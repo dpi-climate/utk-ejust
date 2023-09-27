@@ -10,6 +10,8 @@ import fsColorPoints from './shaders/colorPoints.fs';
 
 import { IKnot } from "./interfaces";
 
+import * as d3_scale from 'd3-scale';
+
 const d3 = require('d3');
 
 export class ShaderColorPoints extends Shader {
@@ -20,6 +22,9 @@ export class ShaderColorPoints extends Shader {
 
     // Color map definition
     private _colorMap: string | null = null;
+    private _range: number[];
+    private _domain: number[];
+    private _scale: string;
 
     // Global color used on the layer
     // protected _globalColor: number[] = [];
@@ -47,7 +52,7 @@ export class ShaderColorPoints extends Shader {
     // Color map texture
     protected _texColorMap: WebGLTexture | null;
 
-    constructor(glContext: WebGL2RenderingContext, colorMap: string = "interpolateReds") {
+    constructor(glContext: WebGL2RenderingContext, colorMap: string = "interpolateReds", range: number[] = [0, 1], domain: number[] = [], scale: string = "scaleLinear") {
         super(vsColorPoints, fsColorPoints, glContext);
 
         // saves the layer color
@@ -55,6 +60,9 @@ export class ShaderColorPoints extends Shader {
 
         // saves the layer color
         this._colorMap = colorMap;
+        this._range = range;
+        this._domain = domain;
+        this._scale = scale;
 
         // creathe dhe shader variables
         this.createUniforms(glContext);
@@ -72,7 +80,12 @@ export class ShaderColorPoints extends Shader {
         this._functionDirty = true;
         this._function = mesh.getFunctionVBO(knot.id);
 
-        let scale = d3.scaleLinear().domain(d3.extent(this._function[0])).range([0,1]);
+        if (this._domain.length === 0) {
+            this._domain = d3.extent(this._function[0])
+        }
+
+        // @ts-ignore
+        let scale = d3_scale[this._scale]().domain(this._domain).range(this._range);
 
         for(let i = 0; i < this._function[0].length; i++){
             // this._function[0][i] = (this._function[0][i] - minFuncValue)/(maxFuncValue - minFuncValue);

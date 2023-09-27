@@ -12,6 +12,8 @@ import {cross, rotateYMatrix, rotateZMatrix, angle, radians, multiplyMatrices, t
 
 import { IKnot } from "./interfaces";
 
+import * as d3_scale from 'd3-scale';
+
 const mathjs = require('mathjs');
 const d3 = require('d3');
 
@@ -41,6 +43,9 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
     // Color map definition
     private _colorMap: string | null = null;
     private _colorMapReverse: boolean = false;
+    private _range: number[];
+    private _domain: number[];
+    private _scale: string;
 
     // Data loaction on GPU
     protected _glCoords:  WebGLBuffer | null = null;
@@ -97,12 +102,15 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
 
     protected _filtered: number[] = [];
 
-    constructor(glContext: WebGL2RenderingContext, colorMap: string = "interpolateReds", colorMapReverse: boolean = false) {
+    constructor(glContext: WebGL2RenderingContext, colorMap: string = "interpolateReds", range: number[] = [0, 1], domain: number[] = [], scale: string = "scaleLinear", colorMapReverse: boolean = false) {
         super(vsSmoothColorMap, fsSmoothColorMap, glContext);
 
         // saves the layer color
         this._colorMap = colorMap;
         this._colorMapReverse = colorMapReverse;
+        this._range = range;
+        this._domain = domain;
+        this._scale = scale;
 
         // create the shader variables    
         this.createUniforms(glContext);
@@ -167,8 +175,13 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
         let tempFunction = mesh.getFunctionVBO(knot.id);
 
         for(let j = 0; j < tempFunction.length; j++){
+            if (this._domain.length === 0) {
+                this._domain = d3.extent(this._function[j])
+            }
+    
+            // @ts-ignore
+            let scale = d3_scale[this._scale]().domain(this._domain).range(this._range);
 
-            let scale = d3.scaleLinear().domain(d3.extent(tempFunction[j])).range([0,1]);
 
             for(let i = 0; i < tempFunction[j].length; i++){
                 tempFunction[j][i] = scale(tempFunction[j][i]);

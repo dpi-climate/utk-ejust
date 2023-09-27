@@ -83,11 +83,26 @@ export class Knot {
         const color = MapStyle.getColor(this._physicalLayer.style);
 
         let cmap = 'interpolateReds';
+        let range = [0, 1];
+        let domain: number[] = [];
+        let scale = "scaleLinear";
 
         if(this._knotSpecification['color_map'] != undefined){
             cmap = <string>this._knotSpecification['color_map'];
         }
-        
+
+        if(this._knotSpecification['range'] != undefined){
+            range = <number[]>this._knotSpecification['range'];
+        }
+
+        if(this._knotSpecification['domain'] != undefined){
+            domain = <number[]>this._knotSpecification['domain'];
+        }
+
+        if(this._knotSpecification['scale'] != undefined){
+            scale = <string>this._knotSpecification['scale'];
+        }
+
         for (const type of this._physicalLayer.renderStyle) {
             let shader = undefined;
             switch (type) {
@@ -95,16 +110,16 @@ export class Knot {
                     shader = new ShaderFlatColor(glContext, color);
                 break;
                 case RenderStyle.FLAT_COLOR_MAP:
-                    shader = new ShaderFlatColorMap(glContext, cmap);
+                    shader = new ShaderFlatColorMap(glContext, cmap, range, domain, scale);
                 break;
                 case RenderStyle.SMOOTH_COLOR:
                     shader = new ShaderSmoothColor(glContext, color);
                 break;
                 case RenderStyle.SMOOTH_COLOR_MAP:
-                    shader = new ShaderSmoothColorMap(glContext, cmap);
+                    shader = new ShaderSmoothColorMap(glContext, cmap, range, domain, scale);
                 break;
                 case RenderStyle.SMOOTH_COLOR_MAP_TEX:
-                    shader = new ShaderSmoothColorMapTex(glContext, cmap);
+                    shader = new ShaderSmoothColorMapTex(glContext, cmap, range, domain, scale);
                 break;
                 case RenderStyle.PICKING: 
 
@@ -139,7 +154,7 @@ export class Knot {
                     shader = new ShaderAbstractSurface(glContext);
                 break;
                 case RenderStyle.COLOR_POINTS:
-                    shader = new ShaderColorPoints(glContext, cmap);
+                    shader = new ShaderColorPoints(glContext, cmap, range, domain, scale);
                 break;
                 case RenderStyle.FLAT_COLOR_POINTS:
                     shader = new ShaderFlatColorPoints(glContext, color);

@@ -10,6 +10,10 @@ import fsFlatColorMap from './shaders/flatColorMap.fs';
 
 import { IKnot } from "./interfaces";
 
+import * as d3_scale from 'd3-scale';
+
+const d3 = require('d3');
+
 export class ShaderFlatColorMap extends Shader {
     // Data to be rendered
     protected _coords:  number[] = [];
@@ -21,6 +25,9 @@ export class ShaderFlatColorMap extends Shader {
 
     // Color map definition
     private _colorMap: string | null = null;
+    private _range: number[];
+    private _domain: number[];
+    private _scale: string;
 
     // Data loaction on GPU
     protected _glCoords:  WebGLBuffer | null = null;
@@ -50,11 +57,14 @@ export class ShaderFlatColorMap extends Shader {
     // Color map texture
     protected _texColorMap: WebGLTexture | null;
 
-    constructor(glContext: WebGL2RenderingContext, colorMap: string = "interpolateReds") {
+    constructor(glContext: WebGL2RenderingContext, colorMap: string = "interpolateReds", range: number[] = [0, 1], domain: number[] = [], scale: string = "scaleLinear") {
         super(vsFlatColorMap, fsFlatColorMap, glContext);
 
         // saves the layer color
         this._colorMap = colorMap;
+        this._range = range;
+        this._domain = domain;
+        this._scale = scale;
 
         // creathe dhe shader variables    
         this.createUniforms(glContext);
@@ -104,12 +114,23 @@ export class ShaderFlatColorMap extends Shader {
 
         }
 
-        // min max normalization
-        if(maxFuncValue != null && minFuncValue != null && maxFuncValue - minFuncValue != 0 && maxFuncValue >= 0 && minFuncValue >= 0){
-            for(let i = 0; i < this._function[this._functionToUse].length; i++){
-                this._function[this._functionToUse][i] = (this._function[this._functionToUse][i] - minFuncValue)/(maxFuncValue - minFuncValue);
-            }
+        // // min max normalization
+        // if(maxFuncValue != null && minFuncValue != null && maxFuncValue - minFuncValue != 0 && maxFuncValue >= 0 && minFuncValue >= 0){
+        //     for(let i = 0; i < this._function[this._functionToUse].length; i++){
+        //         this._function[this._functionToUse][i] = (this._function[this._functionToUse][i] - minFuncValue)/(maxFuncValue - minFuncValue);
+        //     }
+        // }
+        if (this._domain.length === 0) {
+            this._domain = d3.extent(this._function[this._functionToUse])
         }
+
+        // @ts-ignore
+        let scale = d3_scale[this._scale]().domain(this._domain).range(this._range);
+
+        for(let i = 0; i < this._function[this._functionToUse].length; i++){
+            this._function[this._functionToUse][i] = scale(this._function[this._functionToUse][i]);
+        }
+
     }
 
     public updateShaderUniforms(data: any) {

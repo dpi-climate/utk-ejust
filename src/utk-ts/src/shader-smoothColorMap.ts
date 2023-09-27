@@ -12,6 +12,8 @@ import { IKnot } from "./interfaces";
 
 import { AuxiliaryShaderTriangles } from "./auxiliaryShaderTriangles";
 
+import * as d3_scale from 'd3-scale';
+
 const d3 = require('d3');
 
 export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
@@ -30,6 +32,9 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
     // Color map definition
     private _colorMap: string | null = null;
     private _colorMapReverse: boolean = false;
+    private _range: number[];
+    private _domain: number[];
+    private _scale: string;
 
     // Data loaction on GPU
     protected _glCoords:  WebGLBuffer | null = null;
@@ -71,11 +76,14 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
     protected _currentPickedElement: number; // stores the index of the currently picked element
     protected _filtered: number[] = [];
 
-    constructor(glContext: WebGL2RenderingContext, colorMap: string = "interpolateReds") {
+    constructor(glContext: WebGL2RenderingContext, colorMap: string = "interpolateReds", range: number[] = [0, 1], domain: number[] = [], scale: string = "scaleLinear") {
         super(vsSmoothColorMap, fsSmoothColorMap, glContext);
 
         // saves the layer color
         this._colorMap = colorMap;
+        this._range = range;
+        this._domain = domain;
+        this._scale = scale;
 
         // creathe dhe shader variables    
         this.createUniforms(glContext);
@@ -124,11 +132,28 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         this._colorOrPickedDirty = true;
         this._function = mesh.getFunctionVBO(knot.id);
 
-        let scale = d3.scaleLinear().domain(d3.extent(this._function[this._functionToUse])).range([0,1]);
+        // @ts-ignore
+        console.log(d3_scale[this._scale]);
+        console.log("domain", this._domain);
+        console.log("range", this._range);
+
+        if (this._domain.length === 0) {
+            this._domain = d3.extent(this._function[this._functionToUse])
+        }
+
+        // @ts-ignore
+        let scale = d3_scale[this._scale]().domain(this._domain).range(this._range);
+
+        console.log(scale(20));
+
+        console.log("function before", this._function[this._functionToUse]);
 
         for(let i = 0; i < this._function[this._functionToUse].length; i++){
             this._function[this._functionToUse][i] = scale(this._function[this._functionToUse][i]);
         }
+
+        console.log("function after", this._function[this._functionToUse]);
+        console.log("function extent after", d3.extent(this._function[this._functionToUse]));
 
     }
 

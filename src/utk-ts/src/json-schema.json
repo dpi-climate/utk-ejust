@@ -156,6 +156,25 @@
                                 "color_map": {
                                     "type": "string"
                                 },
+                                "range": {
+                                    "type": "array",
+                                    "minItems": 2,
+                                    "maxItems": 2,
+                                    "items": {
+                                        "type": "number"
+                                    }
+                                },
+                                "domain": {
+                                    "type": "array",
+                                    "minItems": 2,
+                                    "maxItems": 2,
+                                    "items": {
+                                        "type": "number"
+                                    }
+                                },
+                                "scale": {
+                                   "type": "string"
+                                },
                                 "integration_scheme": {
                                     "type": "array",
                                     "items": {

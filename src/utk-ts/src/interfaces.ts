@@ -64,6 +64,9 @@ export interface IKnot {
     knot_op?: boolean,
     color_map?: string | IConditionBlock,
     integration_scheme: ILinkDescription[],
+    range?: number[],
+    domain?: number[],
+    scale?: string,
 }
 
 export interface IKnotGroup{
