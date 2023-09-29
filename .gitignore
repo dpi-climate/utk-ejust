@@ -22,5 +22,3 @@ wheels/
 examples/wrf_chicago
 examples/wrf_multi_resolution
 examples/wrf_one_resolution
-
-utk-dashboard/

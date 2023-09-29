@@ -67,4 +67,12 @@ export abstract class GeoUtils {
   public static groundResolution(lat: number, lng: number, zoom: number): number {
     return Math.cos(lat * Math.PI / 180) * 6378137 * 2 * Math.PI / Math.pow(2, zoom);
   }
+
+  public static latlonToWebMercator(lat: number, lon: number) {
+    const x = lon * 20037508.34 / 180
+    let y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180)
+    y = y * 20037508.34 / 180
+    return [x, y]
+  }
+
 }

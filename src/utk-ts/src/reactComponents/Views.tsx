@@ -196,7 +196,8 @@ function Views({viewObjs, viewIds, grammar, mainDivSize}: ViewProps) {
           viewObjs.map((component, index) => {
             if (component.type == ComponentIdentifier.MAP) {
               return <React.Fragment key={viewIds[index]}>
-                <div className='component' style={{padding: 0, position: "absolute", left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}>
+                {/* <div className='component' style={{padding: 0, position: "absolute", left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}> */}
+                <div className='component' style={{padding: 0, left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}>
                   <MapRendererContainer
                     obj = {component.obj}
                     viewId={viewIds[index]}

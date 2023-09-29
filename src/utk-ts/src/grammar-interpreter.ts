@@ -16,7 +16,7 @@ import schema_categories from './json-schema-categories.json';
 
 // const Ajv = require("ajv");
 import Ajv2019 from "ajv/dist/2019" // https://github.com/ajv-validator/ajv/issues/1462
-
+import { GeoUtils } from './geoutils';
 
 const ajv = new Ajv2019()
 
@@ -200,6 +200,20 @@ class GrammarInterpreter {
     public async processGrammar(grammar: IGrammar){
         if(this.validateGrammar(grammar)){
             this._preProcessedGrammar = grammar;
+
+            // const position = grammar.components[0].map.camera.position
+            // const lookAt = grammar.components[0].map.camera.direction.lookAt
+            // // const latLon = GeoUtils.coord2LatLng(position[1], position[0])
+            
+            // const latLonMercatorPosition = GeoUtils.latlonToWebMercator(position[0], position[1])
+            // const latLonMercatorLookAt = GeoUtils.latlonToWebMercator(lookAt[0], lookAt[1])
+            // grammar.components[0].map.camera.position = [latLonMercatorPosition[0], latLonMercatorPosition[1], position[2]]
+            // grammar.components[0].map.camera.direction.lookAt = [latLonMercatorLookAt[0], latLonMercatorLookAt[1], lookAt[2]]
+
+
+            // console.log("position", position)
+            // console.log("mercator", latLonMercator)
+
             // this._processedGrammar = this.processConditionBlocks(JSON.parse(JSON.stringify(this._preProcessedGrammar))); // Making a deep copy of the grammar before processing it
             await this.createSpatialJoins(this._url, this._preProcessedGrammar);
             this._processedGrammar = this._preProcessedGrammar;
