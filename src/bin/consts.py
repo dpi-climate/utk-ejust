@@ -15,6 +15,77 @@ fields = [
 
 fields_keys = [f["key"] for f in fields]
 
+fakeScatterSys = [
+  {
+    "tmp2m":18,
+    "tmpsrf": 23,
+    "rh":80,
+    "wind10":30,
+    "pm25": 52,
+    "pm10": 98  ,
+    "o3"  : 4  ,
+    "co"  : 21  ,
+    "so2" : 76  ,
+    "nox": 43   ,
+    "crime1":130,
+    "crime2":130,
+    "crime3":130,
+    # "time":1,
+    # "point": [1, 3]
+  },
+  {
+    "tmp2m":98,
+    "tmpsrf": 54,
+    "rh":76,
+    "wind10":34,
+    "pm25": 76,
+    "pm10": 65  ,
+    "o3"  : 4  ,
+    "co"  : 12  ,
+    "so2" : 32  ,
+    "nox": 43   ,
+    "crime1":54,
+    "crime2":78,
+    "crime3":43,
+    # "time":1,
+    # "point": [1, 3]
+   },
+  {
+    "tmp2m":5,
+    "tmpsrf": 1,
+    "rh":31,
+    "wind10":88,
+    "pm25": 78,
+    "pm10": 56  ,
+    "o3"  : 54  ,
+    "co"  : 43  ,
+    "so2" : 21  ,
+    "nox": 43   ,
+    "crime1":32,
+    "crime2":3,
+    "crime3":8,
+    # "time":1,
+    # "point": [1, 3]
+   },
+  {
+    "tmp2m":12,
+    "tmpsrf": 65,
+    "rh":12,
+    "wind10":43,
+    "pm25": 76,
+    "pm10": 36  ,
+    "o3"  : 4  ,
+    "co"  : 75  ,
+    "so2" : 25  ,
+    "nox": 75   ,
+    "crime1":75,
+    "crime2":34,
+    "crime3":65,
+    # "time":1,
+    # "point": [1, 3]
+   },
+]
+
 socioFields = [
     {"key": "crm", "nick": "crime", "name": "Crimes"},
     {"key": "crm2", "nick": "crime2", "name": "Crimes2"},

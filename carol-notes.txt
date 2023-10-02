@@ -1,0 +1,2 @@
+cd src
+python utk_server.py start --bundle utk-dashboard\build\utk-app\ --data "..\examples\wrf_chicago"

@@ -36,6 +36,16 @@ function Home() {
     const fetchFieldList = async () => {
       const newFields = await Intermediary.getFields()
       setFieldsList(newFields)
+
+      // Update Scatter
+      const newScatter = await Intermediary.getScatter(scatterX, scatterY)
+      setScatter(newScatter.data)
+
+      // Update Hmat
+      const pt   = 4
+      const time = 6
+      const newHmat = await Intermediary.getHmat(pt, time)
+      setHmat(newHmat.data)
     }
     fetchFieldList()
   }, [])
@@ -48,7 +58,7 @@ function Home() {
       
       // Update Scatter
       Intermediary.getScatter(scatterX, scatterY).then((response: any) => {
-        console.log("scatter promise: ", response.data)
+        // console.log("scatter promise: ", response.data)
         setScatter(response.data)
       })
       .catch((e: Error) => {
@@ -86,7 +96,7 @@ function Home() {
     <Main>
       <div className="analyzes">
         <div className="spatial">
-        {GridPointSelector()}
+        {/* {GridPointSelector()} */}
           <Map/>
         </div>
         <div className="temporal overflow-auto">

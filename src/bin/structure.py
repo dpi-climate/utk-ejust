@@ -1,4 +1,4 @@
-from bin.consts import fields, fakeScatterData, fakeHmat
+from bin.consts import fields, fakeScatterData, fakeHmat, fakeScatterSys
 import random
 
 class Structure(object):
@@ -13,6 +13,7 @@ class Structure(object):
 
         print(msg)
         return fakeScatterData
+        # return fakeScatterSys
     
     def getTemporalData(self, fieldKeys):
         temporalData = {}

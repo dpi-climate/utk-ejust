@@ -9,11 +9,11 @@
     0 2px 23px 0 rgba(0, 0, 0, 0.1),
     0 2px 49px 0 rgba(0, 0, 0, 0.06);
 
-  /* --bias-width: 370px */
   --temporal-width: 900px;
   --bias-width: 350px;
+  /* --temporal-width: 2000px;
+  --bias-width: 170px; */
   --corr-width: calc(var(--temporal-width) - var(--bias-width))
-  /* --corr-width: 450px */
 }
 
 * {

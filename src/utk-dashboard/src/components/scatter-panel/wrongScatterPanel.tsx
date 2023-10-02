@@ -14,20 +14,30 @@ interface ScatterPanelProps {
 interface DropdownProps {
   axis: "X" | "Y"
   label: string
+  activeField: FieldType
 }
 
 const ScatterPanel = ({ fields, data, setScatter } : ScatterPanelProps) => {
 
-  const [xDrop, setXDrop] = useState<DropdownProps>({ axis: "X", label: "null"})
-  const [yDrop, setYDrop] = useState<DropdownProps>({ axis: "Y", label: "null"})
-
-  if(data.length === 0) { return <div></div> }
+  
+  
+  const initialXLabel = fields.length > 0 ? fields[0].nick : ""
+  // const initialXField = fields.length > 0 ? fields[0] : {}
+  
+  const initialYLabel = fields.length > 0 ? fields[1].nick : ""
+  // const initialYField = fields.length > 0 ? fields[1] : {}
+  
+  const [xDrop, setXDrop] = useState<DropdownProps>({ axis: "X", label: initialXLabel, activeField: fields[0]})
+  const [yDrop, setYDrop] = useState<DropdownProps>({ axis: "Y", label: initialYLabel, activeField: fields[1]})
+  
+  if(fields.length === 0 || data.length === 0 || xDrop.activeField === undefined || yDrop.activeField === undefined ) { 
+    return <div></div> 
+  }
 
   function handleClick(ax: DropdownProps, fld:FieldType, setAxis: typeof setXDrop | typeof setYDrop) {
-    setAxis({ axis: ax.axis, label: fld.nick})
+    setAxis({ axis: ax.axis, label: fld.nick, activeField: fld})
   }
   
-  console.log("scatter panel", data)
   const scatter: VisualizationSpec = {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
     // "data": {"url": "https://raw.githubusercontent.com/vega/vega/main/docs/data/cars.json"},
@@ -36,10 +46,12 @@ const ScatterPanel = ({ fields, data, setScatter } : ScatterPanelProps) => {
     "height": 250,
     "mark": "circle",
     "encoding": {
-      "x": {"field": "Horsepower", "type": "quantitative"},
-      "y": {"field": "Miles_per_Gallon", "type": "quantitative"}
+      "x": {"field": `${xDrop.activeField.key}`, "type": "quantitative"},
+      "y": {"field": `${yDrop.activeField.key}`, "type": "quantitative"}
     },
   }
+
+  // return <div>To do</div>
   
   return(
     <>
@@ -81,7 +93,6 @@ const ScatterPanel = ({ fields, data, setScatter } : ScatterPanelProps) => {
       />
     </>
   )
-
 }
 
 export { ScatterPanel }
