@@ -1,9 +1,11 @@
 import { VegaLite } from 'react-vega'
 import { VisualizationSpec } from 'vega-embed'
 import { FieldType } from "../../types/Types"
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import "./ScatterPanel.css"
-// import { ScatterOptions } from '../scatter-options'
+import Intermediary from '../../intermediary/Intermediary'
+
+// import $ from "jquery"
 
 interface ScatterPanelProps {
     fields: FieldType[]
@@ -14,20 +16,59 @@ interface ScatterPanelProps {
 interface DropdownProps {
   axis: "X" | "Y"
   label: string
+  activeField: FieldType | Record<string, never>
 }
 
 const ScatterPanel = ({ fields, data, setScatter } : ScatterPanelProps) => {
+   
+  const [xDrop, setXDrop] = useState<DropdownProps>({ axis: "X", label: "", activeField: {}})
+  const [yDrop, setYDrop] = useState<DropdownProps>({ axis: "Y", label: "", activeField: {}})
+  
+  
+  useEffect(() => {
+    const updateDropdowns = () => {
+      const xD = {...xDrop}
+      const yD = {...yDrop}
+      
+      if(fields.length === 0) {
+        xD.label = ""
+        xD.activeField = {}
 
-  const [xDrop, setXDrop] = useState<DropdownProps>({ axis: "X", label: "null"})
-  const [yDrop, setYDrop] = useState<DropdownProps>({ axis: "Y", label: "null"})
+        yD.label = ""
+        yD.activeField = {}
+        
+      } else {
+        xD.label = fields[0].nick
+        xD.activeField = fields[0]
 
-  if(data.length === 0) { return <div></div> }
+        yD.label = fields[1].nick
+        yD.activeField = fields[1]
+      }
 
-  function handleClick(ax: DropdownProps, fld:FieldType, setAxis: typeof setXDrop | typeof setYDrop) {
-    setAxis({ axis: ax.axis, label: fld.nick})
+      setXDrop(xD)
+      setYDrop(yD)
+    } 
+    
+    updateDropdowns()
+    
+  },[fields])
+  
+  if(fields.length === 0 || data.length === 0) { 
+    return <div></div> 
+  }
+
+  async function handleClick(ax: DropdownProps, fld:FieldType, setAxis: typeof setXDrop | typeof setYDrop) {
+    // $(".scatter-dropdown-content").hide()
+    
+    // Update Scatter
+    const fldX = ax.axis === "X" ? fld.key : xDrop.activeField.key
+    const fldY = ax.axis === "Y" ? fld.key : yDrop.activeField.key
+    const newScatter = await Intermediary.getScatter(fldX, fldY)
+    
+    setScatter(newScatter.data)
+    setAxis({ axis: ax.axis, label: fld.nick, activeField: fld})
   }
   
-  console.log("scatter panel", data)
   const scatter: VisualizationSpec = {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
     // "data": {"url": "https://raw.githubusercontent.com/vega/vega/main/docs/data/cars.json"},
@@ -36,11 +77,13 @@ const ScatterPanel = ({ fields, data, setScatter } : ScatterPanelProps) => {
     "height": 250,
     "mark": "circle",
     "encoding": {
-      "x": {"field": "Horsepower", "type": "quantitative"},
-      "y": {"field": "Miles_per_Gallon", "type": "quantitative"}
+      "x": {"field": `${xDrop.activeField.key}`, "type": "quantitative", "title": `${xDrop.activeField.nick}`},
+      "y": {"field": `${yDrop.activeField.key}`, "type": "quantitative", "title": `${yDrop.activeField.nick}`}
     },
   }
-  
+
+  // return <div>To do</div>
+ 
   return(
     <>
     <div className="scatter-dropdown">
@@ -81,7 +124,6 @@ const ScatterPanel = ({ fields, data, setScatter } : ScatterPanelProps) => {
       />
     </>
   )
-
 }
 
 export { ScatterPanel }

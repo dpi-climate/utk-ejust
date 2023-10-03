@@ -12,8 +12,8 @@ class Structure(object):
         msg = f"[Structure - getScatter] {fld1} {fld2}"
 
         print(msg)
-        return fakeScatterData
-        # return fakeScatterSys
+        # return fakeScatterData
+        return fakeScatterSys
     
     def getTemporalData(self, fieldKeys):
         temporalData = {}

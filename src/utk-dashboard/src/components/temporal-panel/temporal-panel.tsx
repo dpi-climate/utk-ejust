@@ -7,9 +7,9 @@ import { useState } from "react"
 import TseriesFocusCtx from "../tseries/TseriesFocusCtx"
 
 interface TemporalPanelProps {
-    fields: FieldType[]
-    timeSeries: Record<string, TimeSeriesEntry[] | []>
-    activeTime: number
+  fields: FieldType[]
+  timeSeries: Record<string, TimeSeriesEntry[] | []>
+  activeTime: number
 }
 
 const TemporalPanel = memo(({ fields, timeSeries, activeTime} : TemporalPanelProps) => {
@@ -18,7 +18,7 @@ const TemporalPanel = memo(({ fields, timeSeries, activeTime} : TemporalPanelPro
   const [activeFcTseries, setFcTseries] = useState<string>("")
 
   if (Object.keys(timeSeries).length === 0) {
-    return <div></div>  
+    return <div></div>
   } 
 
   return (
