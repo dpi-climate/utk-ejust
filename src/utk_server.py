@@ -17,6 +17,10 @@ from watchdog.events import LoggingEventHandler
 from utk.utils import *
 from utk.files_interface import *
 
+## Carolina ##
+## Change import path if moving src/bin files to src/utk ##
+from bin.structure import Structure
+
 app = Flask(__name__)
 geolocator = Nominatim(user_agent="urbantk")
 workdir = './data/'
@@ -415,7 +419,6 @@ def main():
 ###################################################################################
 ################################ CAROL ############################################
 ###################################################################################
-from bin.structure import Structure
 
 struct = Structure()
 
