@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import {Environment, DataLoader, GrammarInterpreterFactory} from 'utk';
+import {Environment, DataLoader, GrammarInterpreterFactory, InteractionChannel} from 'utk';
+// import {Environment, DataLoader, GrammarInterpreterFactory} from 'utk';
 import $ from 'jquery';
 import { IGrammar } from 'utk';
 
@@ -22,7 +23,14 @@ function Map() {
       grammarInterpreter.resetGrammarInterpreter(grammar, mainDiv);
     }
     createAndRunMap();
+
+    InteractionChannel.setInteraction(myTest)
+    // InteractionChannel.setInteraction("carol")
   }, []);
+
+  const myTest = () => {
+    console.log("hey, I am here o/")
+  }
 
   // return <div id='spatial-div' style={{height: "100vh", width: "100%"}}></div>
   return <div id='spatial-div' style={{ height: "90vh",width: "100%"}}></div>

@@ -99,7 +99,7 @@ function Home() {
         {/* {GridPointSelector()} */}
           <Map/>
         </div>
-        {/* <div className="temporal overflow-auto">
+        <div className="temporal overflow-auto">
           <div className="container">
             <TemporalPanel fields={fieldsList} timeSeries={temporalPanelData} activeTime={activeTime} />
           </div>
@@ -113,7 +113,7 @@ function Home() {
           <div className="m-2">
             <ScatterPanel fields={fieldsList} data={scatter} setScatter={setScatter}/>
           </div>
-        </div> */}
+        </div>
       </div>
     </Main>
     </>
