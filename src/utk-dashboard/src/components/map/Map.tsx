@@ -4,7 +4,11 @@ import {Environment, DataLoader, GrammarInterpreterFactory, InteractionChannel} 
 import $ from 'jquery';
 import { IGrammar } from 'utk';
 
-function Map() {
+interface MapProps {
+  time: number
+}
+
+const Map = ({ time } : MapProps) => {
   
   // Run only once
   useEffect(() => {
@@ -24,12 +28,15 @@ function Map() {
     }
     createAndRunMap();
 
-    InteractionChannel.setInteraction(myTest)
-    // InteractionChannel.setInteraction("carol")
   }, []);
 
+  useEffect(() => {
+    InteractionChannel.setInteraction(myTest)
+
+  }, [time]);
+
   const myTest = () => {
-    console.log("hey, I am here o/")
+    console.log(`Hey, utk got time ${time}!!!`)
   }
 
   // return <div id='spatial-div' style={{height: "100vh", width: "100%"}}></div>

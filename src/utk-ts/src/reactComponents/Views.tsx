@@ -215,23 +215,23 @@ function Views({viewObjs, viewIds, grammar, mainDivSize}: ViewProps) {
                 </div>
               </React.Fragment>
             } else if(component.type == ComponentIdentifier.GRAMMAR) {
-              // return <></>
-              return <React.Fragment key={viewIds[index]}>
-                <div className='component' style={{position: "absolute", left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}>
-                  <GrammarPanelContainer 
-                    obj = {component.obj}
-                    viewId={viewIds[index]}
-                    initialGrammar={grammar}
-                    camera = {camera}
-                    filterKnots = {filterKnots}
-                    inputId = {inputBarId}
-                    setCamera = {setCamera}
-                    addNewMessage = {addNewMessage}
-                    applyGrammarButtonId = {"applyGrammarButton"}
-                    linkMapAndGrammarId = {"linkMapAndGrammar"}
-                  />
-                </div>
-              </React.Fragment>
+              return <></>
+              // return <React.Fragment key={viewIds[index]}>
+              //   <div className='component' style={{position: "absolute", left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}>
+              //     <GrammarPanelContainer 
+              //       obj = {component.obj}
+              //       viewId={viewIds[index]}
+              //       initialGrammar={grammar}
+              //       camera = {camera}
+              //       filterKnots = {filterKnots}
+              //       inputId = {inputBarId}
+              //       setCamera = {setCamera}
+              //       addNewMessage = {addNewMessage}
+              //       applyGrammarButtonId = {"applyGrammarButton"}
+              //       linkMapAndGrammarId = {"linkMapAndGrammar"}
+              //     />
+              //   </div>
+              // </React.Fragment>
             } 
           })
         }

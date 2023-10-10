@@ -17,6 +17,8 @@ import { TemporalOptions } from '../../components/temporal-options'
 import { HmatPanel } from '../../components/hmat-panel'
 import { ScatterPanel } from '../../components/scatter-panel'
 
+import { TimeBtn } from '../../components/time-btn'
+
 function Home() {
 
   const initialTemporalPanelData: any = {}
@@ -29,7 +31,7 @@ function Home() {
   const [scatterX, setScatterX]               = useState<string>("tmp")
   const [scatterY, setScatterY]               = useState<string>("press")
 
-  const [activeTime, setTime] = useState<number>(0)
+  const [activeTime, setTime] = useState<number>(5)
   const [nTimes    , setNTimes] = useState<number>(11)
 
   useEffect(() => {
@@ -91,13 +93,15 @@ function Home() {
       <div className="col-auto navcol">
         <TemporalOptions fields={fieldsList} data={temporalPanelData} setData={setTempPanelData}/>
       </div>
+      <div className="col-auto navcol">
+        <TimeBtn activeTime={activeTime} nTimes={nTimes} setTime={setTime}/>
+      </div>
     </Nav>
-    
     <Main>
       <div className="analyzes">
         <div className="spatial">
         {/* {GridPointSelector()} */}
-          <Map/>
+          <Map time={activeTime}/>
         </div>
         <div className="temporal overflow-auto">
           <div className="container">
