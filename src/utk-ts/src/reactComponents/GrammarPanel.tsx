@@ -3,6 +3,9 @@ import React, { useState, useEffect, useRef } from "react";
 import JSONEditorReact from "./JSONEditorReact";
 import {Col, Row, Button} from 'react-bootstrap';
 
+import {InteractionChannel} from '../interaction-channel';
+import {GrammarMethods} from '../grammar-methods';
+
 import * as d3 from "d3";
 
 import './GrammarPanel.css';
@@ -67,6 +70,8 @@ export const GrammarPanelContainer = ({
 
     const url = process.env.REACT_APP_BACKEND_SERVICE_URL;
 
+    console.log(url, "url");
+
     const applyGrammar = async () => {
 
         if(tempGrammarStateRef.current != ''){
@@ -98,23 +103,42 @@ export const GrammarPanelContainer = ({
 
         const data = { "grammar": sendGrammar };
     
-        fetch(url+"/updateGrammar", {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then((response) => {
-            // await createLinksAndRenderStyles(url);
-            obj.processGrammar(JSON.parse(grammarStateRef.current));
-        })
-        .catch(error => {
-            console.error('Request to update grammar failed: ', error);
-        });
+        // fetch(url+"/updateGrammar", {
+        //     method: 'POST',
+        //     headers: {
+        //         'Accept': 'application/json',
+        //         'Content-Type': 'application/json'
+        //     },
+        //     body: JSON.stringify(data)
+        // })
+        // .then((response) => {
+        //     // await createLinksAndRenderStyles(url);
+        //     obj.processGrammar(JSON.parse(grammarStateRef.current));
+        // })
+        // .catch(error => {
+        //     console.error('Request to update grammar failed: ', error);
+        // });
        
+        GrammarMethods.applyGrammar(url, data)
+            .then((respose) => {
+                obj.processGrammar(JSON.parse(grammarStateRef.current));
+            })
+            .catch(error => {
+                console.error('Request to update grammar failed: ', error);
+            });
+
     }
+
+    // ================
+    const getGrammar = () => {
+        return grammarStateRef.current;
+    }
+
+    const modifyGrammar = (new_grammar: string) => {
+        setCode(new_grammar);
+        // apply grammar
+    }
+    // ================
 
     const addCameraAndFilter = (grammar: string, camera: {position: number[], direction: {right: number[], lookAt: number[], up: number[]}}, filterKnots: number[]) => {
         
@@ -167,6 +191,11 @@ export const GrammarPanelContainer = ({
 
     // run only once to load the initial data
     useEffect(() => {
+
+        GrammarMethods.subscribe((new_grammar: string) => { 
+            console.log("new_grammar", new_grammar);
+            setCode(new_grammar);
+        });
 
         let stringData = JSON.stringify(initialGrammar, null, 4);
         setCode(stringData);

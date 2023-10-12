@@ -10,7 +10,7 @@ interface TimeBtnProps {
 }
 
 const TimeBtn = ({ activeTime, nTimes, setTime } : TimeBtnProps) => {
-
+  // console.log("TimeBtn")
   const handleMinusClick = () => {
     const newTime = activeTime - 1
     if(newTime >= 0) setTime(newTime)

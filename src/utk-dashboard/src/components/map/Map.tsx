@@ -31,8 +31,11 @@ const Map = ({ time } : MapProps) => {
   }, []);
 
   useEffect(() => {
-    InteractionChannel.setInteraction(myTest)
+    // InteractionChannel.setInteraction(myTest)
 
+    console.log("use effect time");
+
+    InteractionChannel.sendData({variable: "timestep", value: time})
   }, [time]);
 
   const myTest = () => {

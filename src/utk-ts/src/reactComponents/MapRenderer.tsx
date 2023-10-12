@@ -36,7 +36,7 @@ export const MapRendererContainer = ({obj, viewId, viewObjs, x, y, width, height
           </div>
         </div>
 
-        {/* <SideBarWidgets 
+        <SideBarWidgets 
           viewObjs={viewObjs}
           x={x}
           y={y}
@@ -47,7 +47,7 @@ export const MapRendererContainer = ({obj, viewId, viewObjs, x, y, width, height
           inputBarId={inputBarId}
           genericPlots={genericPlots}
           togglePlots={togglePlots}
-        /> */}
+        />
 
         {/* <div style={{position: "absolute", height: "160px", bottom: 0, width: (divWidth/12)*window.innerWidth, backgroundColor: "rgba(200,200,200,0.3)", padding: 0}}>
           
