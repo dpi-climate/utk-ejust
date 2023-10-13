@@ -127,7 +127,18 @@
                     1,
                     4
                 ]
-            }
+            },
+            "widgets": [
+                {
+                    "type": "TOGGLE_KNOT"
+                },
+                {
+                    "type": "SEARCH"
+                },
+                {
+                    "type": "HIDE_GRAMMAR"
+                }
+            ]
         }
     ],
     "grid": {

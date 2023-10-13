@@ -44,7 +44,7 @@ export class GrammarManager {
      * @param setGrammarUpdateCallback Function that sets the callback that will be called in the frontend to update the grammar
      */
     constructor(grammar: IGrammar, updateStatusCallback: any, plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
-        
+        console.log("constructor");
         for(const component of grammar['components']){
             if("map" in component){
                 this._viewData = component;                
@@ -210,7 +210,7 @@ export class GrammarManager {
     }
 
     async attachPlots(processedKnotData: any){
-
+        console.log("attachPlots");
         function mergeKnotData(values1: any, values2: any){
             let values3: any = [];
 

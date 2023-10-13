@@ -223,8 +223,7 @@ function Views({viewObjs, viewIds, grammar, mainDivSize}: ViewProps) {
             } else if(component.type == ComponentIdentifier.GRAMMAR) {
               // return <></>
               return <React.Fragment key={viewIds[index]}>
-                {/* <div className='component' style={{position: "absolute", left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}> */}
-                <div className='component' style={{left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}>
+                <div className='component' style={{position: "absolute", left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}>
                   <GrammarPanelContainer 
                     obj = {component.obj}
                     viewId={viewIds[index]}

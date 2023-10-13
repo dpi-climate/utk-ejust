@@ -286,9 +286,8 @@ def writeImpactViewData():
 def serve_updateGrammar():
 
     grammar = request.json['grammar']
-    
     with open(grammarpath, "w", encoding="utf-8") as f:
-        f.write(grammar)
+        f.write(json.dumps(grammar))
 
     return ''
 

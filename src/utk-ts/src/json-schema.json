@@ -4,6 +4,16 @@
     "description": "A grammar to produce visual analytics systems",
     "type": "object",
     "properties": {
+        "variables": {
+            "description": "",
+            "type": "object",
+            "properties": {
+                "time": {
+                    "type": "number",
+                    "value": 0
+                }
+            }
+        },
         "components": {
             "description": "Stores the components that will visually compose the dashboard",
             "type": "array",

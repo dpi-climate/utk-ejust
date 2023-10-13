@@ -55,7 +55,7 @@ class GrammarInterpreter {
 
     // TODO: it should be possible to create more than one map. So map should not be a singleton
     public initViews(mainDiv: HTMLElement, grammar: IGrammar){
-
+        console.log("initViews");
         this._components = [];
 
         for(const component of grammar.components){
@@ -71,6 +71,9 @@ class GrammarInterpreter {
                         }else if(widget.type == WidgetType.SEARCH){
                             this._components.push({type: WidgetType.SEARCH, obj: MapViewFactory.getInstance(mainDiv, this), position: undefined, title: undefined, subtitle: undefined, grammarDefinition: widget});
                         }
+                        else if(widget.type == WidgetType.HIDE_GRAMMAR){
+                            this._components.push({type: WidgetType.HIDE_GRAMMAR, obj: MapViewFactory.getInstance(mainDiv, this), position: undefined, title: undefined, subtitle: undefined, grammarDefinition: widget});
+                        }
                     }
                 }
             }
@@ -84,7 +87,7 @@ class GrammarInterpreter {
     }
 
     public validateGrammar(grammar: IGrammar){
-
+        console.log("validateGrammar");
         // TODO: checking conflicting types of interactions for the knots. One knot cannot be in plots with different arrangements
 
         // TODO: ensure that the widgets have all the attributes they should have
@@ -198,6 +201,7 @@ class GrammarInterpreter {
     }
 
     public async processGrammar(grammar: IGrammar){
+        console.log("processGrammar");
         if(this.validateGrammar(grammar)){
             this._preProcessedGrammar = grammar;
 
@@ -498,6 +502,7 @@ class GrammarInterpreter {
 
     // TODO: more than one view should be rendered but inside a single div provided by the front end
     private renderViews(mainDiv: HTMLElement, grammar: IGrammar){
+        console.log("renderViews");
         // mainDiv.innerHTML = ""; // empty all content
 
         if(this._root == undefined){

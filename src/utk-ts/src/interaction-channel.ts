@@ -1,37 +1,43 @@
 import { GrammarMethods } from './grammar-methods';
+import { Environment } from './environment';
 
 export class InteractionChannel {
-    /**
-     * Loads blablabla
-     * @param {Function} myString blabla
-     * @return { any } bla
-     */
 
     static getGrammar: Function;
     static modifyGrammar: Function;
+    static modifyGrammarVisibility: Function;
+
+    static setModifyGrammarVisibility(modifyGrammar: Function): void {
+        InteractionChannel.modifyGrammarVisibility = modifyGrammar;
+    }
+
+    static getModifyGrammarVisibility(): Function{
+        return InteractionChannel.modifyGrammarVisibility;
+    }
 
     static sendData(data: {variable: string, value: any}): void {
 
-        const url = process.env.REACT_APP_BACKEND_SERVICE_URL;
+        const url = `${Environment.backend}`;
 
-        console.log("time", data);
+        console.log("sendData 1", data);
 
         let grammar = GrammarMethods.grammar;
 
         if(grammar != undefined){
+            console.log("sendData 2", grammar);
             grammar.grammar_position = {
                 "width": [
                     1,
                     2
                 ],
                 "height": [
-                    1,
+                    2,
                     4
                 ]
             }
-    
-            GrammarMethods.applyGrammar(url, {"grammar": JSON.stringify(grammar)})
+            // console.log("here is my previous apply grammar", JSON.stringify(grammar));
+            GrammarMethods.applyGrammar(url, grammar);
         }
-
+        
     }
 }
