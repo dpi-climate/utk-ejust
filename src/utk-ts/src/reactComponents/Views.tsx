@@ -182,6 +182,7 @@ function Views({viewObjs, viewIds, grammar, mainDivSize}: ViewProps) {
   }, []);
 
   useEffect(() => {
+    console.log("this place", grammar);
     GrammarMethods.updateGrammar(grammar);
   }, [grammar]);
 

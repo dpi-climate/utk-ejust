@@ -4,9 +4,9 @@ export class GrammarMethods {
 
     static grammar: IGrammar;
 
-    static subscribers: Function[] = [];
+    static subscribers: any = {};
 
-    static applyGrammar(url_string: string | undefined, grammar: any): Promise<any> {
+    static applyGrammar(url_string: string | undefined, grammar: Object): Promise<any> {
 
         let url = "http://localhost:5001";
 
@@ -26,22 +26,22 @@ export class GrammarMethods {
         })
 
         fetch_promise.then((reponse) => {
-            for(const subscriber of GrammarMethods.subscribers){
+            for(const [key, value] of Object.entries(GrammarMethods.subscribers)){
                 console.log("calling subscribed functions", grammar);
-                subscriber(grammar);
+                (<Function>value)(grammar);
             }
         })
 
         return fetch_promise;
     }
 
-    static subscribe(subscription_callback: Function){
-        console.log("Called subscribe")
-        GrammarMethods.subscribers.push(subscription_callback);
+    static subscribe(identifier: string, subscription_callback: Function){
+        console.log("Called subscribe", identifier);
+        GrammarMethods.subscribers[identifier] = subscription_callback;
     }
 
     static updateGrammar(data: IGrammar): void {
-        this.grammar = data;
+        GrammarMethods.grammar = data;
     }
 
 }

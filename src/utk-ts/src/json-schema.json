@@ -5,12 +5,17 @@
     "type": "object",
     "properties": {
         "variables": {
-            "description": "",
-            "type": "object",
-            "properties": {
-                "time": {
-                    "type": "number",
-                    "value": 0
+            "description": "Variables that can be modified in the knots",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "value": {
+                        "type": "string"
+                    }
                 }
             }
         },

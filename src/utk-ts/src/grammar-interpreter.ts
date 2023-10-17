@@ -23,8 +23,7 @@ const ajv = new Ajv2019()
 
 class GrammarInterpreter {
 
-    protected _preProcessedGrammar: IGrammar;
-    protected _processedGrammar: IGrammar;
+    protected _grammar: IGrammar;
     protected _lastValidationTimestep: number;
     // protected _components: {type: ComponentIdentifier | WidgetType, obj: any, position: IComponentPosition | undefined, grammarDefinition: IView | IGenericWidget | undefined}[] = [];
     protected _components: {type: ComponentIdentifier | WidgetType, obj: any, position: IComponentPosition | any, title: string | undefined, subtitle: string | undefined, grammarDefinition: IView | IGenericWidget | undefined}[] = [];
@@ -54,7 +53,7 @@ class GrammarInterpreter {
     }
 
     // TODO: it should be possible to create more than one map. So map should not be a singleton
-    public initViews(mainDiv: HTMLElement, grammar: IGrammar){
+    public initViews(mainDiv: HTMLElement, grammar: IGrammar, originalGrammar: IGrammar){
         console.log("initViews");
         this._components = [];
 
@@ -83,7 +82,7 @@ class GrammarInterpreter {
             this._components.push({type: ComponentIdentifier.GRAMMAR, obj: this, position: grammar.grammar_position, title: undefined, subtitle: undefined, grammarDefinition: undefined});
         }
 
-        this.renderViews(mainDiv, grammar);
+        this.renderViews(mainDiv, originalGrammar);
     }
 
     public validateGrammar(grammar: IGrammar){
@@ -203,7 +202,15 @@ class GrammarInterpreter {
     public async processGrammar(grammar: IGrammar){
         console.log("processGrammar");
         if(this.validateGrammar(grammar)){
-            this._preProcessedGrammar = grammar;
+            // changing grammar to be the processed grammar
+            let aux = JSON.stringify(grammar);
+            for(let variable of grammar.variables) {
+                aux = aux.replaceAll("$"+variable.name+"$", variable.value);
+            }
+            console.log(aux);
+            let processedGrammar = JSON.parse(aux);
+            console.log(processedGrammar);
+            this._grammar = processedGrammar;
 
             // const position = grammar.components[0].map.camera.position
             // const lookAt = grammar.components[0].map.camera.direction.lookAt
@@ -219,9 +226,8 @@ class GrammarInterpreter {
             // console.log("mercator", latLonMercator)
 
             // this._processedGrammar = this.processConditionBlocks(JSON.parse(JSON.stringify(this._preProcessedGrammar))); // Making a deep copy of the grammar before processing it
-            await this.createSpatialJoins(this._url, this._preProcessedGrammar);
-            this._processedGrammar = this._preProcessedGrammar;
-            this.initViews(this._mainDiv, this._processedGrammar);
+            await this.createSpatialJoins(this._url, processedGrammar);
+            this.initViews(this._mainDiv, processedGrammar, grammar);
         }
     }
 
@@ -326,55 +332,55 @@ class GrammarInterpreter {
     // }
     
     public getCamera(view: number = 0): ICameraData{
-        if("map" in this._processedGrammar['components'][view]){
-            return (<IView>this._processedGrammar['components'][view]).map.camera;
+        if("map" in this._grammar['components'][view]){
+            return (<IView>this._grammar['components'][view]).map.camera;
         }else{
             throw new Error("The component is not a map");
         }
     }
 
     public getPlots(view: number = 0) {
-        if("map" in this._processedGrammar['components'][view]){
-            return (<IView>this._processedGrammar['components'][view]).plots;
+        if("map" in this._grammar['components'][view]){
+            return (<IView>this._grammar['components'][view]).plots;
         }else{
             throw new Error("The component is not a map");
         }
     }
 
     public getKnots(view: number = 0){
-        if("map" in this._processedGrammar['components'][view]){
-            return (<IView>this._processedGrammar['components'][view]).knots;
+        if("map" in this._grammar['components'][view]){
+            return (<IView>this._grammar['components'][view]).knots;
         }else{
             throw new Error("The component is not a map");
         }
     }
 
     public getMap(view: number = 0){
-        if("map" in this._processedGrammar['components'][view]){
-            return (<IView>this._processedGrammar['components'][view]).map;
+        if("map" in this._grammar['components'][view]){
+            return (<IView>this._grammar['components'][view]).map;
         }else{
             throw new Error("The component is not a map");
         }
     }
 
     public getFilterKnots(view: number = 0){
-        if("map" in this._processedGrammar['components'][view]){
-            return (<IView>this._processedGrammar['components'][view]).map.filterKnots;
+        if("map" in this._grammar['components'][view]){
+            return (<IView>this._grammar['components'][view]).map.filterKnots;
         }else{
             throw new Error("The component is not a map");
         }       
     }
 
     public getProcessedGrammar(){
-        return this._processedGrammar;
+        return this._grammar;
     }
 
     public evaluateLayerVisibility(layerId: string, view:number): boolean{
-        if(!("map" in this._processedGrammar['components'])){
+        if(!("map" in this._grammar['components'])){
             throw new Error("The component is not a map");
         }
 
-        if((<IView>this._processedGrammar['components'][view]).map.knotVisibility == undefined)
+        if((<IView>this._grammar['components'][view]).map.knotVisibility == undefined)
             return true;
 
         let map: any = this._components[view];
@@ -384,14 +390,14 @@ class GrammarInterpreter {
 
         let knotId = ''; // TODO: the layer could appear in more than one Knot. Create knot structure
 
-        for(const knot of (<IView>this._processedGrammar['components'][view]).knots){
+        for(const knot of (<IView>this._grammar['components'][view]).knots){
             if(this.getKnotOutputLayer(knot, view) == layerId){
                 knotId = knot.id;
                 break;
             }
         }
 
-        for(const visibility of <IKnotVisibility[]>(<IView>this._processedGrammar['components'][view]).map.knotVisibility){
+        for(const visibility of <IKnotVisibility[]>(<IView>this._grammar['components'][view]).map.knotVisibility){
             if(visibility.knot == knotId){
                 let testString = visibility.test;
 
@@ -408,11 +414,11 @@ class GrammarInterpreter {
     }
 
     public evaluateKnotVisibility(knot: Knot, view:number): boolean{
-        if(!("map" in this._processedGrammar['components'])){
+        if(!("map" in this._grammar['components'])){
             throw new Error("The component is not a map");
         }
 
-        if((<IView>this._processedGrammar['components'][view]).map.knotVisibility == undefined)
+        if((<IView>this._grammar['components'][view]).map.knotVisibility == undefined)
             return knot.visible;
 
         let map: any = this._components[view].obj;
@@ -420,7 +426,7 @@ class GrammarInterpreter {
         let zoom = map.camera.getZoomLevel();
         let timeElapsed = Date.now() - this._lastValidationTimestep;
 
-        for(const visibility of <IKnotVisibility[]>(<IView>this._processedGrammar['components'][view]).map.knotVisibility){
+        for(const visibility of <IKnotVisibility[]>(<IView>this._grammar['components'][view]).map.knotVisibility){
             if(visibility.knot == knot.id){
                 let testString = visibility.test;
 

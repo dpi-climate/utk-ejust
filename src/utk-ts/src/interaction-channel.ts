@@ -15,27 +15,35 @@ export class InteractionChannel {
         return InteractionChannel.modifyGrammarVisibility;
     }
 
-    static sendData(data: {variable: string, value: any}): void {
+    static sendData(variable: {name: string, value: any}): void {
 
         const url = `${Environment.backend}`;
 
-        console.log("sendData 1", data);
+        console.log("sendData 1", variable);
 
         let grammar = GrammarMethods.grammar;
 
         if(grammar != undefined){
             console.log("sendData 2", grammar);
-            grammar.grammar_position = {
-                "width": [
-                    1,
-                    2
-                ],
-                "height": [
-                    2,
-                    4
-                ]
+            if(grammar.variables) {
+                for(let varr of grammar.variables) {
+                    if(varr.name == variable.name) {
+                        varr.value = variable.value;
+                    }
+                }
             }
+            // grammar.grammar_position = {
+            //     "width": [
+            //         1,
+            //         2
+            //     ],
+            //     "height": [
+            //         2,
+            //         4
+            //     ]
+            // };
             // console.log("here is my previous apply grammar", JSON.stringify(grammar));
+            console.log("sendData 3", grammar);
             GrammarMethods.applyGrammar(url, grammar);
         }
         

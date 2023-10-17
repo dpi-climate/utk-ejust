@@ -5,6 +5,7 @@ import { LayerType, RenderStyle, ColorHEX, OperationType, ViewArrangementType, P
  */
 export interface IGrammar {
     components: (IView)[],
+    variables: {name: string, value: string}[],
     arrangement: ViewArrangementType,
     grid: IGrid,
     grammar_position?: IComponentPosition
