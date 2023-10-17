@@ -54,7 +54,6 @@ export default function GrammarEditor({
     //     refEditor.current = null;
     //   }
     // };
-    console.log("JSONEditorReact useEffect");
     // create the editor
     const container = document.getElementById("div-jsoneditor");
 
@@ -82,7 +81,6 @@ export default function GrammarEditor({
   }, []);
 
   useEffect(() => {
-    console.log("JSONEditorReact useEffect");
     if (refEditor.current) {
       if('json' in content){
         refEditor.current.update(content.json);
@@ -95,7 +93,6 @@ export default function GrammarEditor({
   }, [content]);
 
   useEffect(() => {
-    console.log("JSONEditorReact useEffect");
     if (refEditor.current) {
       refEditor.current.setMode(mode);
     }

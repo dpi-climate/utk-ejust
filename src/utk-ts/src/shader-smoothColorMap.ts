@@ -132,11 +132,6 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         this._colorOrPickedDirty = true;
         this._function = mesh.getFunctionVBO(knot.id);
 
-        // @ts-ignore
-        console.log(d3_scale[this._scale]);
-        console.log("domain", this._domain);
-        console.log("range", this._range);
-
         if (this._domain.length === 0) {
             this._domain = d3.extent(this._function[this._functionToUse])
         }

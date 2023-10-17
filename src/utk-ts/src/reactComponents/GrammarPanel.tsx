@@ -53,7 +53,6 @@ export const GrammarPanelContainer = ({
 
     const grammarStateRef = useRef(grammar);
     const setCode = (data: string) => {
-        console.log("setCode", data);
         grammarStateRef.current = data;
         _setCode(data);
     };
@@ -74,21 +73,16 @@ export const GrammarPanelContainer = ({
     // const url = process.env.REACT_APP_BACKEND_SERVICE_URL;
     const url = `${Environment.backend}`
 
-    console.log(url, "url");
-
     const modifyGrammarAndApply = () => {
         // GrammarPanelVisibility = !(GrammarPanelVisibility);
-        console.log("modifyGrammarAndApply");
         applyGrammar(true);
     }
     InteractionChannel.setModifyGrammarVisibility(modifyGrammarAndApply);
 
-
     const applyGrammar = async (visibilityToggle = false, grammar: string | undefined = undefined) => {
-        console.log("applyGrammar");
+
         if(tempGrammarStateRef.current != ''){
             try{                
-                console.log("applyGrammar 2", tempGrammarStateRef.current);
                 JSON.parse(tempGrammarStateRef.current); // testing if temp grammar contains a valid grammar
             }catch(err){
                 console.error('Grammar is not valid');
@@ -104,7 +98,7 @@ export const GrammarPanelContainer = ({
             currentGrammar = grammar;
         }
 
-        if(d3.select('#'+linkMapAndGrammarId).property("checked")){
+        if(!d3.select('#'+linkMapAndGrammarId).empty() && d3.select('#'+linkMapAndGrammarId).property("checked")){
             if(tempGrammarStateRef.current == ''){
                 sendGrammar = addCameraAndFilter(currentGrammar, camera, filterKnots);
             }else{
@@ -126,32 +120,10 @@ export const GrammarPanelContainer = ({
         setTempGrammar('');
 
         const data = sendGrammar;
-        // fetch(url+"/updateGrammar", {
-        //     method: 'POST',
-        //     headers: {
-        //         'Accept': 'application/json',
-        //         'Content-Type': 'application/json'
-        //     },
-        //     body: JSON.stringify(data)
-        // })
-        // .then((response) => {
-        //     // await createLinksAndRenderStyles(url);
-        //     obj.processGrammar(JSON.parse(grammarStateRef.current));
-        // })
-        // .catch(error => {
-        //     console.error('Request to update grammar failed: ', error);
-        // });
-       console.log("GrammarPanel", data);
-        GrammarMethods.applyGrammar(url, JSON.parse(data));
-            // .then((respose) => {
-            //     console.log("applyGrammar 1", grammarStateRef.current);
-            //     obj.processGrammar(JSON.parse(grammarStateRef.current));
-            //     applyGrammar();
-            // })
-            // .catch(error => {
-            //     console.error('Request to update grammar failed: ', error);
-            // });
 
+        GrammarMethods.applyGrammar(url, JSON.parse(data), "GrammarPanel", (response: Object) => {
+            obj.processGrammar(JSON.parse(grammarStateRef.current));
+        });
     }
 
     // ================
@@ -169,7 +141,6 @@ export const GrammarPanelContainer = ({
     // ================
 
     const addCameraAndFilter = (grammar: string, camera: {position: number[], direction: {right: number[], lookAt: number[], up: number[]}}, filterKnots: number[]) => {
-        console.log("addCameraAndFilter");
         if(grammar == ''){
             return '';
         }
@@ -178,7 +149,6 @@ export const GrammarPanelContainer = ({
             return grammar;
         }
 
-        console.log("addCameraAndFilter 1", grammar);
         let parsedGrammar = JSON.parse(grammar);
 
         for(const component of parsedGrammar.components){ // Grammar camera is the same for all map views
@@ -197,8 +167,6 @@ export const GrammarPanelContainer = ({
     }
 
     const checkGrammarVisibility = (grammar: string) => {
-        console.log("checkGrammarVisibility");
-        console.log("checkGrammarVisibility 1", grammar);
         var parsedGrammar = JSON.parse(grammar);
         
         if(GrammarPanelVisibility){
@@ -213,12 +181,10 @@ export const GrammarPanelContainer = ({
     }
 
     const updateLocalNominatim = (camera: { position: number[], direction: { right: number[], lookAt: number[], up: number[] } }, filterKnots: number[]) => {
-        console.log("updateLocalNominatim");
         setTempGrammar(addCameraAndFilter(grammarStateRef.current, camera, filterKnots)); // overwrite previous changes with grammar integrated with camera and filter knots
     }
     
     const updateCameraNominatim = (place: string) => {
-        console.log("updateCameraNominatim");
         fetch(url+"/solveNominatim?text="+place, {
             method: 'GET'
         })
@@ -228,6 +194,7 @@ export const GrammarPanelContainer = ({
 
             updateLocalNominatim(responseJson, filterKnots);
             setCamera(responseJson);
+
             d3.select('#'+linkMapAndGrammarId).property("checked", true);
         })
         .catch(error => {
@@ -246,13 +213,10 @@ export const GrammarPanelContainer = ({
 
     // run only once to load the initial data
     useEffect(() => {
-        console.log("useEffect");
         GrammarMethods.subscribe("GrammarPanel", (new_grammar: Object) => { 
-            console.log("new_grammar", new_grammar);
             setCode(JSON.stringify(new_grammar));
             obj.processGrammar(JSON.parse(grammarStateRef.current));
             applyGrammar(false, JSON.stringify(new_grammar));
-            
         });
 
         let stringData = JSON.stringify(initialGrammar, null, 4);
@@ -286,7 +250,6 @@ export const GrammarPanelContainer = ({
       
     const checkIfAddCameraAndFilter = (grammar: string, camera: {position: number[], direction: {right: number[], lookAt: number[], up: number[]}}, tempGrammar: string, filterKnots: number[]) => {
  
-        console.log("checkIfAddCameraAndFilter 0", linkMapAndGrammarId);
         let inputLink = d3.select('#'+linkMapAndGrammarId)
         
         let returnedGrammar: any = {};
@@ -295,7 +258,6 @@ export const GrammarPanelContainer = ({
             if(tempGrammar != ''){
                 returnedGrammar.text = tempGrammar;
             }else if(grammar != ''){
-                console.log("checkIfAddCameraAndFilter 1", grammar);
                 returnedGrammar.json = JSON.parse(grammar);
             }else{
                 returnedGrammar.json = {};
@@ -309,7 +271,6 @@ export const GrammarPanelContainer = ({
             let mergedGrammar = addCameraAndFilter(grammar, camera, filterKnots);
 
             if(mergedGrammar != ''){
-                console.log("checkIfAddCameraAndFilter 2", mergedGrammar);
                 returnedGrammar.json = JSON.parse(mergedGrammar);
             }else{
                 returnedGrammar.json = {};
@@ -320,7 +281,6 @@ export const GrammarPanelContainer = ({
             if(tempGrammar != ''){
                 returnedGrammar.text = tempGrammar;
             }else if(grammar != ''){
-                console.log("checkIfAddCameraAndFilter 33", grammar);
                 returnedGrammar.json = JSON.parse(grammar);
             }else{
                 returnedGrammar.json = {};
@@ -331,12 +291,10 @@ export const GrammarPanelContainer = ({
     }
 
     const updateGrammarContent = (grammarObj: any) => {
-        console.log("updateGrammarContent", grammarObj);
         setTempGrammar(grammarObj);
     }
 
     const onModeChange = (mode: string) => {
-        console.log("onModeChange");
         setMode(mode);
     };    
 

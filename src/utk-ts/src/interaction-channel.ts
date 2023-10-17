@@ -19,12 +19,9 @@ export class InteractionChannel {
 
         const url = `${Environment.backend}`;
 
-        console.log("sendData 1", variable);
-
         let grammar = GrammarMethods.grammar;
 
         if(grammar != undefined){
-            console.log("sendData 2", grammar);
             if(grammar.variables) {
                 for(let varr of grammar.variables) {
                     if(varr.name == variable.name) {
@@ -32,19 +29,8 @@ export class InteractionChannel {
                     }
                 }
             }
-            // grammar.grammar_position = {
-            //     "width": [
-            //         1,
-            //         2
-            //     ],
-            //     "height": [
-            //         2,
-            //         4
-            //     ]
-            // };
-            // console.log("here is my previous apply grammar", JSON.stringify(grammar));
-            console.log("sendData 3", grammar);
-            GrammarMethods.applyGrammar(url, grammar);
+
+            GrammarMethods.applyGrammar(url, grammar, "InteractionChannel", () => {});
         }
         
     }

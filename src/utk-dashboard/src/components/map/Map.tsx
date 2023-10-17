@@ -31,16 +31,8 @@ const Map = ({ time } : MapProps) => {
   }, []);
 
   useEffect(() => {
-    // InteractionChannel.setInteraction(myTest)
-
-    console.log("use effect time, timestep: ", time);
-    
-    InteractionChannel.sendData({name: "timestep", value: ""+0})
+    InteractionChannel.sendData({name: "timestep", value: ""+time})
   }, [time]);
-
-  const myTest = () => {
-    console.log(`Hey, utk got time ${time}!!!`)
-  }
 
   // return <div id='spatial-div' style={{height: "100vh", width: "100%"}}></div>
   return <div id='spatial-div' style={{ height: "90vh",width: "100%"}}></div>

@@ -54,7 +54,6 @@ class GrammarInterpreter {
 
     // TODO: it should be possible to create more than one map. So map should not be a singleton
     public initViews(mainDiv: HTMLElement, grammar: IGrammar, originalGrammar: IGrammar){
-        console.log("initViews");
         this._components = [];
 
         for(const component of grammar.components){
@@ -86,7 +85,6 @@ class GrammarInterpreter {
     }
 
     public validateGrammar(grammar: IGrammar){
-        console.log("validateGrammar");
         // TODO: checking conflicting types of interactions for the knots. One knot cannot be in plots with different arrangements
 
         // TODO: ensure that the widgets have all the attributes they should have
@@ -200,16 +198,13 @@ class GrammarInterpreter {
     }
 
     public async processGrammar(grammar: IGrammar){
-        console.log("processGrammar");
         if(this.validateGrammar(grammar)){
             // changing grammar to be the processed grammar
             let aux = JSON.stringify(grammar);
             for(let variable of grammar.variables) {
                 aux = aux.replaceAll("$"+variable.name+"$", variable.value);
             }
-            console.log(aux);
             let processedGrammar = JSON.parse(aux);
-            console.log(processedGrammar);
             this._grammar = processedGrammar;
 
             // const position = grammar.components[0].map.camera.position
@@ -508,7 +503,6 @@ class GrammarInterpreter {
 
     // TODO: more than one view should be rendered but inside a single div provided by the front end
     private renderViews(mainDiv: HTMLElement, grammar: IGrammar){
-        console.log("renderViews");
         // mainDiv.innerHTML = ""; // empty all content
 
         if(this._root == undefined){

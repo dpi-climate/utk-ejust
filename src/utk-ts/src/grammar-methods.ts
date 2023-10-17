@@ -6,11 +6,11 @@ export class GrammarMethods {
 
     static subscribers: any = {};
 
-    static applyGrammar(url_string: string | undefined, grammar: Object): Promise<any> {
+    // identifier should be equal to the identifier used in the subscribe function
+    // the callback function is executed after the promise is answered
+    static applyGrammar(url_string: string | undefined, grammar: Object, identifier: string, callback_function: Function): Promise<any> {
 
         let url = "http://localhost:5001";
-
-        console.log("here is my new grammar", JSON.stringify({"grammar": grammar}));
 
         if(url_string != undefined){
             url = url_string;
@@ -25,18 +25,21 @@ export class GrammarMethods {
             body: JSON.stringify({"grammar": grammar})
         })
 
-        fetch_promise.then((reponse) => {
+        fetch_promise.then((response) => {
             for(const [key, value] of Object.entries(GrammarMethods.subscribers)){
-                console.log("calling subscribed functions", grammar);
-                (<Function>value)(grammar);
+                if(key != identifier){ // the source of the grammar knows that a new grammar was applied
+                    (<Function>value)(grammar);
+                }
             }
+
+            callback_function(response);
         })
 
         return fetch_promise;
     }
 
+    // the subscribe identifier should be equal to the applyGrammar identifier
     static subscribe(identifier: string, subscription_callback: Function){
-        console.log("Called subscribe", identifier);
         GrammarMethods.subscribers[identifier] = subscription_callback;
     }
 

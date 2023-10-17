@@ -49,9 +49,6 @@ export const ToggleKnotsWidget = ({obj, title, subtitle, listLayers, knotVisibil
     
     useEffect(() => {
 
-        console.log("listLayersState", listLayersState);
-        console.log("listLayersStateRef.current", listLayersStateRef.current);
-
         const intervalId = window.setInterval(function(){
 
             let div = document.getElementById("toggle_widget_"+viewId);
