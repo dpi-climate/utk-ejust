@@ -170,11 +170,11 @@ export const GrammarPanelContainer = ({
         var parsedGrammar = JSON.parse(grammar);
         
         if(GrammarPanelVisibility){
-            parsedGrammar.components[0].position.width = [5, 12];
-            parsedGrammar.grammar_position.width = [1, 4];
+            parsedGrammar.components[0].position.width = [0, 12];
+            parsedGrammar.grammar_position.width = [1, 5];
         }
         else{
-            parsedGrammar.components[0].position.width = [1, 12];
+            parsedGrammar.components[0].position.width = [0, 12];
             parsedGrammar.grammar_position.width = [0, 0];
         }
         return JSON.stringify(parsedGrammar, null, 4);
