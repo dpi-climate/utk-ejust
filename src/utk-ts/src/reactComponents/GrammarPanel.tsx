@@ -32,7 +32,6 @@ type GrammarPanelProps = {
     addNewMessage: any,
     applyGrammarButtonId: string,
     linkMapAndGrammarId: string,
-    setTime: (time: number) => void
 }
 
 export const GrammarPanelContainer = ({
@@ -45,8 +44,7 @@ export const GrammarPanelContainer = ({
     setCamera,
     addNewMessage,
     applyGrammarButtonId,
-    linkMapAndGrammarId,
-    setTime
+    linkMapAndGrammarId
 }: GrammarPanelProps
 ) =>{
     const [mode, setMode] = useState('code');
@@ -187,7 +185,7 @@ export const GrammarPanelContainer = ({
         let currentTime = parseInt(parsedGrammar.variables[0].value);
         
         if(currentTime>0 && currentTime<11){
-            setTime(currentTime);
+            InteractionChannel.getModifyTime()(currentTime);
         }
     }
 

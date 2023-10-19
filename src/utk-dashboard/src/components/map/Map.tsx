@@ -28,8 +28,10 @@ const Map = ({ time, setTime } : MapProps) => {
 
       const setTimeFunction = setTime;
 
+      InteractionChannel.setModifyTime(setTimeFunction);
+
       const grammarInterpreter = GrammarInterpreterFactory.getInstance();
-      grammarInterpreter.resetGrammarInterpreter(grammar, mainDiv, setTimeFunction);
+      grammarInterpreter.resetGrammarInterpreter(grammar, mainDiv);
     }
     createAndRunMap();
 

@@ -6,6 +6,7 @@ export class InteractionChannel {
     static getGrammar: Function;
     static modifyGrammar: Function;
     static modifyGrammarVisibility: Function;
+    static modifyTime: Function;
 
     static setModifyGrammarVisibility(modifyGrammar: Function): void {
         InteractionChannel.modifyGrammarVisibility = modifyGrammar;
@@ -13,6 +14,14 @@ export class InteractionChannel {
 
     static getModifyGrammarVisibility(): Function{
         return InteractionChannel.modifyGrammarVisibility;
+    }
+
+    static setModifyTime(setTime: Function){
+        InteractionChannel.modifyTime = setTime;
+    }
+
+    static getModifyTime(){
+        return InteractionChannel.modifyTime;
     }
 
     static sendData(variable: {name: string, value: any}): void {
