@@ -184,8 +184,9 @@ export const GrammarPanelContainer = ({
         var parsedGrammar = JSON.parse(grammar);
         let currentTime = parseInt(parsedGrammar.variables[0].value);
         
+        let updateTimeFunction = InteractionChannel.getPassedVariable("timestamp");
         if(currentTime>0 && currentTime<11){
-            InteractionChannel.getModifyTime()(currentTime);
+            updateTimeFunction(currentTime);
         }
     }
 

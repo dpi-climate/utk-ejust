@@ -27,8 +27,7 @@ const Map = ({ time, setTime } : MapProps) => {
       const mainDiv = document.querySelector('#spatial-div') as HTMLElement;
 
       const setTimeFunction = setTime;
-
-      InteractionChannel.setModifyTime(setTimeFunction);
+      InteractionChannel.addToPassedVariables("timestamp", setTimeFunction)
 
       const grammarInterpreter = GrammarInterpreterFactory.getInstance();
       grammarInterpreter.resetGrammarInterpreter(grammar, mainDiv);
