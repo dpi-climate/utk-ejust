@@ -23,10 +23,11 @@ type ViewProps = {
   viewIds: string[]
   grammar: IGrammar
   mainDivSize: {width: number, height: number}
+  setTime: (time: number) => void
 }
 
 // Render components
-function Views({viewObjs, viewIds, grammar, mainDivSize}: ViewProps) {
+function Views({viewObjs, viewIds, grammar, mainDivSize, setTime}: ViewProps) {
 
   const [camera, setCamera] = useState<{position: number[], direction: {right: number[], lookAt: number[], up: number[]}}>({position: [], direction: {right: [], lookAt: [], up: []}}); // TODO: if we have multiple map instances we have multiple cameras
   const [filterKnots, setFilterKnots] = useState<number[]>([]);
@@ -235,6 +236,7 @@ function Views({viewObjs, viewIds, grammar, mainDivSize}: ViewProps) {
                     addNewMessage = {addNewMessage}
                     applyGrammarButtonId = {"applyGrammarButton"}
                     linkMapAndGrammarId = {"linkMapAndGrammar"}
+                    setTime = {setTime}
                   />
                 </div>
               </React.Fragment>

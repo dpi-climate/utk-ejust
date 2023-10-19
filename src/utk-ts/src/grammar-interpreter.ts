@@ -35,8 +35,14 @@ class GrammarInterpreter {
 
     protected _cameraUpdateCallback: any;
 
-    resetGrammarInterpreter(grammar: IGrammar, mainDiv: HTMLElement) {
+    protected _setTime: (time: number)=> void;
 
+    resetGrammarInterpreter(grammar: IGrammar, mainDiv: HTMLElement, setTime: (time: number) => void) {
+
+        if(setTime != undefined){
+            this._setTime = setTime;
+        }
+        
         // =============================
 
         // this._ajv = new Ajv({schemas: [schema, schema_categories]});
@@ -49,12 +55,15 @@ class GrammarInterpreter {
 
         this._frontEndCallback = null;
         this._mainDiv = mainDiv;
-        this.processGrammar(grammar);
+        this.processGrammar(grammar, setTime);
     }
 
     // TODO: it should be possible to create more than one map. So map should not be a singleton
-    public initViews(mainDiv: HTMLElement, grammar: IGrammar, originalGrammar: IGrammar){
+    public initViews(mainDiv: HTMLElement, grammar: IGrammar, originalGrammar: IGrammar, setTime: (time: number) => void){
         this._components = [];
+        if(setTime == undefined){
+            setTime = this._setTime;
+        }
 
         for(const component of grammar.components){
             if("map" in component){ // It is a map view
@@ -81,7 +90,7 @@ class GrammarInterpreter {
             this._components.push({type: ComponentIdentifier.GRAMMAR, obj: this, position: grammar.grammar_position, title: undefined, subtitle: undefined, grammarDefinition: undefined});
         }
 
-        this.renderViews(mainDiv, originalGrammar);
+        this.renderViews(mainDiv, originalGrammar, setTime);
     }
 
     public validateGrammar(grammar: IGrammar){
@@ -197,7 +206,11 @@ class GrammarInterpreter {
         return true;
     }
 
-    public async processGrammar(grammar: IGrammar){
+    public async processGrammar(grammar: IGrammar, setTime: (time: number) => void){
+        if(setTime == undefined){
+            setTime = this._setTime;
+        }
+
         if(this.validateGrammar(grammar)){
             // changing grammar to be the processed grammar
             let aux = JSON.stringify(grammar);
@@ -222,7 +235,7 @@ class GrammarInterpreter {
 
             // this._processedGrammar = this.processConditionBlocks(JSON.parse(JSON.stringify(this._preProcessedGrammar))); // Making a deep copy of the grammar before processing it
             await this.createSpatialJoins(this._url, processedGrammar);
-            this.initViews(this._mainDiv, processedGrammar, grammar);
+            this.initViews(this._mainDiv, processedGrammar, grammar, setTime);
         }
     }
 
@@ -502,8 +515,11 @@ class GrammarInterpreter {
     // }
 
     // TODO: more than one view should be rendered but inside a single div provided by the front end
-    private renderViews(mainDiv: HTMLElement, grammar: IGrammar){
+    private renderViews(mainDiv: HTMLElement, grammar: IGrammar, setTime: (time: number) => void){
         // mainDiv.innerHTML = ""; // empty all content
+        if(setTime == undefined){
+            setTime = this._setTime;
+        }
 
         if(this._root == undefined){
             this._root = createRoot(mainDiv);
@@ -517,8 +533,7 @@ class GrammarInterpreter {
         for(let i = 0; i < this._components.length; i++){
             viewIds.push(this._components[i].type+i);
         }
-
-        this._root.render(React.createElement(Views, {viewObjs: this._components, viewIds: viewIds, grammar: grammar, mainDivSize: {width: mainDiv.offsetWidth, height: mainDiv.offsetHeight}}));
+        this._root.render(React.createElement(Views, {viewObjs: this._components, viewIds: viewIds, grammar: grammar, mainDivSize: {width: mainDiv.offsetWidth, height: mainDiv.offsetHeight}, setTime: setTime}));
     }
 
 }
