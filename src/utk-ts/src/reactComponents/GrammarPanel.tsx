@@ -31,7 +31,7 @@ type GrammarPanelProps = {
     setCamera: any,
     addNewMessage: any,
     applyGrammarButtonId: string,
-    linkMapAndGrammarId: string
+    linkMapAndGrammarId: string,
 }
 
 export const GrammarPanelContainer = ({
@@ -116,6 +116,8 @@ export const GrammarPanelContainer = ({
             sendGrammar = checkGrammarVisibility(sendGrammar);
         }
 
+        updateTimeBtn(sendGrammar);
+
         setCode(sendGrammar);
         setTempGrammar('');
 
@@ -170,14 +172,22 @@ export const GrammarPanelContainer = ({
         var parsedGrammar = JSON.parse(grammar);
         
         if(GrammarPanelVisibility){
-            parsedGrammar.components[0].position.width = [5, 12];
-            parsedGrammar.grammar_position.width = [1, 4];
+            parsedGrammar.grammar_position.width = [1, 5];
         }
         else{
-            parsedGrammar.components[0].position.width = [1, 12];
             parsedGrammar.grammar_position.width = [0, 0];
         }
         return JSON.stringify(parsedGrammar, null, 4);
+    }
+
+    const updateTimeBtn = (grammar:string) => {
+        var parsedGrammar = JSON.parse(grammar);
+        let currentTime = parseInt(parsedGrammar.variables[0].value);
+        
+        let updateTimeFunction = InteractionChannel.getPassedVariable("timestamp");
+        if(currentTime>0 && currentTime<11){
+            updateTimeFunction(currentTime);
+        }
     }
 
     const updateLocalNominatim = (camera: { position: number[], direction: { right: number[], lookAt: number[], up: number[] } }, filterKnots: number[]) => {

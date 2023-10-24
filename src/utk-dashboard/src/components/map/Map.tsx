@@ -5,10 +5,11 @@ import $ from 'jquery';
 import { IGrammar } from 'utk';
 
 interface MapProps {
-  time: number
+  time: number,
+  setTime: (time: number) => void
 }
 
-const Map = ({ time } : MapProps) => {
+const Map = ({ time, setTime } : MapProps) => {
   
   // Run only once
   useEffect(() => {
@@ -20,8 +21,13 @@ const Map = ({ time } : MapProps) => {
       
       const url = `${Environment.backend}/getGrammar`;
       const grammar = await DataLoader.getJsonData(url) as IGrammar;
-      
+
+      const currentTime = parseInt(grammar.variables[0].value);
+      if(currentTime>0 && currentTime<11) setTime(currentTime);
       const mainDiv = document.querySelector('#spatial-div') as HTMLElement;
+
+      const setTimeFunction = setTime;
+      InteractionChannel.addToPassedVariables("timestamp", setTimeFunction)
 
       const grammarInterpreter = GrammarInterpreterFactory.getInstance();
       grammarInterpreter.resetGrammarInterpreter(grammar, mainDiv);

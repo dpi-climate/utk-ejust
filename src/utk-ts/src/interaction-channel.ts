@@ -7,12 +7,22 @@ export class InteractionChannel {
     static modifyGrammar: Function;
     static modifyGrammarVisibility: Function;
 
+    static passedVariables: { [key: string] : any} = {};
+
     static setModifyGrammarVisibility(modifyGrammar: Function): void {
         InteractionChannel.modifyGrammarVisibility = modifyGrammar;
     }
 
     static getModifyGrammarVisibility(): Function{
         return InteractionChannel.modifyGrammarVisibility;
+    }
+
+    static addToPassedVariables(name: string, value: any){
+        InteractionChannel.passedVariables[name] = value;
+    }
+
+    static getPassedVariable(name: string){
+        return InteractionChannel.passedVariables[name];
     }
 
     static sendData(variable: {name: string, value: any}): void {

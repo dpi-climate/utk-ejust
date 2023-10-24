@@ -517,7 +517,6 @@ class GrammarInterpreter {
         for(let i = 0; i < this._components.length; i++){
             viewIds.push(this._components[i].type+i);
         }
-
         this._root.render(React.createElement(Views, {viewObjs: this._components, viewIds: viewIds, grammar: grammar, mainDivSize: {width: mainDiv.offsetWidth, height: mainDiv.offsetHeight}}));
     }
 

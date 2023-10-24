@@ -101,7 +101,7 @@ function Home() {
       <div className="analyzes">
         <div className="spatial">
         {/* {GridPointSelector()} */}
-          <Map time={activeTime}/>
+          <Map time={activeTime} setTime={setTime}/>
         </div>
         <div className="temporal overflow-auto">
           <div className="container">
