@@ -90,7 +90,8 @@ export enum ComponentIdentifier{
 export enum WidgetType{
     TOGGLE_KNOT = "TOGGLE_KNOT",
     SEARCH = "SEARCH",
-    HIDE_GRAMMAR = "HIDE_GRAMMAR"
+    HIDE_GRAMMAR = "HIDE_GRAMMAR",
+    HIDE_PLOTS = "HIDE_PLOTS"
 }
 
 /**

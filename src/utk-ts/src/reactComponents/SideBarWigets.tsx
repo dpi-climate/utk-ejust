@@ -5,7 +5,7 @@ import { ToggleKnotsWidget } from './ToggleKnotsWidget';
 import { SearchWidget } from './SearchWidget';
 import {Row} from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faLayerGroup, faMagnifyingGlass, faChartSimple, faEyeSlash, faSearch, faEye } from '@fortawesome/free-solid-svg-icons'
+import { faLayerGroup, faMagnifyingGlass, faChartSimple, faEyeSlash, faSearch, faEye, faCode, faChartLine } from '@fortawesome/free-solid-svg-icons'
 import * as d3 from "d3";
 import { GenericScreenPlotContainer } from "./GenericScreenPlotContainer";
 import { InteractionChannel } from "../interaction-channel";
@@ -24,6 +24,7 @@ type SideBarWidgetsProps = {
 }
 
 export var GrammarPanelVisibility = true;
+export var PlotVisibility = true;
 export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibility, inputBarId, genericPlots, togglePlots, viewObjs}:SideBarWidgetsProps) =>{
 
     const handleClickLayers = (e: any) => {
@@ -49,6 +50,19 @@ export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibi
       InteractionChannel.getModifyGrammarVisibility()();
     }
 
+    const handleClickHidePlots = (e: any) => {
+      PlotVisibility = !(PlotVisibility);      
+      if(PlotVisibility){
+        d3.selectAll('.analyzes').style('grid-template-areas', '"spatial temporal temporal" "spatial corr bias"');
+        d3.selectAll('.analyzes').classed('fullscreen-spatial', false);
+      }
+      else{
+        d3.selectAll('.analyzes').style('grid-template-areas', '"spatial spatial spatial" "spatial spatial spatial"');
+        d3.selectAll('.analyzes').classed('fullscreen-spatial', true);
+      }
+      InteractionChannel.getModifyGrammarVisibility()();
+    }
+
     const handleTogglePlots = (e: any) => {
       togglePlots();
     }
@@ -65,10 +79,18 @@ export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibi
                     return <FontAwesomeIcon key={"widget_"+index} size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faSearch} onClick={handleClickSearch} />
                   }else if(component.type == WidgetType.HIDE_GRAMMAR){
                     if(GrammarPanelVisibility){
-                      return <FontAwesomeIcon key={"widget_"+index} size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faEye} onClick={handleClickHideGrammar} />
+                      return <FontAwesomeIcon key={"widget_"+index} size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faCode} onClick={handleClickHideGrammar} />
                     }
                     else{
-                      return <FontAwesomeIcon key={"widget_"+index} size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faEyeSlash} onClick={handleClickHideGrammar} />
+                      return <FontAwesomeIcon key={"widget_"+index} size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px", opacity: "0.5"}} icon={faCode} onClick={handleClickHideGrammar} />
+                    }
+                  }
+                  else if(component.type == WidgetType.HIDE_PLOTS){                    
+                    if(GrammarPanelVisibility){
+                      return <FontAwesomeIcon key={"widget_"+index} size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faChartLine} onClick={handleClickHidePlots} />
+                    }
+                    else{
+                      return <FontAwesomeIcon key={"widget_"+index} size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px", opacity: "0.5"}} icon={faChartLine} onClick={handleClickHidePlots} />
                     }
                   }
                 })

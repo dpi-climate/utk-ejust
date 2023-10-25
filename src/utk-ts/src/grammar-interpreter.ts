@@ -72,6 +72,9 @@ class GrammarInterpreter {
                         else if(widget.type == WidgetType.HIDE_GRAMMAR){
                             this._components.push({type: WidgetType.HIDE_GRAMMAR, obj: MapViewFactory.getInstance(mainDiv, this), position: undefined, title: undefined, subtitle: undefined, grammarDefinition: widget});
                         }
+                        else if(widget.type == WidgetType.HIDE_PLOTS){
+                            this._components.push({type: WidgetType.HIDE_PLOTS, obj: MapViewFactory.getInstance(mainDiv, this), position: undefined, title: undefined, subtitle: undefined, grammarDefinition: widget});
+                        }
                     }
                 }
             }

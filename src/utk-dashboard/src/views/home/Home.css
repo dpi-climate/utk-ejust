@@ -93,3 +93,10 @@
     height: fit-content;
     font-size: 14px;
 }
+
+/* Hide other elements when in fullscreen mode */
+.fullscreen-spatial .temporal,
+.fullscreen-spatial .corr,
+.fullscreen-spatial .bias {
+    display: none;
+}
