@@ -86,7 +86,7 @@ export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibi
                     }
                   }
                   else if(component.type == WidgetType.HIDE_PLOTS){                    
-                    if(GrammarPanelVisibility){
+                    if(PlotVisibility){
                       return <FontAwesomeIcon key={"widget_"+index} size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faChartLine} onClick={handleClickHidePlots} />
                     }
                     else{
