@@ -69,7 +69,7 @@ export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibi
 
     return (
         <React.Fragment>
-          {genericPlots.length > 0 || viewObjs.length > 1 ? <div style={{backgroundColor: "white", width: "75px", position: "absolute", left: "10px", top: "10px", padding: "5px", borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)"}}>
+          {genericPlots.length > 0 || viewObjs.length > 1 ? <div style={{backgroundColor: "white", width: "75px", position: "absolute", left: "30px", top: "80px", padding: "5px", borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)"}}>
             <Row>
               {
                 viewObjs.map((component, index) => {
