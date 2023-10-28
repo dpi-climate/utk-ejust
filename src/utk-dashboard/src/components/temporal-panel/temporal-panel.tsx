@@ -6,6 +6,9 @@ import Tseries from "../tseries/Tseries"
 import { useState } from "react"
 import TseriesFocusCtx from "../tseries/TseriesFocusCtx"
 
+import { TimeBtn } from "../time-btn"
+import { InteractionChannel } from "utk"
+import './temporal-panel.css'
 interface TemporalPanelProps {
   fields: FieldType[]
   timeSeries: Record<string, TimeSeriesEntry[] | []>
@@ -20,8 +23,13 @@ const TemporalPanel = memo(({ fields, timeSeries, activeTime} : TemporalPanelPro
   if (Object.keys(timeSeries).length === 0) {
     return <div></div>
   } 
-
+  const setTime = InteractionChannel.getPassedVariable("timestamp")
   return (
+    <div>
+      <div className="time-btn-temporal">
+        <TimeBtn activeTime={activeTime} nTimes={10} setTime={setTime}/>
+      </div>
+      
     <div>
       {
         Object.keys(timeSeries).map((field, idx) => {
@@ -32,8 +40,12 @@ const TemporalPanel = memo(({ fields, timeSeries, activeTime} : TemporalPanelPro
           const unit = fieldObj.unit
           const name = `${fieldObj.name} (${unit})`
 
+          
+
           return (
+            
             <div key={`temporal-row-${idx}`} className="row mt-1 mb-1 align-items-center">
+              
 
               {/* Line Charts */}
               
@@ -69,6 +81,7 @@ const TemporalPanel = memo(({ fields, timeSeries, activeTime} : TemporalPanelPro
           )
         })
       }
+    </div>
     </div>
   )
 })

@@ -93,9 +93,9 @@ function Home() {
       <div className="col-auto navcol">
         <TemporalOptions fields={fieldsList} data={temporalPanelData} setData={setTempPanelData}/>
       </div>
-      <div className="col-auto navcol">
+      {/* <div className="col-auto navcol">
         <TimeBtn activeTime={activeTime} nTimes={nTimes} setTime={setTime}/>
-      </div>
+      </div> */}
     </Nav>
     <Main>
       <div className="analyzes">
