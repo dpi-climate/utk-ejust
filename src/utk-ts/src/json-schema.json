@@ -5,7 +5,6 @@
     "type": "object",
     "properties": {
         "variables": {
-            "description": "Variables that can be modified in the knots",
             "type": "array",
             "items": {
                 "type": "object",
@@ -20,246 +19,13 @@
             }
         },
         "components": {
-            "description": "Stores the components that will visually compose the dashboard",
             "type": "array",
             "minItems": 1,
             "items": {
                 "type": "object",
                 "properties": {
-                    "map": {
-                        "type": "object",
-                        "properties": {
-                            "camera": {
-                                "type": "object",
-                                "properties": {
-                                    "position": {
-                                        "type": "array",
-                                        "minItems": 3,
-                                        "maxItems": 3,
-                                        "items": {
-                                            "type": "number"
-                                        }
-                                    },
-                                    "direction": {
-                                        "type": "object",
-                                        "properties": {
-                                            "right": {
-                                                "type": "array",
-                                                "minItems": 3,
-                                                "maxItems": 3,
-                                                "items": {
-                                                    "type": "number"
-                                                }
-                                            },
-                                            "lookAt": {
-                                                "type": "array",
-                                                "minItems": 3,
-                                                "maxItems": 3,
-                                                "items": {
-                                                    "type": "number"
-                                                }
-                                            },
-                                            "up": {
-                                                "type": "array",
-                                                "minItems": 3,
-                                                "maxItems": 3,
-                                                "items": {
-                                                    "type": "number"
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "knots": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "interactions": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "filter_knots": {
-                                "type": "array",
-                                "minItems": 4,
-                                "maxItems": 4,
-                                "items": {
-                                    "type": "number"
-                                }
-                            },
-                            "knot_visibility": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "knot": {
-                                            "type": "string"
-                                        },
-                                        "test": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": ["knot", "test"]
-                                }
-                            }
-                        },
-                        "required": ["camera", "knots", "interactions"]
-                    },
-                    "plots": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {
-                                    "type": "string"
-                                },
-                                "plot": {
-                                    "type": "object",
-                                    "additionalProperties": true
-                                },
-                                "knots": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    }
-                                },
-                                "arrangement": {
-                                    "type": "string"
-                                },
-                                "interaction": {
-                                    "type": "string"
-                                },
-                                "args": {
-                                    "type": "object",
-                                    "properties": {
-                                        "bins": {
-                                            "type": "number"
-                                        }
-                                    }
-                                }
-                            },
-                            "required": ["plot", "knots", "arrangement"]
-                        }
-                    },
-                    "knots": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "id": {
-                                    "type": "string"
-                                },
-                                "group": {
-                                    "type": "object",
-                                    "properties": {
-                                        "group_name": {
-                                            "type": "string"
-                                        },
-                                        "position": {
-                                            "type": "number"
-                                        }
-                                    },
-                                    "required": ["group_name", "position"]
-                                },
-                                "knot_op": {
-                                    "type": "boolean"
-                                },
-                                "color_map": {
-                                    "type": "string"
-                                },
-                                "range": {
-                                    "type": "array",
-                                    "minItems": 2,
-                                    "maxItems": 2,
-                                    "items": {
-                                        "type": "number"
-                                    }
-                                },
-                                "domain": {
-                                    "type": "array",
-                                    "minItems": 2,
-                                    "maxItems": 2,
-                                    "items": {
-                                        "type": "number"
-                                    }
-                                },
-                                "scale": {
-                                   "type": "string"
-                                },
-                                "integration_scheme": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "spatial_relation": {
-                                                "type": "string"
-                                            },
-                                            "out": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "name": {
-                                                        "type": "string"
-                                                    },
-                                                    "level": {
-                                                        "type": "string"
-                                                    }
-                                                }
-                                            },
-                                            "in": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "name": {
-                                                        "type": "string"
-                                                    },
-                                                    "level": {
-                                                        "type": "string"
-                                                    }
-                                                }
-                                            },
-                                            "operation": {
-                                                "type": "string"
-                                            },
-                                            "abstract": {
-                                                "type": "boolean"
-                                            },
-                                            "op": {
-                                                "type": "string"
-                                            },
-                                            "maxDistance": {
-                                                "type": "number"
-                                            },
-                                            "defaultValue": {
-                                                "type": "number"
-                                            }
-                                        },
-                                        "required": ["out"],
-                                        "dependentRequired": {
-                                            "in": ["spatial_relation"]
-                                        }
-                                    }
-                                }
-                            },
-                            "required": ["id", "integration_scheme"]
-                        }
-                    },
-                    "widgets": {
-                        "type":"array",
-                        "items": {
-                            "type": "object", 
-                            "properties": {
-                                "type": {
-                                    "type": "string"
-                                },
-                                "args": {
-                                    "type": "object"
-                                }
-                            },
-                            "required": ["type"]
-                        }
+                    "id": {
+                        "type": "string"
                     },
                     "position": {
                         "type": "object",
@@ -284,13 +50,7 @@
                         "required": ["width", "height"]
                     }
                 },
-                "required": ["position", "map"],
-                "dependentRequired": {
-                    "map": ["plots", "knots"],
-                    "plots": ["map", "knots"],
-                    "knots": ["map", "plots"],
-                    "widgets": ["map"]
-                }
+                "required": ["id", "position"]
             }
         },
         "grid": {
