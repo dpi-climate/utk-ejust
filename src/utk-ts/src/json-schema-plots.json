@@ -43,5 +43,5 @@
             }
         }
     },
-    "required": ["plot", "knots", "arrangement"]
+    "required": ["plot", "knots"]
 }

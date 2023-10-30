@@ -53,6 +53,107 @@
                 "required": ["id", "position"]
             }
         },
+        "knots": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "group": {
+                        "type": "object",
+                        "properties": {
+                            "group_name": {
+                                "type": "string"
+                            },
+                            "position": {
+                                "type": "number"
+                            }
+                        },
+                        "required": ["group_name", "position"]
+                    },
+                    "knot_op": {
+                        "type": "boolean"
+                    },
+                    "color_map": {
+                        "type": "string"
+                    },
+                    "range": {
+                        "type": "array",
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "items": {
+                            "type": "number"
+                        }
+                    },
+                    "domain": {
+                        "type": "array",
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "items": {
+                            "type": "number"
+                        }
+                    },
+                    "scale": {
+                       "type": "string"
+                    },
+                    "integration_scheme": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "spatial_relation": {
+                                    "type": "string"
+                                },
+                                "out": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "level": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "in": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "level": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "operation": {
+                                    "type": "string"
+                                },
+                                "abstract": {
+                                    "type": "boolean"
+                                },
+                                "op": {
+                                    "type": "string"
+                                },
+                                "maxDistance": {
+                                    "type": "number"
+                                },
+                                "defaultValue": {
+                                    "type": "number"
+                                }
+                            },
+                            "required": ["out"],
+                            "dependentRequired": {
+                                "in": ["spatial_relation"]
+                            }
+                        }
+                    }
+                },
+                "required": ["id", "integration_scheme"]
+            }
+        },
         "grid": {
             "description": "Defines how the screen should be divided",
             "type": "object",
@@ -65,7 +166,29 @@
                 }
             },
             "required": ["width", "height"]
+        },
+        "grammar_position": {
+            "type": "object",
+            "properties": {
+                "width": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "height": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "required": ["width", "height"]
         }
     },
-    "required": ["grid", "components"]
+    "required": ["grid", "components", "knots"]
 }

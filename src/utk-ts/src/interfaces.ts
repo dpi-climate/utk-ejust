@@ -1,14 +1,44 @@
 import { LayerType, RenderStyle, ColorHEX, OperationType, ViewArrangementType, PlotArrangementType, SpatialRelationType, LevelType, InteractionType, PlotInteractionType, WidgetType } from "./constants";
 
 /**
- * Interface for grammar
+ * Interface for master grammar
  */
-export interface IGrammar {
-    components: (IView)[],
-    variables: {name: string, value: string}[],
-    arrangement: ViewArrangementType,
+export interface IMasterGrammar {
+    variables?: {name: string, value: string}[], 
+    components: (IComponent)[],
+    knots: IKnot[],
     grid: IGrid,
     grammar_position?: IComponentPosition
+}
+
+/**
+ * Interface for map grammar
+ */
+export interface IMapGrammar {
+    variables?: {name: string, value: string}[],
+    camera: ICameraData,
+    knots: (string | IConditionBlock)[],
+    interactions: (InteractionType | IConditionBlock)[],
+    filterKnots?: (number | IConditionBlock)[],
+    knotVisibility?: IKnotVisibility[],
+    widgets?: IGenericWidget[]
+}
+
+/**
+ * Interface for plot grammar
+ */
+export interface IPlotGrammar {
+    variables?: {name: string, value: string}[],
+    name: string,
+    plot: Object,
+    knots: string[],
+    interaction: string,
+    args?: {bins: number}
+}
+
+export interface IComponent {
+    id: string,
+    position: IComponentPosition
 }
 
 export interface IGrid{
@@ -16,13 +46,13 @@ export interface IGrid{
     height: number // number of vertical cells
 }
 
-export interface IView{
-    map: {camera: ICameraData, knots: (string | IConditionBlock)[], interactions: (InteractionType | IConditionBlock)[], filterKnots?: (number | IConditionBlock)[], knotVisibility?: IKnotVisibility[]}, // The knots refers to the id of IKnot. These knots must finished in a physical layer in the object level 
-    plots: {name?: string, plot: any, knots: (string | IConditionBlock)[], arrangement: PlotArrangementType | IConditionBlock, interaction?: PlotInteractionType | IConditionBlock, args?: IPlotArgs}[], // The knots refers to the id of IKnot. These knots can finish in any layer at any level
-    knots: IKnot[],
-    widgets?: IGenericWidget[],
-    position: IComponentPosition
-}
+// export interface IView{
+//     map: {camera: ICameraData, knots: (string | IConditionBlock)[], interactions: (InteractionType | IConditionBlock)[], filterKnots?: (number | IConditionBlock)[], knotVisibility?: IKnotVisibility[]}, // The knots refers to the id of IKnot. These knots must finished in a physical layer in the object level 
+//     plots: {name?: string, plot: any, knots: (string | IConditionBlock)[], arrangement: PlotArrangementType | IConditionBlock, interaction?: PlotInteractionType | IConditionBlock, args?: IPlotArgs}[], // The knots refers to the id of IKnot. These knots can finish in any layer at any level
+//     knots: IKnot[],
+//     widgets?: IGenericWidget[],
+//     position: IComponentPosition
+// }
 
 // export interface IToggleKnotsWidget{
 //     toggle_knots_widget: {
@@ -45,19 +75,19 @@ export interface IGenericWidget{
 //     position: IComponentPosition
 // }
 
-export interface ICategory{
-    category_name: string,
-    elements: (string | ICategory)[]
-}
+// export interface ICategory{
+//     category_name: string,
+//     elements: (string | ICategory)[]
+// }
 
 export interface IComponentPosition{
     width: number[],
     height: number[]
 }
 
-export interface IPlotArgs{
-    bins?: number | IConditionBlock
-}
+// export interface IPlotArgs{
+//     bins?: number | IConditionBlock
+// }
 
 export interface IKnot {
     id: string,
