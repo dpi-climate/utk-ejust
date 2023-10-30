@@ -538,6 +538,64 @@ It is possible to do operations between knots. To do so the `knotOp` field in th
     },
 ```
 
+### Variables
+
+It is possible to define variables in the grammar in order to update it dynamically. For example:
+
+```js
+    {
+        "variables": [
+            {
+                "name": "timestep",
+                "value": "1"
+            }
+        ],
+        "components": [
+            {
+                "map": {
+                    "camera": {...},
+                    "knots": [
+                        "wrfToSurface_d02_2016-07-01_t$timestep$",
+                    ],
+                    "interactions": [
+                        "NONE"
+                    ],
+                    "knotVisibility": []
+                },
+                "plots": [],
+                "knots": [
+                    {
+                        "id": "wrfToSurface_d02_2016-07-01_t$timestep$",
+                        "integration_scheme": [
+                            {
+                                "spatial_relation": "CONTAINS",
+                                "out": {
+                                    "name": "zip",
+                                    "level": "OBJECTS"
+                                },
+                                "in": {
+                                    "name": "wrf_d02_2016-07-01_t$timestep$",
+                                    "level": "COORDINATES"
+                                },
+                                "operation": "AVG",
+                                "abstract": true
+                            }
+                        ]
+                    }
+                ],
+                "position": {...},
+                "widgets": [...]
+            }
+        ],
+        "grid": {...},
+        "grammar_position": {...}
+    }
+```
+
+All variables must have a name and a value. The variable can be referenced inside any string in the grammar by enclosing its name between `$` like `$timestep$`.
+
+These variables can be automatically updated by using the `InteractionChannel` class that can be imported from the UTK's javascript bundle. The class exposes a method called `sendData` that receives a variable definition and updates it in the grammar: `static sendData(variable: {name: string, value: any}): void`.  
+
 <!--- Not sure if it is worth to support it.
 
 ### Condition block (not supported yet)
