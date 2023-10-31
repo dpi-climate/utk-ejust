@@ -1,4 +1,4 @@
-import { LayerType, RenderStyle, ColorHEX, OperationType, ViewArrangementType, PlotArrangementType, SpatialRelationType, LevelType, InteractionType, PlotInteractionType, WidgetType } from "./constants";
+import { LayerType, RenderStyle, ColorHEX, OperationType, GrammarType, ViewArrangementType, PlotArrangementType, SpatialRelationType, LevelType, InteractionType, PlotInteractionType, WidgetType } from "./constants";
 
 /**
  * Interface for master grammar
@@ -19,9 +19,11 @@ export interface IMapGrammar {
     camera: ICameraData,
     knots: (string | IConditionBlock)[],
     interactions: (InteractionType | IConditionBlock)[],
+    plot: {id: string, arrangement: PlotArrangementType},
     filterKnots?: (number | IConditionBlock)[],
     knotVisibility?: IKnotVisibility[],
-    widgets?: IGenericWidget[]
+    widgets?: IGenericWidget[],
+    grammar_type: GrammarType
 }
 
 /**
@@ -33,7 +35,8 @@ export interface IPlotGrammar {
     plot: Object,
     knots: string[],
     interaction: string,
-    args?: {bins: number}
+    args?: {bins: number},
+    grammar_type: GrammarType
 }
 
 export interface IComponent {

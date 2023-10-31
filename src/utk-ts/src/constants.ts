@@ -46,9 +46,13 @@ export enum ViewArrangementType{
 }
 
 export enum PlotArrangementType{
-    LINKED = "LINKED",
-    SUR_EMBEDDED = "SUR_EMBEDDED",
-    FOOT_EMBEDDED = "FOOT_EMBEDDED"
+    SURFACE = "SURFACE",
+    FOOTPRINT = "FOOTPRINT"
+}
+
+export enum GrammarType{
+    PLOT = "PLOT",
+    MAP = "MAP"
 }
 
 export enum SpatialRelationType{

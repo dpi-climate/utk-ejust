@@ -60,6 +60,18 @@
                 }
             }
         },
+        "plot": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "arrangement": {
+                    "type": "string"
+                }
+            },
+            "required": ["id", "arrangement"]
+        },
         "knots": {
             "type": "array",
             "items": {
@@ -109,7 +121,10 @@
                 },
                 "required": ["type"]
             }
+        },
+        "grammar_type": {
+            "type": "string"
         }
     },
-    "required": ["knots", "interactions", "camera"]
+    "required": ["knots", "interactions", "camera", "grammar_type"]
 }

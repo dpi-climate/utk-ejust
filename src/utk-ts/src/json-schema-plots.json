@@ -41,7 +41,10 @@
                     "type": "number"
                 }
             }
+        },
+        "grammar_type": {
+            "type": "string"
         }
     },
-    "required": ["plot", "knots"]
+    "required": ["plot", "knots", "grammar_type"]
 }
