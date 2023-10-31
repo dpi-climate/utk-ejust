@@ -6,8 +6,9 @@ import Tseries from "../tseries/Tseries"
 import { useState } from "react"
 import TseriesFocusCtx from "../tseries/TseriesFocusCtx"
 
-import { TimeBtn } from "../time-btn"
+import { TemporalOptions } from "../temporal-options"
 import { InteractionChannel } from "utk"
+
 import './temporal-panel.css'
 interface TemporalPanelProps {
   fields: FieldType[]
@@ -19,17 +20,21 @@ const TemporalPanel = memo(({ fields, timeSeries, activeTime} : TemporalPanelPro
     
   const [fcIsOpen, setFcIsOpen] = useState(false)
   const [activeFcTseries, setFcTseries] = useState<string>("")
+  const setTempPanelData = InteractionChannel.getPassedVariable("temporalOptions")
 
   if (Object.keys(timeSeries).length === 0) {
-    return <div></div>
+    return <div><div className="temporal-options-btn">
+    <TemporalOptions fields={fields} data={timeSeries} setData={setTempPanelData}/>
+  </div></div>
   } 
-  const setTime = InteractionChannel.getPassedVariable("timestamp")
   return (
     <div>
-      <div className="time-btn-temporal">
+      {/* <div className="time-btn-temporal">
         <TimeBtn activeTime={activeTime} nTimes={10} setTime={setTime}/>
-      </div>
-      
+      </div> */}
+      <div className="temporal-options-btn">
+        <TemporalOptions fields={fields} data={timeSeries} setData={setTempPanelData}/>
+      </div>      
     <div>
       {
         Object.keys(timeSeries).map((field, idx) => {

@@ -18,6 +18,7 @@ import { HmatPanel } from '../../components/hmat-panel'
 import { ScatterPanel } from '../../components/scatter-panel'
 
 import { TimeBtn } from '../../components/time-btn'
+import { InteractionChannel } from 'utk'
 
 function Home() {
 
@@ -50,6 +51,7 @@ function Home() {
       setHmat(newHmat.data)
     }
     fetchFieldList()
+    InteractionChannel.addToPassedVariables("temporalOptions", setTempPanelData)
   }, [])
 
   function GridPointSelector() {
@@ -90,12 +92,12 @@ function Home() {
   return (
     <>
     <Nav>
-      <div className="col-auto navcol">
-        <TemporalOptions fields={fieldsList} data={temporalPanelData} setData={setTempPanelData}/>
-      </div>
       {/* <div className="col-auto navcol">
-        <TimeBtn activeTime={activeTime} nTimes={nTimes} setTime={setTime}/>
+        <TemporalOptions fields={fieldsList} data={temporalPanelData} setData={setTempPanelData}/>
       </div> */}
+      <div className="col-auto navcol">
+        <TimeBtn activeTime={activeTime} nTimes={nTimes} setTime={setTime}/>
+      </div>
     </Nav>
     <Main>
       <div className="analyzes">
