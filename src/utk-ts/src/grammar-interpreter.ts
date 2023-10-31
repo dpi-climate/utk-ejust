@@ -1,29 +1,30 @@
 /// <reference types="@types/webgl2" />
 
-import { ICameraData, IConditionBlock, IGrammar, IKnotVisibility, IKnot, IView, IComponentPosition, IGenericWidget } from './interfaces';
+import { ICameraData, IConditionBlock, IMasterGrammar, IKnotVisibility, IKnot, IMapGrammar, IPlotGrammar, IView, IComponentPosition, IGenericWidget } from './interfaces';
 import { PlotArrangementType, OperationType, SpatialRelationType, LevelType, ComponentIdentifier, WidgetType} from './constants';
 import { Knot } from './knot';
 import { MapViewFactory } from './mapview';
 import { Environment } from './environment';
+import { DataLoader } from './data-loader';
 import { MapRendererContainer } from './reactComponents/MapRenderer';
 import React, { ComponentType } from 'react';
 import {Root, createRoot} from 'react-dom/client';
+
 import Views from './reactComponents/Views';
 
 // @ts-ignore 
-import schema from './json-schema.json';
+import schema from './json-schema.json'; // master JSON
 import schema_categories from './json-schema-categories.json';
+import schema_map from './json-schema-maps.json';
+import schema_plots from './json-schema-plots.json';
 
 // const Ajv = require("ajv");
 import Ajv2019 from "ajv/dist/2019" // https://github.com/ajv-validator/ajv/issues/1462
-import { GeoUtils } from './geoutils';
-
-const ajv = new Ajv2019()
-
 
 class GrammarInterpreter {
 
-    protected _grammar: IGrammar;
+    protected _grammar: IMasterGrammar;
+    protected _components_grammar: {id: string, grammar: (IMapGrammar | IPlotGrammar)}[] = [];
     protected _lastValidationTimestep: number;
     // protected _components: {type: ComponentIdentifier | WidgetType, obj: any, position: IComponentPosition | undefined, grammarDefinition: IView | IGenericWidget | undefined}[] = [];
     protected _components: {type: ComponentIdentifier | WidgetType, obj: any, position: IComponentPosition | any, title: string | undefined, subtitle: string | undefined, grammarDefinition: IView | IGenericWidget | undefined}[] = [];
@@ -32,20 +33,18 @@ class GrammarInterpreter {
     protected _url: string;
     protected _root: Root;
     protected _ajv: any;
+    protected _ajv_map: any;
+    protected _ajv_plots: any;
 
     protected _cameraUpdateCallback: any;
 
-    resetGrammarInterpreter(grammar: IGrammar, mainDiv: HTMLElement) {
+    resetGrammarInterpreter(grammar: IMasterGrammar, mainDiv: HTMLElement) {
 
-        // =============================
-
-        // this._ajv = new Ajv({schemas: [schema, schema_categories]});
         this._ajv = new Ajv2019({schemas: [schema, schema_categories]});
-
-        // =============================
+        this._ajv_map = new Ajv2019({schemas: [schema_map]});
+        this._ajv_plots = new Ajv2019({schemas: [schema_plots]});
 
         this._url = <string>Environment.backend;
-        // this._url = "http://localhost:5001"
 
         this._frontEndCallback = null;
         this._mainDiv = mainDiv;
@@ -53,7 +52,7 @@ class GrammarInterpreter {
     }
 
     // TODO: it should be possible to create more than one map. So map should not be a singleton
-    public initViews(mainDiv: HTMLElement, grammar: IGrammar, originalGrammar: IGrammar){
+    public initViews(mainDiv: HTMLElement, grammar: IMasterGrammar, originalGrammar: IMasterGrammar){
         this._components = [];
 
         for(const component of grammar.components){
@@ -84,7 +83,7 @@ class GrammarInterpreter {
         this.renderViews(mainDiv, originalGrammar);
     }
 
-    public validateGrammar(grammar: IGrammar){
+    public validateGrammar(grammar: IMasterGrammar){
         // TODO: checking conflicting types of interactions for the knots. One knot cannot be in plots with different arrangements
 
         // TODO: ensure that the widgets have all the attributes they should have
@@ -197,31 +196,40 @@ class GrammarInterpreter {
         return true;
     }
 
-    public async processGrammar(grammar: IGrammar){
+    public async processGrammar(grammar: IMasterGrammar){
         if(this.validateGrammar(grammar)){
             // changing grammar to be the processed grammar
             let aux = JSON.stringify(grammar);
-            for(let variable of grammar.variables) {
-                aux = aux.replaceAll("$"+variable.name+"$", variable.value);
+            if(grammar.variables != undefined){
+                for(let variable of grammar.variables) {
+                    aux = aux.replaceAll("$"+variable.name+"$", variable.value);
+                }
             }
             let processedGrammar = JSON.parse(aux);
             this._grammar = processedGrammar;
 
-            // const position = grammar.components[0].map.camera.position
-            // const lookAt = grammar.components[0].map.camera.direction.lookAt
-            // // const latLon = GeoUtils.coord2LatLng(position[1], position[0])
-            
-            // const latLonMercatorPosition = GeoUtils.latlonToWebMercator(position[0], position[1])
-            // const latLonMercatorLookAt = GeoUtils.latlonToWebMercator(lookAt[0], lookAt[1])
-            // grammar.components[0].map.camera.position = [latLonMercatorPosition[0], latLonMercatorPosition[1], position[2]]
-            // grammar.components[0].map.camera.direction.lookAt = [latLonMercatorLookAt[0], latLonMercatorLookAt[1], lookAt[2]]
-
-
-            // console.log("position", position)
-            // console.log("mercator", latLonMercator)
-
-            // this._processedGrammar = this.processConditionBlocks(JSON.parse(JSON.stringify(this._preProcessedGrammar))); // Making a deep copy of the grammar before processing it
             await this.createSpatialJoins(this._url, processedGrammar);
+
+            Environment.setEnvironment({backend: `http://localhost:5001` as string});
+            
+            for(const component of grammar.components){
+                const url = `${Environment.backend}/files/${component.id}`;
+
+                let component_grammar = <IMapGrammar | IPlotGrammar> await DataLoader.getJsonData(url);
+ 
+                this._components_grammar.push({id: component.id, grammar: component_grammar});
+
+            }
+            
+            // DataLoader.getJsonData(url).then(data => {
+            //     initializer.run(data);
+            //   });
+
+
+            // load adjancent grammars
+            // replace their variables
+            // pass all grammars to initViews
+
             this.initViews(this._mainDiv, processedGrammar, grammar);
         }
     }
@@ -231,51 +239,47 @@ class GrammarInterpreter {
         return;
     }
 
-    private createSpatialJoins = async (url: string, grammar: IGrammar) => {
-        for(const component of grammar.components){
-            if("map" in component){
-                for(const knot of component.knots){
-                    if(knot.knot_op != true){
-                        for(let i = 0; i < knot.integration_scheme.length; i++){
-                            if(knot.integration_scheme[i].spatial_relation != 'INNERAGG' && knot.integration_scheme[i].in != undefined){
-                                let spatial_relation = (<SpatialRelationType>knot.integration_scheme[i].spatial_relation).toLowerCase();
-                                let out = knot.integration_scheme[i].out.name;
-                                let outLevel = knot.integration_scheme[i].out.level.toLowerCase();
-                                let inLevel = (<{name: string, level: LevelType}>knot.integration_scheme[i].in).level.toLowerCase();
-                                let maxDistance = knot.integration_scheme[i].maxDistance;
-                                let defaultValue = knot.integration_scheme[i].defaultValue;
-        
-                                let operation = (<OperationType>knot.integration_scheme[i].operation).toLowerCase();
-        
-                                if(operation == 'none'){
-                                    operation = 'avg'; // there must be an operation to solve conflicts in the join
-                                }
-        
-                                let inData = (<{name: string, level: LevelType}>knot.integration_scheme[i].in).name;
-                                let abstract = knot.integration_scheme[i].abstract;
-        
-                                // addNewMessage("Joining "+out+" with "+inData, "red");
-        
-                                if(maxDistance != undefined){
-                                    await fetch(url+"/linkLayers?spatial_relation="+spatial_relation+"&out="+out+"&operation="+operation+"&in="+inData+"&abstract="+abstract+"&outLevel="+outLevel+"&inLevel="+inLevel+"&maxDistance="+maxDistance+"&defaultValue="+defaultValue);
-                                }else{
-                                    await fetch(url+"/linkLayers?spatial_relation="+spatial_relation+"&out="+out+"&operation="+operation+"&in="+inData+"&abstract="+abstract+"&outLevel="+outLevel+"&inLevel="+inLevel).catch(error => {
-                                        // Handle any errors here
-                                        console.error(error);
-                                    });
-                                }
-        
-                                // addNewMessage("Join finished in " +(elapsed/1000)+" seconds", "green");
-        
-                            }
+    private createSpatialJoins = async (url: string, grammar: IMasterGrammar) => {
+        for(const knot of grammar.knots){
+            if(knot.knot_op != true){
+                for(let i = 0; i < knot.integration_scheme.length; i++){
+                    if(knot.integration_scheme[i].spatial_relation != 'INNERAGG' && knot.integration_scheme[i].in != undefined){
+                        let spatial_relation = (<SpatialRelationType>knot.integration_scheme[i].spatial_relation).toLowerCase();
+                        let out = knot.integration_scheme[i].out.name;
+                        let outLevel = knot.integration_scheme[i].out.level.toLowerCase();
+                        let inLevel = (<{name: string, level: LevelType}>knot.integration_scheme[i].in).level.toLowerCase();
+                        let maxDistance = knot.integration_scheme[i].maxDistance;
+                        let defaultValue = knot.integration_scheme[i].defaultValue;
+
+                        let operation = (<OperationType>knot.integration_scheme[i].operation).toLowerCase();
+
+                        if(operation == 'none'){
+                            operation = 'avg'; // there must be an operation to solve conflicts in the join
                         }
+
+                        let inData = (<{name: string, level: LevelType}>knot.integration_scheme[i].in).name;
+                        let abstract = knot.integration_scheme[i].abstract;
+
+                        // addNewMessage("Joining "+out+" with "+inData, "red");
+
+                        if(maxDistance != undefined){
+                            await fetch(url+"/linkLayers?spatial_relation="+spatial_relation+"&out="+out+"&operation="+operation+"&in="+inData+"&abstract="+abstract+"&outLevel="+outLevel+"&inLevel="+inLevel+"&maxDistance="+maxDistance+"&defaultValue="+defaultValue);
+                        }else{
+                            await fetch(url+"/linkLayers?spatial_relation="+spatial_relation+"&out="+out+"&operation="+operation+"&in="+inData+"&abstract="+abstract+"&outLevel="+outLevel+"&inLevel="+inLevel).catch(error => {
+                                // Handle any errors here
+                                console.error(error);
+                            });
+                        }
+
+                        // addNewMessage("Join finished in " +(elapsed/1000)+" seconds", "green");
+
                     }
                 }
             }
         }
     }
 
-    // private processConditionBlocks(grammar: IGrammar){
+    // private processConditionBlocks(grammar: IMasterGrammar){
 
     //     let _this = this;
 
@@ -502,7 +506,7 @@ class GrammarInterpreter {
     // }
 
     // TODO: more than one view should be rendered but inside a single div provided by the front end
-    private renderViews(mainDiv: HTMLElement, grammar: IGrammar){
+    private renderViews(mainDiv: HTMLElement, grammar: IMasterGrammar){
         // mainDiv.innerHTML = ""; // empty all content
 
         if(this._root == undefined){

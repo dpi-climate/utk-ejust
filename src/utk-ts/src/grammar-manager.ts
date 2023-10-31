@@ -1,4 +1,4 @@
-import { IGrammar, IPlotArgs, IView } from './interfaces';
+import { IMasterGrammar, IPlotArgs, IView } from './interfaces';
 import { PlotInteractionType, PlotArrangementType } from './constants';
 import {radians} from './utils';
 
@@ -43,7 +43,7 @@ export class GrammarManager {
      * @param viewData 
      * @param setGrammarUpdateCallback Function that sets the callback that will be called in the frontend to update the grammar
      */
-    constructor(grammar: IGrammar, updateStatusCallback: any, plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
+    constructor(grammar: IMasterGrammar, updateStatusCallback: any, plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
         for(const component of grammar['components']){
             if("map" in component){
                 this._viewData = component;                

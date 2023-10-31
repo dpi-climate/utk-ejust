@@ -14,14 +14,14 @@ import Draggable from "react-draggable";
 import './Dragbox.css'
 
 import * as d3 from "d3";
-import { IComponentPosition, IGenericWidget, IGrammar, IGrid, IView } from '../interfaces';
+import { IComponentPosition, IGenericWidget, IMasterGrammar, IGrid, IView } from '../interfaces';
 import './View.css';
 
 // declaring the types of the props
 type ViewProps = {
   viewObjs: {type: ComponentIdentifier | WidgetType, obj: any, position: IComponentPosition, title: string | undefined, subtitle: string | undefined, grammarDefinition: IView | IGenericWidget | undefined}[] // each view has a an object representing its logic
   viewIds: string[]
-  grammar: IGrammar
+  grammar: IMasterGrammar
   mainDivSize: {width: number, height: number}
 }
 

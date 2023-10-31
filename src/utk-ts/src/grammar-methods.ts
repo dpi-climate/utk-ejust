@@ -1,8 +1,8 @@
-import { IGrammar } from './interfaces';
+import { IMasterGrammar } from './interfaces';
 
 export class GrammarMethods {
 
-    static grammar: IGrammar;
+    static grammar: IMasterGrammar;
 
     static subscribers: any = {};
 
@@ -43,7 +43,7 @@ export class GrammarMethods {
         GrammarMethods.subscribers[identifier] = subscription_callback;
     }
 
-    static updateGrammar(data: IGrammar): void {
+    static updateGrammar(data: IMasterGrammar): void {
         GrammarMethods.grammar = data;
     }
 

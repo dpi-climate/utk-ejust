@@ -14,7 +14,7 @@ import './GrammarPanel.css';
 
 // const params = require('./pythonServerConfig.json');
 
-import { IGrammar } from "../interfaces";
+import { IMasterGrammar } from "../interfaces";
 
 import schema from '../json-schema.json';
 import schema_categories from '../json-schema-categories.json';
@@ -24,7 +24,7 @@ import { GrammarPanelVisibility } from "./SideBarWigets";
 type GrammarPanelProps = {
     obj: any,
     viewId: string,
-    initialGrammar: IGrammar,
+    initialGrammar: IMasterGrammar,
     camera: {position: number[], direction: {right: number[], lookAt: number[], up: number[]}},
     filterKnots: number[],
     inputId: string,

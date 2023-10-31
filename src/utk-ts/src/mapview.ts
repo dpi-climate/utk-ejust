@@ -11,7 +11,7 @@ import { MouseEventsFactory } from './mouse-events';
 import { DataApi } from './data-api';
 import { LayerManager } from './layer-manager';
 
-import { ICameraData, ILayerData, IGrammar } from './interfaces';
+import { ICameraData, ILayerData, IMasterGrammar } from './interfaces';
 
 import { LevelType } from './constants';
 
@@ -323,7 +323,7 @@ class MapView {
 
     }
 
-    initGrammarManager(grammar: IGrammar){
+    initGrammarManager(grammar: IMasterGrammar){
         this._grammarManager = new GrammarManager(grammar, this._updateStatusCallback, this.parsePlotsKnotData(), {"function": this.setHighlightElement, "arg": this});
     }
 
