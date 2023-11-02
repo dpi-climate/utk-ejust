@@ -46,8 +46,9 @@ export enum ViewArrangementType{
 }
 
 export enum PlotArrangementType{
-    SURFACE = "SURFACE",
-    FOOTPRINT = "FOOTPRINT"
+    SUR_EMBEDDED = "SUR_EMBEDDED",
+    FOOT_EMBEDDED = "FOOT_EMBEDDED",
+    LINKED = "LINKED"
 }
 
 export enum GrammarType{
@@ -85,10 +86,16 @@ export enum PlotInteractionType{
     BRUSH = "BRUSH"
 }
 
+// export enum ComponentIdentifier{
+//     MAP = "MAP",
+//     GRAMMAR = "GRAMMAR",
+//     WIDGET = "WIDGET"
+// }
+
 export enum ComponentIdentifier{
     MAP = "MAP",
     GRAMMAR = "GRAMMAR",
-    WIDGET = "WIDGET"
+    PLOT = "PLOT"
 }
 
 export enum WidgetType{

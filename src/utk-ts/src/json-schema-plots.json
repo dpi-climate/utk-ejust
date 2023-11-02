@@ -1,5 +1,5 @@
 {
-    "$id": "https://urbantk.org/grammar",
+    "$id": "https://urbantk.org/grammar_plots",
     "title": "Grammar for plot components",
     "description": "Grammar for plot components",
     "type": "object",
@@ -30,6 +30,9 @@
             "items": {
                 "type": "string"
             }
+        },
+        "arragement": {
+            "type": "string"
         },
         "interaction": {
             "type": "string"

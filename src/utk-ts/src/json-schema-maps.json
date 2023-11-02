@@ -65,12 +65,9 @@
             "properties": {
                 "id": {
                     "type": "string"
-                },
-                "arrangement": {
-                    "type": "string"
                 }
             },
-            "required": ["id", "arrangement"]
+            "required": ["id"]
         },
         "knots": {
             "type": "array",

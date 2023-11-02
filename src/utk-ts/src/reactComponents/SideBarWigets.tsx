@@ -1,11 +1,11 @@
-import React, { useState } from "react";
-import { ComponentIdentifier, WidgetType } from "../constants";
-import { IComponentPosition, IGenericWidget, IView } from "../interfaces";
+import React from "react";
+import { WidgetType } from "../constants";
+import { IGenericWidget } from "../interfaces";
 import { ToggleKnotsWidget } from './ToggleKnotsWidget';
 import { SearchWidget } from './SearchWidget';
 import {Row} from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faLayerGroup, faMagnifyingGlass, faChartSimple, faEyeSlash, faSearch, faEye } from '@fortawesome/free-solid-svg-icons'
+import { faLayerGroup, faChartSimple, faEyeSlash, faSearch, faEye } from '@fortawesome/free-solid-svg-icons'
 import * as d3 from "d3";
 import { GenericScreenPlotContainer } from "./GenericScreenPlotContainer";
 import { InteractionChannel } from "../interaction-channel";
@@ -20,11 +20,11 @@ type SideBarWidgetsProps = {
     inputBarId: string,
     genericPlots: any,
     togglePlots: any,
-    viewObjs: {type: ComponentIdentifier | WidgetType, obj: any, position: IComponentPosition, title: string | undefined, subtitle: string | undefined, grammarDefinition: IView | IGenericWidget | undefined}[] // each viewObj has a an object representing its logic
+    mapWidgets: {type: WidgetType, obj: any, grammarDefinition: IGenericWidget | undefined}[] // each viewObj has a an object representing its logic
 }
 
 export var GrammarPanelVisibility = true;
-export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibility, inputBarId, genericPlots, togglePlots, viewObjs}:SideBarWidgetsProps) =>{
+export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibility, inputBarId, genericPlots, togglePlots, mapWidgets}:SideBarWidgetsProps) =>{
 
     const handleClickLayers = (e: any) => {
 
@@ -55,10 +55,10 @@ export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibi
 
     return (
         <React.Fragment>
-          {genericPlots.length > 0 || viewObjs.length > 1 ? <div style={{backgroundColor: "white", width: "75px", position: "absolute", left: "10px", top: "10px", padding: "5px", borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)"}}>
+          {genericPlots.length > 0 || mapWidgets.length > 1 ? <div style={{backgroundColor: "white", width: "75px", position: "absolute", left: "10px", top: "10px", padding: "5px", borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)"}}>
             <Row>
               {
-                viewObjs.map((component, index) => {
+                mapWidgets.map((component, index) => {
                   if(component.type == WidgetType.TOGGLE_KNOT){
                     return <FontAwesomeIcon key={"widget_"+index} size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faLayerGroup} onClick={handleClickLayers} />
                   }else if(component.type == WidgetType.SEARCH){
@@ -77,7 +77,7 @@ export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibi
             </Row>
           </div> : null}
             {
-              viewObjs.map((component, index) => {
+              mapWidgets.map((component, index) => {
                 if(component.type == WidgetType.TOGGLE_KNOT){
                   return <React.Fragment key={"toggle_knot_"+index}>
                     <div className='component' id="toggle_knot_widget" style={{position: "absolute", left: 100, top: 10, width: 300, borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)", display: "none"}}>
@@ -85,8 +85,6 @@ export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibi
                         obj = {component.obj}
                         listLayers = {layersIds}
                         knotVisibility = {knotVisibility}
-                        title = {component.title}
-                        subtitle = {component.subtitle}
                         viewId = {"toggle_knot_"+index}
                         grammarDefinition = {component.grammarDefinition}
                       />
@@ -99,8 +97,6 @@ export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibi
                         obj = {component.obj}
                         viewId = {"search_"+index}
                         inputId = {inputBarId}
-                        title = {component.title}
-                        subtitle = {component.subtitle}
                       />
                     </div>
                   </React.Fragment>

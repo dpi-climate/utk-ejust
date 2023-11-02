@@ -30,16 +30,14 @@ export class Knot {
     protected _shaders: (Shader|AuxiliaryShader)[] = [];
     protected _visible: boolean;
     protected _grammarInterpreter: any;
-    protected _viewId: number;
     protected _map: any
 
-    constructor(id: string, physicalLayer: Layer, knotSpecification: IKnot, grammarInterpreter: any, viewId: number, visible: boolean, map: any) {
+    constructor(id: string, physicalLayer: Layer, knotSpecification: IKnot, grammarInterpreter: any, visible: boolean, map: any) {
         this._physicalLayer = physicalLayer;
         this._knotSpecification = knotSpecification;
         this._id = id;
         this._visible = visible;
         this._grammarInterpreter = grammarInterpreter;
-        this._viewId = viewId;
         this._map = map;
     }   
 
@@ -202,7 +200,7 @@ export class Knot {
 
             for(const scheme of this._knotSpecification.integration_scheme){
                 if(functionsPerKnot[scheme.out.name] == undefined){
-                    let knot = this._grammarInterpreter.getKnotById(scheme.out.name, this._viewId);
+                    let knot = this._grammarInterpreter.getKnotById(scheme.out.name);
 
                     if(knot == undefined){
                         throw Error("Could not retrieve knot that composes knot_op "+this._knotSpecification.id);
@@ -212,7 +210,7 @@ export class Knot {
                 }
 
                 if(scheme.in != undefined && functionsPerKnot[<string>scheme.in.name] == undefined){
-                    let knot = this._grammarInterpreter.getKnotById(<string>scheme.in.name, this._viewId);
+                    let knot = this._grammarInterpreter.getKnotById(<string>scheme.in.name);
 
                     if(knot == undefined){
                         throw Error("Could not retrieve knot that composes knot_op "+this._knotSpecification.id);

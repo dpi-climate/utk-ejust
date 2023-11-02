@@ -222,12 +222,12 @@ class MapView {
         let plotsKnotData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[] = [];
 
         for(const knotId of plotsKnots){
-            for(const knot of this._grammarInterpreter.getKnots(this._viewId)){
+            for(const knot of this._grammarInterpreter.getKnots()){
                 if(knotId == knot.id){
 
-                    let lastLink = this._grammarInterpreter.getKnotLastLink(knot, this._viewId);
+                    let lastLink = this._grammarInterpreter.getKnotLastLink(knot);
 
-                    let left_layer = this._layerManager.searchByLayerId(this._grammarInterpreter.getKnotOutputLayer(knot, this._viewId));
+                    let left_layer = this._layerManager.searchByLayerId(this._grammarInterpreter.getKnotOutputLayer(knot));
 
                     // let left_layer = this._layerManager.searchByLayerId(lastLink.out.name);
 
@@ -298,8 +298,8 @@ class MapView {
         if(!clear){
             let elements: any = {};
         
-            for(const knot of this._grammarInterpreter.getKnots(this._viewId)){
-                let lastLink = this._grammarInterpreter.getKnotLastLink(knot, this._viewId);
+            for(const knot of this._grammarInterpreter.getKnots()){
+                let lastLink = this._grammarInterpreter.getKnotLastLink(knot);
     
                 if(lastLink.out.name == layerId && lastLink.out.level == level){
                     elements[knot.id] = elementIndex;
@@ -310,8 +310,8 @@ class MapView {
         }else{
             let knotsToClear: string[] = [];
 
-            for(const knot of this._grammarInterpreter.getKnots(this._viewId)){
-                let lastLink = this._grammarInterpreter.getKnotLastLink(knot, this._viewId);
+            for(const knot of this._grammarInterpreter.getKnots()){
+                let lastLink = this._grammarInterpreter.getKnotLastLink(knot);
     
                 if(lastLink.out.name == layerId){
                     knotsToClear.push(knot.id);
@@ -330,15 +330,15 @@ class MapView {
     //TODO: not sure if mapview should contain this logic
     setHighlightElement(knotId: string, elementIndex: number, value: boolean, _this: any){
 
-        let knot = _this._grammarInterpreter.getKnotById(knotId, this._viewId);
+        let knot = _this._grammarInterpreter.getKnotById(knotId);
 
         if(knot == undefined){
             throw Error("Cannot highlight element knot not found");
         }
 
-        let layerId = _this._grammarInterpreter.getKnotOutputLayer(knot, _this._viewId);
+        let layerId = _this._grammarInterpreter.getKnotOutputLayer(knot);
 
-        let lastLink = _this._grammarInterpreter.getKnotLastLink(knot, _this._viewId);
+        let lastLink = _this._grammarInterpreter.getKnotLastLink(knot);
 
         if(lastLink.out.level == undefined)
             return;
@@ -383,7 +383,7 @@ class MapView {
         let joinedList: boolean[] = [];
         let centroid = this.camera.getWorldOrigin();
 
-        for(const knot of this._grammarInterpreter.getKnots(this._viewId)){
+        for(const knot of this._grammarInterpreter.getKnots()){
             if(!knot.knot_op){
                 // load layers from knots if they dont already exist
                 for(let i = 0; i < knot.integration_scheme.length; i++){
@@ -447,12 +447,12 @@ class MapView {
 
         let knotsMap = this._grammarInterpreter.getMap(this._viewId).knots;
 
-        for(const knotGrammar of this._grammarInterpreter.getKnots(this._viewId)){
-            let layerId = this._grammarInterpreter.getKnotOutputLayer(knotGrammar, this._viewId);
+        for(const knotGrammar of this._grammarInterpreter.getKnots()){
+            let layerId = this._grammarInterpreter.getKnotOutputLayer(knotGrammar);
             
             let layer = this._layerManager.searchByLayerId(layerId);
 
-            let knot = this._knotManager.createKnot(knotGrammar.id, <Layer>layer, knotGrammar, this._grammarInterpreter, this._viewId, knotsMap.includes(knotGrammar.id), this);
+            let knot = this._knotManager.createKnot(knotGrammar.id, <Layer>layer, knotGrammar, this._grammarInterpreter, knotsMap.includes(knotGrammar.id), this);
             knot.processThematicData(this._layerManager); // send thematic data to the mesh of the physical layer TODO: put this inside the constructor of Knot
             knot.loadShaders(this._glContext); // instantiate the shaders inside the knot TODO: put this inside the constructor of Knot
         }
@@ -605,11 +605,15 @@ export var MapViewFactory = (function(){
     var instance: MapView;
   
     return {
-      getInstance: function(mapDiv: HTMLElement, grammarInterpreter: any){
+      getInstance: function(mapDiv: HTMLElement | null = null, grammarInterpreter: any | null = null){
           if (instance == null) {
               instance = new MapView();
           }
-          instance.resetMap(mapDiv, grammarInterpreter);
+
+          if(mapDiv != null && grammarInterpreter != null){
+              instance.resetMap(mapDiv, grammarInterpreter);
+          }
+
           return instance;
       }
     };

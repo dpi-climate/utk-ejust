@@ -1,32 +1,24 @@
 import React, {useEffect, useState, useRef} from 'react';
-import {Container, Row, Col} from 'react-bootstrap'
 import { GrammarPanelContainer } from './GrammarPanel';
 import { MapRendererContainer } from './MapRenderer';
-import { GenericScreenPlotContainer } from './GenericScreenPlotContainer';
-import { ToggleKnotsWidget } from './ToggleKnotsWidget';
-import { ResolutionWidget } from './ResolutionWidget';
-import { SearchWidget } from './SearchWidget';
 import { ComponentIdentifier, WidgetType} from '../constants';
-
 import {GrammarMethods} from '../grammar-methods';
-
-import Draggable from "react-draggable";
 import './Dragbox.css'
-
 import * as d3 from "d3";
-import { IComponentPosition, IGenericWidget, IMasterGrammar, IGrid, IView } from '../interfaces';
+import { IComponentPosition, IGenericWidget, IMasterGrammar, } from '../interfaces';
 import './View.css';
 
 // declaring the types of the props
 type ViewProps = {
-  viewObjs: {type: ComponentIdentifier | WidgetType, obj: any, position: IComponentPosition, title: string | undefined, subtitle: string | undefined, grammarDefinition: IView | IGenericWidget | undefined}[] // each view has a an object representing its logic
+  viewObjs: {type: ComponentIdentifier, obj: any, position: IComponentPosition}[] // each view has a an object representing its logic
+  mapsWidgets: {type: WidgetType, obj: any, grammarDefinition: IGenericWidget | undefined}[] // each view has a an object representing its logic
   viewIds: string[]
   grammar: IMasterGrammar
   mainDivSize: {width: number, height: number}
 }
 
 // Render components
-function Views({viewObjs, viewIds, grammar, mainDivSize}: ViewProps) {
+function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize}: ViewProps) {
 
   const [camera, setCamera] = useState<{position: number[], direction: {right: number[], lookAt: number[], up: number[]}}>({position: [], direction: {right: [], lookAt: [], up: []}}); // TODO: if we have multiple map instances we have multiple cameras
   const [filterKnots, setFilterKnots] = useState<number[]>([]);
@@ -207,7 +199,7 @@ function Views({viewObjs, viewIds, grammar, mainDivSize}: ViewProps) {
                   <MapRendererContainer
                     obj = {component.obj}
                     viewId={viewIds[index]}
-                    viewObjs={viewObjs}
+                    mapWidgets={mapsWidgets}
                     x={getTopLeft(component.position).left}
                     y={getTopLeft(component.position).top}
                     width={getSizes(component.position).width}
@@ -240,6 +232,8 @@ function Views({viewObjs, viewIds, grammar, mainDivSize}: ViewProps) {
               </React.Fragment>
             } 
           })
+
+          // TODO: generic fixed plot container
         }
       </div>
     </React.Fragment>
