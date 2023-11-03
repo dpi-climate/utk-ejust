@@ -14,24 +14,36 @@ class WRF_Output_Reader(object):
     def get_ntimes(self):
         return self.__nTimes
     
-    def getVariable(self, var_key, time_indexes=[]):
+    def get_variable(self, var_key):
+        var_key = var_key.upper()
+        data = self.__ncData.variables[var_key][:]
+        
+        if var_key == 'T2':
+            data = data - 273 # Kelvin to Celsius
+              
+        return data
+    
+    def get_variable2(self, var_key, latmin_idx, lonmin_idx, latmax_idx, lonmax_idx, time_indexes):
         var_key = var_key.upper()
         # To do: validate var_key
         
         #### Get data
         data = []
 
-        if len(time_indexes) > 0:
-            try:
-                data = np.ma.masked_array([self.__ncData.variables[var_key][:][tidx] for tidx in time_indexes])
+        if len(time_indexes) == 0: time_indexes = range(self.__nTimes)
+           
+        try:
+            for tidx in time_indexes:
+                for latidx in range(latmin_idx, latmax_idx + 1):
+                    for lonidx in range(lonmin_idx, lonmax_idx + 1):
+                        data.append(self.__ncData.variables[var_key][:][tidx][latidx][lonidx])
 
-            except Exception as error:
-                msg = f"[{self.__className} - getData]\n{error}"
-                print(colored(f"{msg}", "red"))
-                sys.exit()
-        
-        else:
-            data = self.__ncData.variables[var_key][:]
+            data = np.ma.masked_array(data)
+
+        except Exception as error:
+            msg = f"[{self.__className} - getData]\n{error}"
+            print(colored(f"{msg}", "red"))
+            sys.exit()
     
         #### Process Data
         if len(data) > 0:
@@ -94,7 +106,7 @@ def thematic_from_wrf2(filepath, variables_list, coordinates_projection, time_in
     n_times = len(time_indexes) if len(time_indexes) > 0 else wrfout.get_ntimes()
     
     for variable_key in variables_list:
-        variable_data = wrfout.getVariable(variable_key, time_indexes)
+        variable_data = wrfout.get_variable(variable_key, time_indexes)
         mask_values = [[False * len(lon_matrix[0])] * len(lat_matrix)] * n_times
     
         if(len(bbox) > 0):
@@ -129,26 +141,57 @@ def thematic_from_wrf2(filepath, variables_list, coordinates_projection, time_in
                         values.append(float(variable_data[t][i][j]))
 
     
-def thematic_from_wrf(filepath, variables_list, coordinates_projection, time_indexes=[], bbox=[]):
+def thematic_from_wrf(filepath, variables_list, coordinates_projection, time_idxs=[], bbox=[]):
     wrfout = WRF_Output_Reader()
     wrfout.setNcData(filepath)
     wrfout.setAttributes()
 
     lat_array, lon_array = wrfout.getLatLon()
-    print(lat_array[0], lat_array[len(lat_array)-1])
-    print(lon_array[0], lon_array[len(lon_array)-1])
+    ntimes = wrfout.get_ntimes()
+
+    latmin_idx = 0
+    latmax_idx = len(lat_array)-1
+        
+    lonmin_idx = 0
+    lonmax_idx = len(lon_array)-1
+
+    if len(time_idxs) == 0: time_idxs = range(ntimes)
 
     if(len(bbox) > 0):
 
         latmin, lonmin = bbox[0], bbox[1]
         latmax, lonmax = bbox[2], bbox[3]
 
-        # lat_idx = np.where(lat_array>latmin and lat_array<latmax)
-        # lon_idx = np.where(lon_array>lonmin and lon_array<lonmax, axis=1)
-        lat_idx = [i for i in range(len(lat_array)) if lat_array[i] > latmin and lat_array[i] < latmax]
+        lat_idxs = [i for i in range(len(lat_array)) if lat_array[i] > latmin and lat_array[i] < latmax]
+        lon_idxs = [j for j in range(len(lon_array)) if lon_array[j] > lonmin and lon_array[j] < lonmax]
         
-        print(lat_idx)
-        # print(lon_idx)
+        latmin_idx = lat_idxs[0]
+        latmax_idx = lat_idxs[len(lat_idxs)-1]
+        
+        lonmin_idx = lon_idxs[0]
+        lonmax_idx = lon_idxs[len(lon_idxs)-1]
+
+    
+    for variable_key in variables_list:
+        values = [[None * len(time_idxs)] * len(lat_idxs)] 
+        points = []
+
+        data = wrfout.get_variable(variable_key)
+
+        try:
+            for latidx in range(latmin_idx, latmax_idx + 1):
+                for lonidx in range(lonmin_idx, lonmax_idx + 1):
+                    points.append((lat_array[latidx], lon_array[lonidx]))
+
+                    # for tidx in time_idxs:
+                        # values.append(float(data[tidx][latidx][lonidx]))
+
+
+        except Exception as error:
+            msg = f"[thematic_from_wrf]\n{error}"
+            print(colored(f"{msg}", "red"))
+            sys.exit()
+
 
 
 
@@ -169,3 +212,5 @@ if __name__ == '__main__':
 
     # thematic_from_wrf(filepath, ['T2'], 4326)
     thematic_from_wrf(filepath, ['T2'], 4326, range(1, 5), [33, -94, 42, -81])
+    # thematic_from_wrf(filepath, ['T2'], 4326)
+
