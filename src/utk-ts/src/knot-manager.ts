@@ -1,4 +1,3 @@
-import { GrammarManager } from "./grammar-manager";
 import { IKnot } from "./interfaces";
 import { Knot } from "./knot";
 import { Layer } from "./layer";

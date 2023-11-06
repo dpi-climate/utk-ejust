@@ -71,27 +71,27 @@ class GrammarInterpreter {
 
             if(component.grammar != undefined && comp_position != undefined){
                 if(component.grammar.grammar_type == "MAP"){
-                    this._components.push({type: ComponentIdentifier.MAP, obj: MapViewFactory.getInstance(), position: comp_position});
+                    this._components.push({type: ComponentIdentifier.MAP, obj: MapViewFactory.getInstance(this), position: comp_position});
                     if((<IMapGrammar>component.grammar).widgets != undefined){
                         for(const widget of <IGenericWidget[]>(<IMapGrammar>component.grammar).widgets){
                             if(widget.type == WidgetType.TOGGLE_KNOT){
-                                this._maps_widgets.push({type: WidgetType.TOGGLE_KNOT, obj: MapViewFactory.getInstance(), grammarDefinition: widget});
+                                this._maps_widgets.push({type: WidgetType.TOGGLE_KNOT, obj: MapViewFactory.getInstance(this), grammarDefinition: widget});
                             }else if(widget.type == WidgetType.SEARCH){
-                                this._maps_widgets.push({type: WidgetType.SEARCH, obj: MapViewFactory.getInstance(), grammarDefinition: widget});
+                                this._maps_widgets.push({type: WidgetType.SEARCH, obj: MapViewFactory.getInstance(this), grammarDefinition: widget});
                             }
                             else if(widget.type == WidgetType.HIDE_GRAMMAR){
-                                this._maps_widgets.push({type: WidgetType.HIDE_GRAMMAR, obj: MapViewFactory.getInstance(), grammarDefinition: widget});
+                                this._maps_widgets.push({type: WidgetType.HIDE_GRAMMAR, obj: MapViewFactory.getInstance(this), grammarDefinition: widget});
                             }
                         }
                     }
                 }else if(component.grammar.grammar_type == "PLOT"){
-                    this._components.push({type: ComponentIdentifier.PLOT, obj: component.grammar.plot, position: comp_position});
+                    this._components.push({type: ComponentIdentifier.PLOT, obj: {grammar: component.grammar.plot, init: () => {}}, position: comp_position});
                 }
             }
         }
 
         if(grammar.grammar_position != undefined){
-            this._components.push({type: ComponentIdentifier.MAP, obj: this, position: grammar.grammar_position});
+            this._components.push({type: ComponentIdentifier.GRAMMAR, obj: this, position: grammar.grammar_position});
         }
 
         this.renderViews(mainDiv, originalGrammar);
@@ -217,7 +217,7 @@ class GrammarInterpreter {
             Environment.setEnvironment({backend: `http://localhost:5001` as string});
             
             for(const component of grammar.components){
-                const url = `${Environment.backend}/files/${component.id}`;
+                const url = `${Environment.backend}/files/${component.id}.json`;
 
                 let component_grammar = <IMapGrammar | IPlotGrammar> await DataLoader.getJsonData(url);
 
@@ -227,8 +227,7 @@ class GrammarInterpreter {
             }
             
             for(const component_grammar of this._components_grammar){
-
-                let aux = JSON.stringify(component_grammar);
+                let aux = JSON.stringify(component_grammar.originalGrammar);
                 if(component_grammar.originalGrammar.variables != undefined){
                     for(let variable of component_grammar.originalGrammar.variables) {
                         aux = aux.replaceAll("$"+variable.name+"$", variable.value);
@@ -237,11 +236,7 @@ class GrammarInterpreter {
                 component_grammar.grammar = JSON.parse(aux);
             }            
 
-            // DataLoader.getJsonData(url).then(data => {
-            //     initializer.run(data);
-            //   });
-
-            this.initViews(this._mainDiv, processedGrammar, grammar, this._components_grammar);
+            this.initViews(this._mainDiv, processedGrammar, grammar, this._components_grammar); 
         }
     }
 
@@ -358,13 +353,28 @@ class GrammarInterpreter {
         throw new Error("There is no map with that id");
     }
 
-    public getPlots() {
+    // If mapId is specified get all the plots that are embedded in that map
+    public getPlots(mapId: number | null = null) {
         let plots = [];
+        let map_component: any = null;
+        let currentMapId = 0;
 
         for(const component of this._components_grammar){
             if(component.grammar != undefined && component.grammar.grammar_type == GrammarType.PLOT){
                 plots.push(component);
             }
+
+            if(component.grammar != undefined && mapId != null && component.grammar.grammar_type == GrammarType.MAP){
+                if(currentMapId == mapId){
+                    map_component = component;
+                }
+
+                currentMapId += 1;
+            }
+        }
+
+        if(mapId != null && map_component != null){
+            plots = plots.filter((plot) => plot.id == map_component.plot.id); // TODO: give support to more than one embedded plots per map
         }
 
         return plots;
@@ -409,7 +419,7 @@ class GrammarInterpreter {
                     if((<IMapGrammar>component.grammar).knotVisibility == undefined)
                         return true;
             
-                    let map: any = MapViewFactory.getInstance(); // TODO: suppor the use of multiple maps
+                    let map: any = MapViewFactory.getInstance(this); // TODO: suppor the use of multiple maps
             
                     let zoom = map.camera.getZoomLevel();
                     let timeElapsed = Date.now() - this._lastValidationTimestep;
@@ -460,7 +470,7 @@ class GrammarInterpreter {
                     if((<IMapGrammar>component.grammar).knotVisibility == undefined)
                         return knot.visible;
         
-                    let map: any = MapViewFactory.getInstance(); // TODO: suppor the use of multiple maps
+                    let map: any = MapViewFactory.getInstance(this); // TODO: suppor the use of multiple maps
             
                     let zoom = map.camera.getZoomLevel();
                     let timeElapsed = Date.now() - this._lastValidationTimestep;
@@ -567,6 +577,7 @@ class GrammarInterpreter {
         for(let i = 0; i < this._maps_widgets.length; i++){
             viewIds.push(this._maps_widgets[i].type+i);
         }
+
         this._root.render(React.createElement(Views, {viewObjs: this._components, mapsWidgets: this._maps_widgets, viewIds: viewIds, grammar: grammar, mainDivSize: {width: mainDiv.offsetWidth, height: mainDiv.offsetHeight}}));
     }
 

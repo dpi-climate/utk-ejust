@@ -1,4 +1,4 @@
-import { IMasterGrammar, IPlotArgs, IView } from './interfaces';
+import { IMasterGrammar, IPlotArgs, IPlotGrammar } from './interfaces';
 import { PlotInteractionType, PlotArrangementType } from './constants';
 import {radians} from './utils';
 
@@ -25,10 +25,9 @@ class LockFlag {
   
 }
 
-// TODO: Generalize grammar manager to work with several components
-export class GrammarManager {
+export class EmbeddedPlotsManager {
 
-    protected _viewData: IView; // TODO: only one active view is currently supported
+    protected _plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar}[];
     protected _grammarSpec: string;
     protected _updateStatusCallback: any;
     protected _setGrammarUpdateCallback: any;
@@ -43,17 +42,21 @@ export class GrammarManager {
      * @param viewData 
      * @param setGrammarUpdateCallback Function that sets the callback that will be called in the frontend to update the grammar
      */
-    constructor(grammar: IMasterGrammar, updateStatusCallback: any, plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
-        for(const component of grammar['components']){
-            if("map" in component){
-                this._viewData = component;                
-            }
-        }
+    constructor(grammar: IMasterGrammar, plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar}[], updateStatusCallback: any, plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
+        // for(const component of grammar['components']){
+        //     if("map" in component){
+        //         this._viewData = component;                
+        //     }
+        // }
 
         this._updateStatusCallback = updateStatusCallback;
         this._setHighlightElementCallback = setHighlightElementCallback;
-        this._plotsReferences = new Array(this._viewData.plots.length);
+
+        this._plotsReferences = new Array(plots.length);
+
         this._needToUnHighlight = false;
+
+        this._plots = plots;
         
         this.updateGrammarPlotsData(plotsKnotsData);
     }
@@ -65,7 +68,6 @@ export class GrammarManager {
         let processedKnotData = this.proccessKnotData();
 
         this.attachPlots(processedKnotData);
-
     }
 
     proccessKnotData(){
@@ -104,8 +106,8 @@ export class GrammarManager {
         }
 
         // update plots data
-        for(let i = 0; i < this._viewData.plots.length; i++){
-            let elem = this._viewData.plots[i]
+        for(let i = 0; i < this._plots.length; i++){
+            let elem = this._plots[i].grammar;
 
             if(elem.plot.data != undefined){
                 for(const value of elem.plot.data.values){  
@@ -162,8 +164,8 @@ export class GrammarManager {
         }
 
         // update plots data
-        for(let i = 0; i < this._viewData.plots.length; i++){
-            let elem = this._viewData.plots[i]
+        for(let i = 0; i < this._plots.length; i++){
+            let elem = this._plots[i].grammar
 
             if(elem.plot.data != undefined){
                 for(const value of elem.plot.data.values){
@@ -240,12 +242,12 @@ export class GrammarManager {
         let linkedPlots = [];
         let names = [];
 
-        for(let i = 0; i < this._viewData.plots.length; i++){
-            if(this._viewData.plots[i].arrangement == PlotArrangementType.LINKED){
-                linkedPlots.push(this._viewData.plots[i]);
+        for(let i = 0; i < this._plots.length; i++){
+            if(this._plots[i].grammar.arrangement == PlotArrangementType.LINKED){
+                linkedPlots.push(this._plots[i].grammar);
                 
-                if(this._viewData.plots[i].name != undefined){
-                    names.push(this._viewData.plots[i].name);
+                if(this._plots[i].grammar.name != undefined){
+                    names.push(this._plots[i].grammar.name);
                 }else{
                     names.push('');
                 }
@@ -528,101 +530,109 @@ export class GrammarManager {
         }
 
         let bins: number = 0;
-        let selectedPlot: any;
+        let selectedPlot: IPlotGrammar | null = null;
 
-        for(let i = 0; i < this._viewData.plots.length; i++){ // TODO: support multiple embedded plots
-            if(this._viewData.plots[i].arrangement == PlotArrangementType.FOOT_EMBEDDED){
+        for(let i = 0; i < this._plots.length; i++){ // TODO: support multiple embedded plots
+            if(this._plots[i].grammar.arrangement == PlotArrangementType.FOOT_EMBEDDED){
 
-                if(this._viewData.plots[i].args != undefined){
-                    bins = <number>(<IPlotArgs>this._viewData.plots[i].args).bins;
+                if(this._plots[i].grammar.args != undefined){
+                    bins = <number>(<IPlotArgs>this._plots[i].grammar.args).bins;
                 }
 
-                selectedPlot = this._viewData.plots[i];
+                selectedPlot = this._plots[i].grammar;
             }
         }
 
-        let data_arr = JSON.parse(data); 
-
-        let vegaValues = [];
-
-        let binsDescription: number[];
-
-        if(bins == 0){
-            binsDescription = [0,360];
-        }else{
-            binsDescription = defineBins(bins);
-        }
-
-        for(let i = 0; i < data_arr.pointData.length; i++){
-            let point = data_arr.pointData[i];
-
-            let value: any = {};
-
-            value.x = point.pixelCoord[0];
-            value.y = point.pixelCoord[1];
-            value.bin = checkBin(binsDescription, radians(point.angle));
-            value.normalX = point.normal[0];
-            value.normalY = point.normal[1];
-
-            let abstractValues = this.getAbstractValues(point.functionIndex, selectedPlot.knots, this._plotsKnotsData);
-
-            let abstractValuesKeys = Object.keys(abstractValues);
-
-            for(const key of abstractValuesKeys){
-                value[key+"_abstract"] = abstractValues[key];
+        if(selectedPlot != null){
+            let data_arr = JSON.parse(data); 
+    
+            let vegaValues = [];
+    
+            let binsDescription: number[];
+    
+            if(bins == 0){
+                binsDescription = [0,360];
+            }else{
+                binsDescription = defineBins(bins);
             }
-
-            vegaValues.push(value);
+    
+            for(let i = 0; i < data_arr.pointData.length; i++){
+                let point = data_arr.pointData[i];
+    
+                let value: any = {};
+    
+                value.x = point.pixelCoord[0];
+                value.y = point.pixelCoord[1];
+                value.bin = checkBin(binsDescription, radians(point.angle));
+                value.normalX = point.normal[0];
+                value.normalY = point.normal[1];
+    
+                let abstractValues = this.getAbstractValues(point.functionIndex, selectedPlot.knots, this._plotsKnotsData);
+    
+                let abstractValuesKeys = Object.keys(abstractValues);
+    
+                for(const key of abstractValuesKeys){
+                    value[key+"_abstract"] = abstractValues[key];
+                }
+    
+                vegaValues.push(value);
+            }
+    
+            selectedPlot.plot.data = {"values": vegaValues};
+            selectedPlot.plot.width = plotWidth;
+            selectedPlot.plot.height = plotHeight;
+    
+            let image = await this.getHTMLFromVega(selectedPlot.plot);
+    
+            return image;
         }
 
-        selectedPlot.plot.data = {"values": vegaValues};
-        selectedPlot.plot.width = plotWidth;
-        selectedPlot.plot.height = plotHeight;
-
-        let image = await this.getHTMLFromVega(selectedPlot.plot);
-
-        return image;
-        
+        return null;
     }
 
     async getSurEmbeddedSvg(data: any, plotWidth: number, plotHeight: number){
-        let selectedPlot: any;
+        let selectedPlot: IPlotGrammar | null = null;
         
-        for(let i = 0; i < this._viewData.plots.length; i++){ // TODO: support multiple embedded plots
-            if(this._viewData.plots[i].arrangement == PlotArrangementType.SUR_EMBEDDED){
+        for(let i = 0; i < this._plots.length; i++){ // TODO: support multiple embedded plots
+            if(this._plots[i].grammar.arrangement == PlotArrangementType.SUR_EMBEDDED){
 
-                selectedPlot = this._viewData.plots[i];
+                selectedPlot = this._plots[i].grammar;
             }
         }
 
-        let data_arr = JSON.parse(data); 
+        if(selectedPlot != null){
+            let data_arr = JSON.parse(data); 
 
-        let vegaValues = [];
-
-        for(let i = 0; i < data_arr.length; i++){
-            let point = data_arr[i];
-
-            let value: any = {};
-
-            let abstractValues = this.getAbstractValues(point.functionIndex, selectedPlot.knots, this._plotsKnotsData);
-
-            let abstractValuesKeys = Object.keys(abstractValues);
-
-            for(const key of abstractValuesKeys){
-                value[key+"_abstract"] = abstractValues[key];
-                value[key+"_index"] = point.index;
+            let vegaValues = [];
+    
+            for(let i = 0; i < data_arr.length; i++){
+                let point = data_arr[i];
+    
+                let value: any = {};
+    
+                let abstractValues = this.getAbstractValues(point.functionIndex, selectedPlot.knots, this._plotsKnotsData);
+    
+                let abstractValuesKeys = Object.keys(abstractValues);
+    
+                for(const key of abstractValuesKeys){
+                    value[key+"_abstract"] = abstractValues[key];
+                    value[key+"_index"] = point.index;
+                }
+    
+                vegaValues.push(value);
             }
-
-            vegaValues.push(value);
+    
+            selectedPlot.plot.data = {"values": vegaValues};
+            selectedPlot.plot.width = plotWidth;
+            selectedPlot.plot.height = plotHeight;
+    
+            let image = await this.getHTMLFromVega(selectedPlot.plot);
+    
+            return image;
         }
 
-        selectedPlot.plot.data = {"values": vegaValues};
-        selectedPlot.plot.width = plotWidth;
-        selectedPlot.plot.height = plotHeight;
+        return null;
 
-        let image = await this.getHTMLFromVega(selectedPlot.plot);
-
-        return image;
     }
 
 }

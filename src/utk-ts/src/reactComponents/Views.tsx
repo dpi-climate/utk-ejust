@@ -29,6 +29,9 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize}: ViewProps
   const [layersIds, setLayersIds] = useState<any>({});
   let inputBarId = "searchBar";
 
+  console.log("viewObjs", viewObjs);
+  console.log("mapsWidgets", mapsWidgets);
+
   const nodeRef = useRef(null);
 
   const addNewMessage = (msg: string, color: string) => {
@@ -165,6 +168,9 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize}: ViewProps
 
   // Executes after component rendered
   useEffect(() => {
+
+    console.log("viewIds", viewIds);
+
     for(let i = 0; i < viewObjs.length; i++){
       let viewObj = viewObjs[i].obj;
       let viewId = viewIds[i];

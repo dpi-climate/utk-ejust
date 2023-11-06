@@ -32,11 +32,11 @@ export interface IMapGrammar {
 export interface IPlotGrammar {
     variables?: {name: string, value: string}[],
     name: string,
-    plot: Object,
-    arragement: string,
+    plot: any, // vega-lite spec
+    arrangement: string,
     knots: string[],
     interaction: string,
-    args?: {bins: number},
+    args?: IPlotArgs,
     grammar_type: GrammarType
 }
 
@@ -50,14 +50,6 @@ export interface IGrid{
     height: number // number of vertical cells
 }
 
-// export interface IView{
-//     map: {camera: ICameraData, knots: (string | IConditionBlock)[], interactions: (InteractionType | IConditionBlock)[], filterKnots?: (number | IConditionBlock)[], knotVisibility?: IKnotVisibility[]}, // The knots refers to the id of IKnot. These knots must finished in a physical layer in the object level 
-//     plots: {name?: string, plot: any, knots: (string | IConditionBlock)[], arrangement: PlotArrangementType | IConditionBlock, interaction?: PlotInteractionType | IConditionBlock, args?: IPlotArgs}[], // The knots refers to the id of IKnot. These knots can finish in any layer at any level
-//     knots: IKnot[],
-//     widgets?: IGenericWidget[],
-//     position: IComponentPosition
-// }
-
 // export interface IToggleKnotsWidget{
 //     toggle_knots_widget: {
 //         map_id: number,
@@ -67,7 +59,7 @@ export interface IGrid{
 
 export interface IGenericWidget{
     type: WidgetType,
-    args?: any
+    args?: {categories: ICategory[]}
 }
 
 // export interface IGenericWidget{
@@ -79,19 +71,19 @@ export interface IGenericWidget{
 //     position: IComponentPosition
 // }
 
-// export interface ICategory{
-//     category_name: string,
-//     elements: (string | ICategory)[]
-// }
+export interface ICategory{
+    category_name: string,
+    elements: (string | ICategory)[]
+}
 
 export interface IComponentPosition{
     width: number[],
     height: number[]
 }
 
-// export interface IPlotArgs{
-//     bins?: number | IConditionBlock
-// }
+export interface IPlotArgs{
+    bins?: number | IConditionBlock
+}
 
 export interface IKnot {
     id: string,

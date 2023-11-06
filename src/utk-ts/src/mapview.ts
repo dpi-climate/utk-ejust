@@ -18,7 +18,7 @@ import { LevelType } from './constants';
 import { ShaderPicking } from "./shader-picking";
 import { ShaderPickingTriangles } from "./shader-picking-triangles";
 
-import { GrammarManager } from "./grammar-manager";
+import { EmbeddedPlotsManager } from "./embedded-manager";
 import { KnotManager } from './knot-manager';
 import { Knot } from './knot';
 
@@ -35,7 +35,7 @@ class MapView {
     protected _knotManager: KnotManager;
 
     // Manages the view configuration loaded (including plots and its interactions)
-    protected _grammarManager: GrammarManager;
+    protected _embeddedPlotsManager: EmbeddedPlotsManager;
 
     protected _grammarInterpreter: any;
 
@@ -57,7 +57,7 @@ class MapView {
 
     public _viewId: number; // the view to which this map belongs
 
-    resetMap(mapDiv: HTMLElement, grammarInterpreter: any): void {
+    resetMap(grammarInterpreter: any): void {
 
         this._grammarInterpreter = grammarInterpreter;
 
@@ -106,8 +106,8 @@ class MapView {
         return this._knotManager;
     }
 
-    get grammarManager(): GrammarManager{
-        return this._grammarManager;
+    get embeddedPlotsManager(): EmbeddedPlotsManager{
+        return this._embeddedPlotsManager;
     }
 
     /**
@@ -196,7 +196,7 @@ class MapView {
 
         this._updateStatusCallback("layersIds", knotsGroups);
 
-        this.initGrammarManager(this._grammarInterpreter.getProcessedGrammar());
+        this.initEmbeddedPlotsManager(this._grammarInterpreter.getProcessedGrammar());
 
         if(this._grammarInterpreter.getFilterKnots(this._viewId) != undefined){
             this._layerManager.filterBbox = this._grammarInterpreter.getFilterKnots(this._viewId);
@@ -288,7 +288,7 @@ class MapView {
 
         let plotsKnotData = this.parsePlotsKnotData();
 
-        this._grammarManager.updateGrammarPlotsData(plotsKnotData);
+        this._embeddedPlotsManager.updateGrammarPlotsData(plotsKnotData);
 
     }
 
@@ -306,7 +306,7 @@ class MapView {
                 }
             }
             
-            this.grammarManager.setHighlightElementsLocally(elements, true, true);
+            this.embeddedPlotsManager.setHighlightElementsLocally(elements, true, true);
         }else{
             let knotsToClear: string[] = [];
 
@@ -318,13 +318,13 @@ class MapView {
                 }
             }
 
-            this.grammarManager.clearHighlightsLocally(knotsToClear);
+            this.embeddedPlotsManager.clearHighlightsLocally(knotsToClear);
         }
 
     }
 
-    initGrammarManager(grammar: IMasterGrammar){
-        this._grammarManager = new GrammarManager(grammar, this._updateStatusCallback, this.parsePlotsKnotData(), {"function": this.setHighlightElement, "arg": this});
+    initEmbeddedPlotsManager(grammar: IMasterGrammar){
+        this._embeddedPlotsManager = new EmbeddedPlotsManager(grammar, this._grammarInterpreter.getPlots(this._viewId), this._updateStatusCallback, this.parsePlotsKnotData(), {"function": this.setHighlightElement, "arg": this});
     }
 
     //TODO: not sure if mapview should contain this logic
@@ -605,15 +605,12 @@ export var MapViewFactory = (function(){
     var instance: MapView;
   
     return {
-      getInstance: function(mapDiv: HTMLElement | null = null, grammarInterpreter: any | null = null){
+      getInstance: function(grammarInterpreter: any){
           if (instance == null) {
               instance = new MapView();
           }
 
-          if(mapDiv != null && grammarInterpreter != null){
-              instance.resetMap(mapDiv, grammarInterpreter);
-          }
-
+          instance.resetMap(grammarInterpreter);
           return instance;
       }
     };

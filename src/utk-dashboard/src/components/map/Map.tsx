@@ -22,8 +22,11 @@ const Map = ({ time, setTime } : MapProps) => {
       const url = `${Environment.backend}/getGrammar`;
       const grammar = await DataLoader.getJsonData(url) as IMasterGrammar;
 
-      const currentTime = parseInt(grammar.variables[0].value);
-      if(currentTime>0 && currentTime<11) setTime(currentTime);
+      if(grammar.variables != undefined){
+        const currentTime = parseInt(grammar.variables[0].value);
+        if(currentTime>0 && currentTime<11) setTime(currentTime);
+      }
+      
       const mainDiv = document.querySelector('#spatial-div') as HTMLElement;
 
       const setTimeFunction = setTime;
