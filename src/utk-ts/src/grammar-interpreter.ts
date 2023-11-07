@@ -355,7 +355,7 @@ class GrammarInterpreter {
 
     // If mapId is specified get all the plots that are embedded in that map
     public getPlots(mapId: number | null = null) {
-        let plots = [];
+        let plots: any[] = [];
         let map_component: any = null;
         let currentMapId = 0;
 
@@ -373,8 +373,8 @@ class GrammarInterpreter {
             }
         }
 
-        if(mapId != null && map_component != null){
-            plots = plots.filter((plot) => plot.id == map_component.plot.id); // TODO: give support to more than one embedded plots per map
+        if(mapId != null && map_component != null && map_component.grammar.plot != undefined){
+            plots = plots.filter((plot) => {console.log(plot); plot.id == map_component.plot.id}); // TODO: give support to more than one embedded plots per map
         }
 
         return plots;
@@ -574,9 +574,13 @@ class GrammarInterpreter {
 
         let viewIds: string[] = [];
 
-        for(let i = 0; i < this._maps_widgets.length; i++){
-            viewIds.push(this._maps_widgets[i].type+i);
+        for(let i = 0; i < this._components.length; i++){
+            viewIds.push(this._components[i].type+i);
         }
+
+        // for(let i = 0; i < this._maps_widgets.length; i++){
+        //     viewIds.push(this._maps_widgets[i].type+i);
+        // }
 
         this._root.render(React.createElement(Views, {viewObjs: this._components, mapsWidgets: this._maps_widgets, viewIds: viewIds, grammar: grammar, mainDivSize: {width: mainDiv.offsetWidth, height: mainDiv.offsetHeight}}));
     }

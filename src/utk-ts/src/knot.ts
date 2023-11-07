@@ -173,6 +173,7 @@ export class Knot {
         }
 
         this._physicalLayer.updateShaders(this._shaders); // send mesh data to the shaders
+
         this._physicalLayer.updateFunction(this._knotSpecification, this._shaders);
     }
 

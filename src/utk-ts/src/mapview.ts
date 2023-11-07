@@ -156,15 +156,15 @@ class MapView {
         this.resize();
 
         await this.initLayers();
-
+        
         this.initKnots();
 
         let knotsGroups: any = {};
 
         for(const knot of this._knotManager.knots){
-
+            
             let knotSpecification = knot.knotSpecification;
-
+            
             if(knotSpecification.group != undefined){
                 if(!(knotSpecification.group.group_name in knotsGroups)){
                     knotsGroups[knotSpecification.group.group_name] = [{
@@ -180,7 +180,7 @@ class MapView {
             }else{
                 knotsGroups[knot.id] = [knot.id]; // group of single knot
             }
-
+            
         }
 
         for(const group of Object.keys(knotsGroups)){
@@ -193,18 +193,21 @@ class MapView {
                 knotsGroups[group] = ids;
             }
         }
-
+        
         this._updateStatusCallback("layersIds", knotsGroups);
+
+        // ========
 
         this.initEmbeddedPlotsManager(this._grammarInterpreter.getProcessedGrammar());
 
-        if(this._grammarInterpreter.getFilterKnots(this._viewId) != undefined){
-            this._layerManager.filterBbox = this._grammarInterpreter.getFilterKnots(this._viewId);
-        }else{
-            this._layerManager.filterBbox = [];
-        }
-    
-        this.render();
+        // remove comment
+        // if(this._grammarInterpreter.getFilterKnots(this._viewId) != undefined){
+        //     this._layerManager.filterBbox = this._grammarInterpreter.getFilterKnots(this._viewId);
+        // }else{
+        //     this._layerManager.filterBbox = [];
+        // }
+
+        // this.render();
     }
 
     parsePlotsKnotData(){
@@ -453,7 +456,9 @@ class MapView {
             let layer = this._layerManager.searchByLayerId(layerId);
 
             let knot = this._knotManager.createKnot(knotGrammar.id, <Layer>layer, knotGrammar, this._grammarInterpreter, knotsMap.includes(knotGrammar.id), this);
+            
             knot.processThematicData(this._layerManager); // send thematic data to the mesh of the physical layer TODO: put this inside the constructor of Knot
+            
             knot.loadShaders(this._glContext); // instantiate the shaders inside the knot TODO: put this inside the constructor of Knot
         }
     }

@@ -175,10 +175,11 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
         let tempFunction = mesh.getFunctionVBO(knot.id);
 
         for(let j = 0; j < tempFunction.length; j++){
+
             if (this._domain.length === 0) {
-                this._domain = d3.extent(this._function[j])
+                this._domain = d3.extent(tempFunction[j])
             }
-    
+            
             // @ts-ignore
             let scale = d3_scale[this._scale]().domain(this._domain).range(this._range);
 

@@ -29,9 +29,6 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize}: ViewProps
   const [layersIds, setLayersIds] = useState<any>({});
   let inputBarId = "searchBar";
 
-  console.log("viewObjs", viewObjs);
-  console.log("mapsWidgets", mapsWidgets);
-
   const nodeRef = useRef(null);
 
   const addNewMessage = (msg: string, color: string) => {
@@ -169,8 +166,6 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize}: ViewProps
   // Executes after component rendered
   useEffect(() => {
 
-    console.log("viewIds", viewIds);
-
     for(let i = 0; i < viewObjs.length; i++){
       let viewObj = viewObjs[i].obj;
       let viewId = viewIds[i];
@@ -195,13 +190,13 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize}: ViewProps
 
   return (
     <React.Fragment>
-      <div style={{backgroundColor: "#EAEAEA", height: "100%", width: "100%"}}>
+      <div style={{backgroundColor: "#EAEAEA", height: "100%", width: "100%", position: "relative"}}>
         {
           viewObjs.map((component, index) => {
             if (component.type == ComponentIdentifier.MAP) {
-              return <React.Fragment key={viewIds[index]}>
+              return <React.Fragment key={component.type+index}>
                 {/* <div className='component' style={{padding: 0, position: "absolute", left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}> */}
-                <div className='component' style={{padding: 0, left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}>
+                <div className='component' style={{padding: 0, position: "absolute", left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}>
                   <MapRendererContainer
                     obj = {component.obj}
                     viewId={viewIds[index]}
@@ -220,7 +215,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize}: ViewProps
               </React.Fragment>
             } else if(component.type == ComponentIdentifier.GRAMMAR) {
               // return <></>
-              return <React.Fragment key={viewIds[index]}>
+              return <React.Fragment key={component.type+index}>
                 <div className='component' style={{position: "absolute", left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}>
                   <GrammarPanelContainer 
                     obj = {component.obj}
