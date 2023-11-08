@@ -196,18 +196,15 @@ class MapView {
         
         this._updateStatusCallback("layersIds", knotsGroups);
 
-        // ========
-
         this.initEmbeddedPlotsManager(this._grammarInterpreter.getProcessedGrammar());
 
-        // remove comment
-        // if(this._grammarInterpreter.getFilterKnots(this._viewId) != undefined){
-        //     this._layerManager.filterBbox = this._grammarInterpreter.getFilterKnots(this._viewId);
-        // }else{
-        //     this._layerManager.filterBbox = [];
-        // }
+        if(this._grammarInterpreter.getFilterKnots(this._viewId) != undefined){
+            this._layerManager.filterBbox = this._grammarInterpreter.getFilterKnots(this._viewId);
+        }else{
+            this._layerManager.filterBbox = [];
+        }
 
-        // this.render();
+        this.render();
     }
 
     parsePlotsKnotData(){
@@ -215,7 +212,7 @@ class MapView {
         let plotsKnots: string[] = [];
 
         for(const plotAttributes of this._grammarInterpreter.getPlots(this._viewId)){
-            for(const knotId of plotAttributes.knots){
+            for(const knotId of plotAttributes.grammar.knots){
                 if(!plotsKnots.includes(knotId)){
                     plotsKnots.push(knotId);
                 }

@@ -340,7 +340,7 @@ export class Knot {
         let plotsGrammar = this._grammarInterpreter.getPlots();
         let plotArrangements = [];
 
-        for(const plot of plotsGrammar){
+        for(const plot of plotsGrammar.grammar){
             if(plot.knots.includes(this._id)){
                 plotArrangements.push(plot.arrangement);
             }

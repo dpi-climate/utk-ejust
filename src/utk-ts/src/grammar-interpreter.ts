@@ -354,14 +354,14 @@ class GrammarInterpreter {
     }
 
     // If mapId is specified get all the plots that are embedded in that map
-    public getPlots(mapId: number | null = null) {
-        let plots: any[] = [];
+    public getPlots(mapId: number | null = null) : {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar}[] {
+        let plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar}[] = [];
         let map_component: any = null;
         let currentMapId = 0;
 
         for(const component of this._components_grammar){
             if(component.grammar != undefined && component.grammar.grammar_type == GrammarType.PLOT){
-                plots.push(component);
+                plots.push(<{id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar}>component);
             }
 
             if(component.grammar != undefined && mapId != null && component.grammar.grammar_type == GrammarType.MAP){
@@ -374,7 +374,7 @@ class GrammarInterpreter {
         }
 
         if(mapId != null && map_component != null && map_component.grammar.plot != undefined){
-            plots = plots.filter((plot) => {console.log(plot); plot.id == map_component.plot.id}); // TODO: give support to more than one embedded plots per map
+            plots = plots.filter((plot) => {plot.id == map_component.plot.id}); // TODO: give support to more than one embedded plots per map
         }
 
         return plots;
