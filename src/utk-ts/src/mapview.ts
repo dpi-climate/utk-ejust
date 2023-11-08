@@ -18,7 +18,7 @@ import { LevelType, PlotArrangementType } from './constants';
 import { ShaderPicking } from "./shader-picking";
 import { ShaderPickingTriangles } from "./shader-picking-triangles";
 
-import { EmbeddedPlotsManager } from "./embedded-manager";
+import { PlotManager } from "./plot-manager";
 import { KnotManager } from './knot-manager';
 import { Knot } from './knot';
 
@@ -30,12 +30,11 @@ class MapView {
     // WebGL context of the canvas
     public _glContext: WebGL2RenderingContext;
 
-    // Layer manager object
     protected _layerManager: LayerManager;
     protected _knotManager: KnotManager;
 
     // Manages the view configuration loaded (including plots and its interactions)
-    protected _embeddedPlotsManager: EmbeddedPlotsManager;
+    protected _plotManager: PlotManager; // plot manager for local embedded plots
 
     protected _grammarInterpreter: any;
 
@@ -57,10 +56,18 @@ class MapView {
 
     public _viewId: number; // the view to which this map belongs
 
-    resetMap(grammarInterpreter: any): void {
-
+    resetMap(grammarInterpreter: any, layerManager: LayerManager, knotManager: KnotManager): void {
         this._grammarInterpreter = grammarInterpreter;
+        this._layerManager = layerManager;
+        this._knotManager = knotManager;
+    }
 
+    get layerManager(): LayerManager {
+        return this._layerManager;
+    }
+
+    get knotManager(): KnotManager{
+        return this._knotManager;
     }
 
     get mouse(): any{
@@ -95,19 +102,8 @@ class MapView {
         return this._camera;
     }
 
-    /**
-     * gets the layers
-     */
-    get layerManager(): LayerManager {
-        return this._layerManager;
-    }
-
-    get knotManager(): KnotManager{
-        return this._knotManager;
-    }
-
-    get embeddedPlotsManager(): EmbeddedPlotsManager{
-        return this._embeddedPlotsManager;
+    get plotManager(): PlotManager{
+        return this._plotManager;
     }
 
     /**
@@ -133,9 +129,6 @@ class MapView {
         this._viewId = 0; // TODO: should change depending on in what view the map is
 
         this._updateStatusCallback = updateStatusCallback;
-
-        this._layerManager = new LayerManager(this._updateStatusCallback, this);
-        this._knotManager = new KnotManager(this._updateStatusCallback);
 
         if(this._knotVisibilityMonitor){
             clearInterval(this._knotVisibilityMonitor);
@@ -196,7 +189,7 @@ class MapView {
         
         this._updateStatusCallback("layersIds", knotsGroups);
 
-        this.initEmbeddedPlotsManager(this._grammarInterpreter.getProcessedGrammar());
+        this.initPlotManager();
 
         if(this._grammarInterpreter.getFilterKnots(this._viewId) != undefined){
             this._layerManager.filterBbox = this._grammarInterpreter.getFilterKnots(this._viewId);
@@ -207,92 +200,11 @@ class MapView {
         this.render();
     }
 
-    parsePlotsKnotData(){
-
-        let plotsKnots: string[] = [];
-
-        for(const plotAttributes of this._grammarInterpreter.getPlots(this._viewId)){
-            if(plotAttributes.grammar.arrangement == PlotArrangementType.LINKED){
-                alert("A plot with Linked arrangement cannot be used in a map");
-            }else{
-                for(const knotId of plotAttributes.grammar.knots){
-                    if(!plotsKnots.includes(knotId)){
-                        plotsKnots.push(knotId);
-                    }
-                }
-            }
-        }
-
-        let plotsKnotData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[] = [];
-
-        for(const knotId of plotsKnots){
-            for(const knot of this._grammarInterpreter.getKnots()){
-                if(knotId == knot.id){
-
-                    let lastLink = this._grammarInterpreter.getKnotLastLink(knot);
-
-                    let left_layer = this._layerManager.searchByLayerId(this._grammarInterpreter.getKnotOutputLayer(knot));
-
-                    // let left_layer = this._layerManager.searchByLayerId(lastLink.out.name);
-
-                    if(left_layer == null){
-                        throw Error("Layer not found while processing knot");
-                    }
-
-                    let elements = [];
-
-                    if(lastLink.out.level == undefined){ // this is a pure knot
-                        continue;
-                    }
-
-                    let coordinates = left_layer.getCoordsByLevel(lastLink.out.level);
-
-                    let functionValues = left_layer.getFunctionByLevel(lastLink.out.level, knotId);
-
-                    let knotStructure = this._knotManager.getKnotById(knotId);
-
-                    let highlighted = left_layer.getHighlightsByLevel(lastLink.out.level, (<Knot>knotStructure).shaders);
-
-                    let readCoords = 0;
-
-                    let filtered = left_layer.mesh.filtered;
-
-                    for(let i = 0; i < coordinates.length; i++){
-
-                        // if(elements.length >= 1000){ // preventing plot from having too many elements TODO: let the user know that plot is cropped
-                        //     break;
-                        // }
-
-                        if(filtered.length == 0 || filtered[readCoords] == 1){
-                            elements.push({
-                                coordinates: coordinates[i],
-                                abstract: functionValues[i][0],
-                                highlighted: highlighted[i],
-                                index: i
-                            });
-                        }
-
-                        readCoords += coordinates[i].length/left_layer.mesh.dimension;
-                    }
-
-                    let knotData = {
-                        knotId: knotId,
-                        elements: elements
-                    }
-
-                    plotsKnotData.push(knotData);
-                }
-            }
-        }   
-
-        return plotsKnotData;
-    }
-
     updateGrammarPlotsData(){
 
-        let plotsKnotData = this.parsePlotsKnotData();
+        let plotsKnotData = this._grammarInterpreter.parsePlotsKnotData(this._viewId); // only parse plots knot data that belongs to this mapview
 
-        this._embeddedPlotsManager.updateGrammarPlotsData(plotsKnotData);
+        this._plotManager.updateGrammarPlotsData(plotsKnotData);
 
     }
 
@@ -310,7 +222,7 @@ class MapView {
                 }
             }
             
-            this.embeddedPlotsManager.setHighlightElementsLocally(elements, true, true);
+            this.plotManager.setHighlightElementsLocally(elements, true, true);
         }else{
             let knotsToClear: string[] = [];
 
@@ -322,13 +234,14 @@ class MapView {
                 }
             }
 
-            this.embeddedPlotsManager.clearHighlightsLocally(knotsToClear);
+            this.plotManager.clearHighlightsLocally(knotsToClear);
         }
 
     }
 
-    initEmbeddedPlotsManager(grammar: IMasterGrammar){
-        this._embeddedPlotsManager = new EmbeddedPlotsManager(grammar, this._grammarInterpreter.getPlots(this._viewId), this._updateStatusCallback, this.parsePlotsKnotData(), {"function": this.setHighlightElement, "arg": this});
+    initPlotManager(){
+        this._plotManager = new PlotManager(this._grammarInterpreter.getPlots(this._viewId), this._grammarInterpreter.parsePlotsKnotData(this._viewId), {"function": this.setHighlightElement, "arg": this});
+        this._plotManager.init(this._updateStatusCallback);
     }
 
     //TODO: not sure if mapview should contain this logic
@@ -611,12 +524,12 @@ export var MapViewFactory = (function(){
     var instance: MapView;
   
     return {
-      getInstance: function(grammarInterpreter: any){
+      getInstance: function(grammarInterpreter: any, layerManager: any, knotManager: any){
           if (instance == null) {
               instance = new MapView();
           }
 
-          instance.resetMap(grammarInterpreter);
+          instance.resetMap(grammarInterpreter, layerManager, knotManager);
           return instance;
       }
     };

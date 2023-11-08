@@ -25,7 +25,7 @@ class LockFlag {
   
 }
 
-export class EmbeddedPlotsManager {
+export class PlotManager {
 
     protected _plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar}[];
     protected _grammarSpec: string;
@@ -42,23 +42,18 @@ export class EmbeddedPlotsManager {
      * @param viewData 
      * @param setGrammarUpdateCallback Function that sets the callback that will be called in the frontend to update the grammar
      */
-    constructor(grammar: IMasterGrammar, plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar}[], updateStatusCallback: any, plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
-        // for(const component of grammar['components']){
-        //     if("map" in component){
-        //         this._viewData = component;                
-        //     }
-        // }
+    constructor(plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar}[], plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
 
-        this._updateStatusCallback = updateStatusCallback;
         this._setHighlightElementCallback = setHighlightElementCallback;
-
         this._plotsReferences = new Array(plots.length);
-
         this._needToUnHighlight = false;
-
         this._plots = plots;
-        
-        this.updateGrammarPlotsData(plotsKnotsData);
+        this._plotsKnotsData = plotsKnotsData;
+    }
+
+    public init(updateStatusCallback: any){
+        this._updateStatusCallback = updateStatusCallback;
+        this.updateGrammarPlotsData(this._plotsKnotsData);
     }
 
     async updateGrammarPlotsData(plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[]){

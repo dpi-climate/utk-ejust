@@ -21,6 +21,9 @@ import schema_plots from './json-schema-plots.json';
 
 // const Ajv = require("ajv");
 import Ajv2019 from "ajv/dist/2019" // https://github.com/ajv-validator/ajv/issues/1462
+import { LayerManager } from './layer-manager';
+import { KnotManager } from './knot-manager';
+import { PlotManager } from './plot-manager';
 
 class GrammarInterpreter {
 
@@ -30,6 +33,9 @@ class GrammarInterpreter {
     protected _components: {type: ComponentIdentifier, obj: any, position: IComponentPosition}[] = [];
     protected _maps_widgets: {type: WidgetType, obj: any, grammarDefinition: IGenericWidget | undefined}[] = [];
     protected _frontEndCallback: any;
+    protected _layerManager: LayerManager;
+    protected _knotManager: KnotManager;
+    protected _plotManager: PlotManager; // plot manager for all plots not attached to maps
     protected _mainDiv: HTMLElement;
     protected _url: string;
     protected _root: Root;
@@ -39,7 +45,18 @@ class GrammarInterpreter {
 
     protected _cameraUpdateCallback: any;
 
+    get layerManager(): LayerManager {
+        return this._layerManager;
+    }
+
+    get knotManager(): KnotManager{
+        return this._knotManager;
+    }
+
     resetGrammarInterpreter(grammar: IMasterGrammar, mainDiv: HTMLElement) {
+
+        this._layerManager = new LayerManager(this);
+        this._knotManager = new KnotManager();
 
         this._ajv = new Ajv2019({schemas: [schema, schema_categories]});
         this._ajv_map = new Ajv2019({schemas: [schema_map]});
@@ -71,16 +88,16 @@ class GrammarInterpreter {
 
             if(component.grammar != undefined && comp_position != undefined){
                 if(component.grammar.grammar_type == "MAP"){
-                    this._components.push({type: ComponentIdentifier.MAP, obj: MapViewFactory.getInstance(this), position: comp_position});
+                    this._components.push({type: ComponentIdentifier.MAP, obj: MapViewFactory.getInstance(this, this.layerManager, this.knotManager), position: comp_position});
                     if((<IMapGrammar>component.grammar).widgets != undefined){
                         for(const widget of <IGenericWidget[]>(<IMapGrammar>component.grammar).widgets){
                             if(widget.type == WidgetType.TOGGLE_KNOT){
-                                this._maps_widgets.push({type: WidgetType.TOGGLE_KNOT, obj: MapViewFactory.getInstance(this), grammarDefinition: widget});
+                                this._maps_widgets.push({type: WidgetType.TOGGLE_KNOT, obj: MapViewFactory.getInstance(this, this.layerManager, this.knotManager), grammarDefinition: widget});
                             }else if(widget.type == WidgetType.SEARCH){
-                                this._maps_widgets.push({type: WidgetType.SEARCH, obj: MapViewFactory.getInstance(this), grammarDefinition: widget});
+                                this._maps_widgets.push({type: WidgetType.SEARCH, obj: MapViewFactory.getInstance(this, this.layerManager, this.knotManager), grammarDefinition: widget});
                             }
                             else if(widget.type == WidgetType.HIDE_GRAMMAR){
-                                this._maps_widgets.push({type: WidgetType.HIDE_GRAMMAR, obj: MapViewFactory.getInstance(this), grammarDefinition: widget});
+                                this._maps_widgets.push({type: WidgetType.HIDE_GRAMMAR, obj: MapViewFactory.getInstance(this, this.layerManager, this.knotManager), grammarDefinition: widget});
                             }
                         }
                     }
@@ -373,8 +390,12 @@ class GrammarInterpreter {
             }
         }
 
-        if(mapId != null && map_component != null && map_component.grammar.plot != undefined){
-            plots = plots.filter((plot) => {plot.id == map_component.plot.id}); // TODO: give support to more than one embedded plots per map
+        if(mapId != null && map_component != null){
+            if(map_component.grammar.plot != undefined){
+                plots = plots.filter((plot) => {return plot.id == map_component.grammar.plot.id}); // TODO: give support to more than one embedded plots per map
+            }else{
+                plots = [];
+            }
         }
 
         return plots;
@@ -419,7 +440,7 @@ class GrammarInterpreter {
                     if((<IMapGrammar>component.grammar).knotVisibility == undefined)
                         return true;
             
-                    let map: any = MapViewFactory.getInstance(this); // TODO: suppor the use of multiple maps
+                    let map: any = MapViewFactory.getInstance(this, this.layerManager, this.knotManager); // TODO: suppor the use of multiple maps
             
                     let zoom = map.camera.getZoomLevel();
                     let timeElapsed = Date.now() - this._lastValidationTimestep;
@@ -470,7 +491,7 @@ class GrammarInterpreter {
                     if((<IMapGrammar>component.grammar).knotVisibility == undefined)
                         return knot.visible;
         
-                    let map: any = MapViewFactory.getInstance(this); // TODO: suppor the use of multiple maps
+                    let map: any = MapViewFactory.getInstance(this, this.layerManager, this.knotManager); // TODO: suppor the use of multiple maps
             
                     let zoom = map.camera.getZoomLevel();
                     let timeElapsed = Date.now() - this._lastValidationTimestep;
@@ -545,6 +566,87 @@ class GrammarInterpreter {
         }
     }
 
+    public parsePlotsKnotData(viewId: number | null = null){
+
+        let plotsKnots: string[] = [];
+
+        let plots = (viewId != null) ? this.getPlots(viewId) : this.getPlots();
+
+        for(const plotAttributes of plots){
+            if(plotAttributes.grammar.arrangement == PlotArrangementType.LINKED && viewId != null){
+                alert("A plot with Linked arrangement cannot be used in a map");
+            }else{
+                for(const knotId of plotAttributes.grammar.knots){
+                    if(!plotsKnots.includes(knotId)){
+                        plotsKnots.push(knotId);
+                    }
+                }
+            }
+        }
+
+        let plotsKnotData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[] = [];
+
+        for(const knotId of plotsKnots){
+            for(const knot of this.getKnots()){
+                if(knotId == knot.id){
+
+                    let lastLink = this.getKnotLastLink(knot);
+
+                    let left_layer = this._layerManager.searchByLayerId(this.getKnotOutputLayer(knot));
+
+                    if(left_layer == null){
+                        throw Error("Layer not found while processing knot");
+                    }
+
+                    let elements = [];
+
+                    if(lastLink.out.level == undefined){ // this is a pure knot
+                        continue;
+                    }
+
+                    let coordinates = left_layer.getCoordsByLevel(lastLink.out.level);
+
+                    let functionValues = left_layer.getFunctionByLevel(lastLink.out.level, knotId);
+
+                    let knotStructure = this._knotManager.getKnotById(knotId);
+
+                    let highlighted = left_layer.getHighlightsByLevel(lastLink.out.level, (<Knot>knotStructure).shaders);
+
+                    let readCoords = 0;
+
+                    let filtered = left_layer.mesh.filtered;
+
+                    for(let i = 0; i < coordinates.length; i++){
+
+                        // if(elements.length >= 1000){ // preventing plot from having too many elements TODO: let the user know that plot is cropped
+                        //     break;
+                        // }
+
+                        if(filtered.length == 0 || filtered[readCoords] == 1){
+                            elements.push({
+                                coordinates: coordinates[i],
+                                abstract: functionValues[i][0],
+                                highlighted: highlighted[i],
+                                index: i
+                            });
+                        }
+
+                        readCoords += coordinates[i].length/left_layer.mesh.dimension;
+                    }
+
+                    let knotData = {
+                        knotId: knotId,
+                        elements: elements
+                    }
+
+                    plotsKnotData.push(knotData);
+                }
+            }
+        }   
+
+        return plotsKnotData;
+    }
+
     // /**
     //  * The callback is called everytime some data that can impact the front end changes
     //  */
@@ -582,7 +684,11 @@ class GrammarInterpreter {
         //     viewIds.push(this._maps_widgets[i].type+i);
         // }
 
-        this._root.render(React.createElement(Views, {viewObjs: this._components, mapsWidgets: this._maps_widgets, viewIds: viewIds, grammar: grammar, mainDivSize: {width: mainDiv.offsetWidth, height: mainDiv.offsetHeight}}));
+        let plotsKnotData = this.parsePlotsKnotData(); // parse all plots knots
+
+        this._plotManager = new PlotManager(this.getPlots(), plotsKnotData, {"function": (param1: any, param2: any, param3: any, param4: any) => {}, "arg": this}); // change function to program highlight callback
+
+        this._root.render(React.createElement(Views, {viewObjs: this._components, mapsWidgets: this._maps_widgets, viewIds: viewIds, grammar: grammar, mainDivSize: {width: mainDiv.offsetWidth, height: mainDiv.offsetHeight}, layerManager: this.layerManager, knotManager: this.knotManager, plotManager: this._plotManager}));
     }
 
 }

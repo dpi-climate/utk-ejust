@@ -7,6 +7,9 @@ import './Dragbox.css'
 import * as d3 from "d3";
 import { IComponentPosition, IGenericWidget, IMasterGrammar, } from '../interfaces';
 import './View.css';
+import { LayerManager } from '../layer-manager';
+import { KnotManager } from '../knot-manager';
+import { PlotManager } from '../plot-manager';
 
 // declaring the types of the props
 type ViewProps = {
@@ -14,11 +17,14 @@ type ViewProps = {
   mapsWidgets: {type: WidgetType, obj: any, grammarDefinition: IGenericWidget | undefined}[] // each view has a an object representing its logic
   viewIds: string[]
   grammar: IMasterGrammar
-  mainDivSize: {width: number, height: number}
+  mainDivSize: {width: number, height: number},
+  layerManager: LayerManager,
+  knotManager: KnotManager,
+  plotManager: PlotManager
 }
 
 // Render components
-function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize}: ViewProps) {
+function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, layerManager, knotManager, plotManager}: ViewProps) {
 
   const [camera, setCamera] = useState<{position: number[], direction: {right: number[], lookAt: number[], up: number[]}}>({position: [], direction: {right: [], lookAt: [], up: []}}); // TODO: if we have multiple map instances we have multiple cameras
   const [filterKnots, setFilterKnots] = useState<number[]>([]);
@@ -172,6 +178,10 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize}: ViewProps
 
       viewObj.init(viewId, updateStatus);
     }
+
+    layerManager.init(updateStatus);
+    knotManager.init(updateStatus);
+    plotManager.init(updateStatus);
   }, []);
 
   useEffect(() => {

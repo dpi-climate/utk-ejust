@@ -15,11 +15,14 @@ export class LayerManager {
     protected _layers: Layer[] = [];
     protected _filterBbox: number[] = []; // minx, miny, maxx, maxy
     protected _updateStatusCallback: any;
-    protected _map: any;
+    protected _grammarInterpreter: any;
 
-    constructor(updateStatusCallback: any | null = null, map: any) {
+    constructor(grammarInterpreter: any) {
+        this._grammarInterpreter = grammarInterpreter;
+    }
+
+    public init(updateStatusCallback: any | null = null){
         this._updateStatusCallback = updateStatusCallback;
-        this._map = map;
     }
 
     /**
@@ -36,7 +39,7 @@ export class LayerManager {
 
         this._filterBbox = bbox;
 
-        for(const knot of this._map.knotManager.knots){
+        for(const knot of this._grammarInterpreter.knotManager.knots){
             knot.physicalLayer.mesh.setFiltered(bbox);
             for(const shader of knot.shaders){
                 shader.setFiltered(knot.physicalLayer.mesh.filtered);

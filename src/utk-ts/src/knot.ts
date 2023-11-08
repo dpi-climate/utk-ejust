@@ -455,13 +455,13 @@ export class Knot {
             if(this._physicalLayer instanceof BuildingsLayer){ // TODO: generalize this
                 this._physicalLayer.createFootprintPlot(this._map.glContext, cursorPosition[0], cursorPosition[1], true, this._shaders);
                 this._map.render(); // TODO: get rid of the need to render the map
-                await this._physicalLayer.updateFootprintPlot(this._map.glContext, this._map.embeddedPlotsManager, -1, eventObject.deltaY * 0.02, 'vega', this._shaders);
+                await this._physicalLayer.updateFootprintPlot(this._map.glContext, this._map.plotManager, -1, eventObject.deltaY * 0.02, 'vega', this._shaders);
             }
         }
 
         if(eventName == "enter" && highlightCellInteraction && embedSurfaceInteraction){
             if(this._physicalLayer instanceof BuildingsLayer){ // TODO: generalize this
-                await this._physicalLayer.applyTexSelectedCells(this._map.glContext, this._map.embeddedPlotsManager, 'vega', this._shaders);
+                await this._physicalLayer.applyTexSelectedCells(this._map.glContext, this._map.plotManager, 'vega', this._shaders);
             }
         }
 
@@ -496,7 +496,7 @@ export class Knot {
                 if(this._physicalLayer instanceof BuildingsLayer){
                     this._physicalLayer.createFootprintPlot(this._map.glContext, cursorPosition[0], cursorPosition[1], false, this._shaders);
                     this._map.render();
-                    let buildingId = await this._physicalLayer.applyFootprintPlot(this._map.glContext, this._map.embeddedPlotsManager, 1, 'vega', this._shaders);
+                    let buildingId = await this._physicalLayer.applyFootprintPlot(this._map.glContext, this._map.plotManager, 1, 'vega', this._shaders);
                     elementsIndex.push(buildingId);
                 }
                 this._map.render();

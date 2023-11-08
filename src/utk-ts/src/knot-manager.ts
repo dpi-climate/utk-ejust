@@ -7,8 +7,7 @@ export class KnotManager {
     protected _knots: Knot[] = [];
     protected _updateStatusCallback: any;
 
-
-    constructor(updateStatusCallback: any) {
+    public init(updateStatusCallback: any){
         this._updateStatusCallback = updateStatusCallback;
     }
 
