@@ -13,7 +13,7 @@ import { LayerManager } from './layer-manager';
 
 import { ICameraData, ILayerData, IMasterGrammar } from './interfaces';
 
-import { LevelType } from './constants';
+import { LevelType, PlotArrangementType } from './constants';
 
 import { ShaderPicking } from "./shader-picking";
 import { ShaderPickingTriangles } from "./shader-picking-triangles";
@@ -212,9 +212,13 @@ class MapView {
         let plotsKnots: string[] = [];
 
         for(const plotAttributes of this._grammarInterpreter.getPlots(this._viewId)){
-            for(const knotId of plotAttributes.grammar.knots){
-                if(!plotsKnots.includes(knotId)){
-                    plotsKnots.push(knotId);
+            if(plotAttributes.grammar.arrangement == PlotArrangementType.LINKED){
+                alert("A plot with Linked arrangement cannot be used in a map");
+            }else{
+                for(const knotId of plotAttributes.grammar.knots){
+                    if(!plotsKnots.includes(knotId)){
+                        plotsKnots.push(knotId);
+                    }
                 }
             }
         }

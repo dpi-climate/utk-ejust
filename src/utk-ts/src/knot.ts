@@ -340,9 +340,9 @@ export class Knot {
         let plotsGrammar = this._grammarInterpreter.getPlots();
         let plotArrangements = [];
 
-        for(const plot of plotsGrammar.grammar){
-            if(plot.knots.includes(this._id)){
-                plotArrangements.push(plot.arrangement);
+        for(const plot of plotsGrammar){
+            if(plot.grammar.knots.includes(this._id)){
+                plotArrangements.push(plot.grammar.arrangement);
             }
         }
 
@@ -459,7 +459,7 @@ export class Knot {
             }
         }
 
-        if(eventName == "Enter" && highlightCellInteraction && embedSurfaceInteraction){
+        if(eventName == "enter" && highlightCellInteraction && embedSurfaceInteraction){
             if(this._physicalLayer instanceof BuildingsLayer){ // TODO: generalize this
                 await this._physicalLayer.applyTexSelectedCells(this._map.glContext, this._map.embeddedPlotsManager, 'vega', this._shaders);
             }
