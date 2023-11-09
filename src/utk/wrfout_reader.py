@@ -1,71 +1,122 @@
+import os
 import sys
+import json
 import numpy as np
-
 from netCDF4 import Dataset
 from termcolor import colored
 from wrf import getvar, interplevel, to_np, ALL_TIMES
 from pyproj import Transformer
+import xarray as xr
 
-class WRF_Output_Reader(object):
+class WRFOutputReader(object):
     def __init__(self) -> None:
-        self.__className = "WRF_Output_Reader"
+        self.__className = "WRFOutputReader"
+        self.__variablesList = ('PM10', 'so2', 'co', 'o3', 'PM2_5_DRY', 'no', 'no2', 'no3', 'T2', 'rh', 'wind10m', 'accRain', '3hRain', '24hRain')
         self.resetClass()
         
-    def get_ntimes(self):
+    def __processRain(self, time_idxs, interval):
+        rainc = self.__ncData.variables['RAINC'][:]
+        rainnc = self.__ncData.variables['RAINNC'][:]
+
+        accRain = rainc + rainnc
+
+        data = []
+
+        if not interval:
+            data = accRain if len(time_idxs) == 0 else np.array(accRain[t] for t in time_idxs)
+
+        else:
+            if len(time_idxs) == 0:
+                data = [accRain[t] - accRain[t - interval] for t in range(0, self.__nTimes, interval)]
+
+            else:
+                for t in time_idxs:
+                    if t - interval >= 0:
+                        data.append(accRain[t] - accRain[t - interval])
+            
+            # elif all(t - interval >= 0 for t in time_idxs):
+            #     data = [accRain[t] - accRain[t - interval] for t in time_idxs]
+                
+            # else:
+            #     msg = f"[{self.__className} - __processRain() - Negative time step.]"
+            #     raise ValueError(colored(msg, 'red'))
+            
+            data = np.array(data)
+
+        return data
+
+    def __process4DVariable(self, var_key, level, time_idxs):
+        data = []
+
+        if len(time_idxs) == 0: time_idxs = range(self.__nTimes)
+
+        for t in time_idxs:
+            var_time_matrix = getvar(self.__ncData, var_key, timeidx=t,
+                        squeeze=False, meta=False)
+            pressure_time_matrix = getvar(self.__ncData, 'pressure', timeidx=t,
+                        squeeze=False, meta=False)
+
+            var_time_matrix = to_np(interplevel(var_time_matrix, pressure_time_matrix, level))
+
+            if np.ma.isMaskedArray(var_time_matrix):
+                var_time_matrix = list(var_time_matrix)
+                # var_time_matrix.reverse()
+            data.append(var_time_matrix)
+
+
+        data = np.array(data)
+        return data
+    
+    def getGridId(self):
+        return self.__gridId
+    
+    def getStartDate(self):
+        return self.__startDate
+    
+    def getGridDimensions(self):
+        return self.__nLat, self.__nLon
+
+    def getNTimes(self):
         return self.__nTimes
     
-    def get_variable(self, var_key):
-        var_key = var_key.upper()
-        data = self.__ncData.variables[var_key][:]
+    def getVariableData(self, var_key, time_idxs, var_level=None):
+        active_var = None
+        data = []
+
+        # Set active_var
+        for i in range(len(self.__variablesList)):
+            if var_key.lower() == self.__variablesList[i].lower(): 
+                active_var = self.__variablesList[i]
+                break
         
-        if var_key == 'T2':
-            data = data - 273 # Kelvin to Celsius
+        # Set data according to the variable
+        if active_var:
+            if 'Rain' in active_var:
+                interval = None
+                if active_var == '3hRain':
+                    interval = 3
+                elif active_var == '24hRain':
+                    interval = 24
+                self.__processRain(time_idxs, interval)
+
+            elif active_var == 'T2':
+                data = self.__ncData.variables[active_var][:] if len(time_idxs) == 0 else np.array([self.__ncData.variables[active_var][t] for t in time_idxs])
+                data -= 273 # Kelvin to Celsius
+            
+            elif active_var == 'wind10m':
+                # to do
+                # https://medium.com/the-barometer/plotting-wrf-data-using-python-wrf-python-and-cartopy-edition-b7bf45ff46bb
+                data = []
+
+            else:
+                data = self.__process4DVariable(active_var, var_level, time_idxs)
+                    
+        else:
+            sys.exit()
               
         return data
     
-    def get_variable2(self, var_key, latmin_idx, lonmin_idx, latmax_idx, lonmax_idx, time_indexes):
-        var_key = var_key.upper()
-        # To do: validate var_key
-        
-        #### Get data
-        data = []
-
-        if len(time_indexes) == 0: time_indexes = range(self.__nTimes)
-           
-        try:
-            for tidx in time_indexes:
-                for latidx in range(latmin_idx, latmax_idx + 1):
-                    for lonidx in range(lonmin_idx, lonmax_idx + 1):
-                        data.append(self.__ncData.variables[var_key][:][tidx][latidx][lonidx])
-
-            data = np.ma.masked_array(data)
-
-        except Exception as error:
-            msg = f"[{self.__className} - getData]\n{error}"
-            print(colored(f"{msg}", "red"))
-            sys.exit()
-    
-        #### Process Data
-        if len(data) > 0:
-            if var_key == 'T2':
-                data = data - 273 # Kelvin to Celsius
-                
-                    
-        return data
-    
-    def old_getData(self, varKey, timestep=None):
-        varKey = varKey.upper()
-        
-        # To do: validate varKey
-        data = self.__ncData.variables[varKey][:] if timestep is None else self.__ncData.variables[varKey][:][timestep]
-
-        if varKey == 'T2':
-            data = data - 273 # Kelvin to Celsius
-                    
-        return data
-    
     def getLatLon(self):
-        # return self.__latMatrix, self.__lonMatrix
         return self.__latList, self.__lonList
     
     def setNcData(self, ncFilePath):
@@ -79,138 +130,164 @@ class WRF_Output_Reader(object):
 
     def resetClass(self):
         self.__ncData = None
-        self.__gridId = None
+        self.__latMatrix = None
+        self.__lonMatrix = None
+        
         self.__latList = None
         self.__lonList = None
+
+        self.__nLat = None
+        self.__nLon = None
+
         self.__nTimes = None
+        self.__gridId = None
+        self.__startDate = None
     
     def setAttributes(self):
-        self.__latMatrix = sorted(self.__ncData.variables['XLAT'][:][0], key=lambda x: x[0], reverse=True)
+        # self.__latMatrix = sorted(self.__ncData.variables['XLAT'][:][0], key=lambda x: x[0], reverse=True)
+        self.__latMatrix = self.__ncData.variables['XLAT'][:][0]
         self.__lonMatrix = self.__ncData.variables['XLONG'][:][0]
         
-        self.__latList = np.array([row[0] for row in self.__latMatrix] )
+        self.__latList = np.array([row[0] for row in self.__latMatrix])
         self.__lonList = np.array(self.__lonMatrix[0])
 
-        self.__nRows = self.__ncData.dimensions['south_north'].size
-        self.__nCols = self.__ncData.dimensions['west_east'].size
+        self.__nLat = self.__ncData.dimensions['south_north'].size
+        self.__nLon = self.__ncData.dimensions['west_east'].size
 
         self.__nTimes = self.__ncData.dimensions['Time'].size
 
-def thematic_from_wrf2(filepath, variables_list, coordinates_projection, time_indexes=[], bbox=[]):
-    wrfout = WRF_Output_Reader()
-    wrfout.setNcData(filepath)
-    wrfout.setAttributes()
+        self.__gridId = self.__ncData.GRID_ID
+        self.__startDate = self.__ncData.SIMULATION_START_DATE.replace(":", "")
+ 
 
-    lat_matrix, lon_matrix = wrfout.getLatLon()
+def thematic_from_netcdf(model, file, file_path, target_variables, coordinates_projection, time_idxs=[], bbox=[]):
+    transformer = Transformer.from_crs(coordinates_projection, 3395)
+    ncReader = None
 
-    n_times = len(time_indexes) if len(time_indexes) > 0 else wrfout.get_ntimes()
+    if model.lower() == 'wrf':
+        ncReader = WRFOutputReader()
     
-    for variable_key in variables_list:
-        variable_data = wrfout.get_variable(variable_key, time_indexes)
-        mask_values = [[False * len(lon_matrix[0])] * len(lat_matrix)] * n_times
-    
-        if(len(bbox) > 0):
+    if ncReader:
+        ncReader.setNcData(file_path)
+        ncReader.setAttributes()
 
-            longmin, longmax = bbox[1], bbox[3]
-            latmin, latmax = bbox[0], bbox[2]
+        # start_date = ncReader.getStartDate()
+        # grid_id = ncReader.getGridId()
 
-            ## Mask coordinates according to bounds
-            latmask=np.ma.masked_where(lat_matrix<latmin,lat_matrix).mask+np.ma.masked_where(lat_matrix>latmax,lat_matrix).mask
-            lonmask=np.ma.masked_where(lon_matrix<longmin,lon_matrix).mask+np.ma.masked_where(lon_matrix>longmax,lon_matrix).mask
+        lat_array, lon_array = ncReader.getLatLon()
 
-            totmask = lonmask + latmask
+        n_lat, n_lon = ncReader.getGridDimensions()
+        # n_times = ncReader.getNTimes()
+
+        lat_idxs = range(n_lat)
+        lon_idxs = range(n_lon)
+        
+        latmin_idx = 0
+        latmax_idx = n_lat-1
             
-            for i in len(mask_values):
-                ## Apply mask to data
-                masked_variable_data = np.ma.masked_where(totmask,variable_data[i])
-                
-                ## plot masked data
-                mask_values[i] = np.ma.getmask(masked_variable_data)
+        lonmin_idx = 0
+        lonmax_idx = n_lon-1
+
+        time_idxs.sort()
         
-        coordinates = []
-        values = []
-        points = []
+        if len(bbox) > 0:
 
-        transformer = Transformer.from_crs(coordinates_projection, 3395)
+            latmin, lonmin = bbox[0], bbox[1]
+            latmax, lonmax = bbox[2], bbox[3]
 
-        for t in range(len(mask_values)):
-            for i, line in enumerate(mask_values[t]):
-                for j, masked in enumerate(line):
-                    if(not masked): # not masked
-                        points.append((lat_matrix[i][j], lon_matrix[i][j]))
-                        values.append(float(variable_data[t][i][j]))
-
-    
-def thematic_from_wrf(filepath, variables_list, coordinates_projection, time_idxs=[], bbox=[]):
-    wrfout = WRF_Output_Reader()
-    wrfout.setNcData(filepath)
-    wrfout.setAttributes()
-
-    lat_array, lon_array = wrfout.getLatLon()
-    ntimes = wrfout.get_ntimes()
-
-    latmin_idx = 0
-    latmax_idx = len(lat_array)-1
+            lat_idxs = [i for i in range(n_lat) if lat_array[i] >= latmin and lat_array[i] <= latmax]
+            lon_idxs = [j for j in range(n_lon) if lon_array[j] >= lonmin and lon_array[j] <= lonmax]
         
-    lonmin_idx = 0
-    lonmax_idx = len(lon_array)-1
-
-    if len(time_idxs) == 0: time_idxs = range(ntimes)
-
-    if(len(bbox) > 0):
-
-        latmin, lonmin = bbox[0], bbox[1]
-        latmax, lonmax = bbox[2], bbox[3]
-
-        lat_idxs = [i for i in range(len(lat_array)) if lat_array[i] > latmin and lat_array[i] < latmax]
-        lon_idxs = [j for j in range(len(lon_array)) if lon_array[j] > lonmin and lon_array[j] < lonmax]
-        
-        latmin_idx = lat_idxs[0]
-        latmax_idx = lat_idxs[len(lat_idxs)-1]
-        
-        lonmin_idx = lon_idxs[0]
-        lonmax_idx = lon_idxs[len(lon_idxs)-1]
-
-    
-    for variable_key in variables_list:
-        values = [[None * len(time_idxs)] * len(lat_idxs)] 
-        points = []
-
-        data = wrfout.get_variable(variable_key)
+            latmin_idx = lat_idxs[0]
+            latmax_idx = lat_idxs[len(lat_idxs)-1]
+            
+            lonmin_idx = lon_idxs[0]
+            lonmax_idx = lon_idxs[len(lon_idxs)-1]
 
         try:
+            points = []
+
             for latidx in range(latmin_idx, latmax_idx + 1):
                 for lonidx in range(lonmin_idx, lonmax_idx + 1):
                     points.append((lat_array[latidx], lon_array[lonidx]))
 
-                    # for tidx in time_idxs:
-                        # values.append(float(data[tidx][latidx][lonidx]))
+            coordinates = []
 
+            for point in transformer.itransform(points):
+                coordinates.append(float(point[0]))
+                coordinates.append(float(point[1]))
+                coordinates.append(0)
 
         except Exception as error:
-            msg = f"[thematic_from_wrf]\n{error}"
-            print(colored(f"{msg}", "red"))
-            sys.exit()
+                msg = f"[thematic_from_wrf]\n{error}"
+                print(colored(f"{msg}", "red"))
+                sys.exit()
+        
+        
+        for var_obj in target_variables:
+            var_key   = var_obj.get('variable')
+            var_level = var_obj.get('level')
+
+            values = []
+            layer_id = f"{file}_{var_key}"
+            
+            data = ncReader.getVariableData(var_key, time_idxs, var_level)
+            
+            try:
+                for latidx in range(latmin_idx, latmax_idx + 1):
+                    for lonidx in range(lonmin_idx, lonmax_idx + 1):
+                        pt_arr = [round(float(matrix[latidx][lonidx]), 2) for matrix in data]
+                        values.append(pt_arr)
+         
+                abstract_json = {
+                    "id": layer_id,
+                    "coordinates": coordinates,
+                    "values": values
+                }
+
+                json_object = json.dumps(abstract_json)
+
+                directory = os.path.dirname(filepath)
+
+                with open(os.path.join(directory,layer_id+".json"), "w") as outfile:
+                    outfile.write(json_object)
+
+            except Exception as error:
+                msg = f"[thematic_from_wrf]\n{error}"
+                print(colored(f"{msg}", "red"))
+                sys.exit()
 
 
 
 
-    
+
 if __name__ == '__main__':
+    # path = f'../../examples/wrf_chicago'
+    # startDate = "2016-07-01"
+    # gId = "2"
+
+    # filepath = f"{path}/wrfout_d0{gId}_{startDate}.nc"
+
     path = f'../../examples/wrf_chicago'
-    startDate = "2016-07-01"
-    gId = "2"
+    startDate = "2023-06-09_20_00_00"
+    gId = "3"
 
-    filepath = f"{path}/wrfout_d0{gId}_{startDate}.nc"
+    file = f"wrfout_d0{gId}_{startDate}"
+    filepath = f"{path}/{file}"
+    # filepath = f"{path}/wrfout_d03_2023-06-09_20_00_00.nc"
 
-    # wrfout = WRF_Output_Reader()
-    # t = None
-    # wrfout.setNcData(filepath)
-    # wrfout.setAttributes()
-    # t2 = wrfout.getData('T2', t)
-    # print(len(t2))
+    # obj1 = {'variable': 'T2', 'level': None}
+    # obj2 = {'variable': 'rh', 'level': 850}
+    # obj3 = {'variable': '3hRain', 'level': None}
+    # varList = [obj1, obj2, obj3]
 
-    # thematic_from_wrf(filepath, ['T2'], 4326)
-    thematic_from_wrf(filepath, ['T2'], 4326, range(1, 5), [33, -94, 42, -81])
-    # thematic_from_wrf(filepath, ['T2'], 4326)
+    obj1 = {'variable': 'T2', 'level': None}
+    obj2 = {'variable': 'rh', 'level': 850}
+    obj3 = {'variable': '3hRain', 'level': None}
+    varList = [obj3]
 
+    # thematic_from_netcdf('wrf', file, filepath, varList, 4326)
+    # thematic_from_netcdf('wrf', file, filepath, varList, 4326, [t for t in range(1, 5)], [33, -94, 42, -81])
+    # thematic_from_netcdf('wrf', file, filepath, varList, 4326, list(range(0, 2)), [33, -94, 42, -81])
+    thematic_from_netcdf('wrf', file, filepath, varList, 4326)
+    

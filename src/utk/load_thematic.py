@@ -6,6 +6,11 @@ from netCDF4 import Dataset
 import numpy as np
 from .utils import *
 
+import sys
+from termcolor import colored
+from wrf import getvar, interplevel, to_np, ALL_TIMES
+from .wrfout_reader import WRFOutputReader
+
 '''
     Converts a dataframe into an abstract layer
 '''
@@ -148,6 +153,98 @@ def thematic_from_netcdf(filepath, layer_id, value_variable, latitude_variable, 
 
     with open(os.path.join(directory,layer_id+".json"), "w") as outfile:
         outfile.write(json_object)
+
+'''
+    Converts a WRF output file into an abstract layer
+'''
+
+def thematic_from_wrf(filepath, variables_list, coordinates_projection, time_idxs=[], bbox=[]):
+    transformer = Transformer.from_crs(coordinates_projection, 3395)
+
+    wrfout = WRFOutputReader()
+    wrfout.setNcData(filepath)
+    wrfout.setAttributes()
+
+    start_date = wrfout.getStartDate()
+    grid_id = wrfout.getGridId()
+
+    lat_array, lon_array = wrfout.getLatLon()
+
+    n_lat, n_lon = wrfout.getGridDimensions()
+    n_times = wrfout.getNTimes()
+
+    lat_idxs = range(n_lat)
+    lon_idxs = range(n_lon)
+    
+    latmin_idx = 0
+    latmax_idx = n_lat-1
+        
+    lonmin_idx = 0
+    lonmax_idx = n_lon-1
+
+    if len(time_idxs) == 0: time_idxs = range(n_times)
+    
+    if(len(bbox) > 0):
+
+        latmin, lonmin = bbox[0], bbox[1]
+        latmax, lonmax = bbox[2], bbox[3]
+
+        lat_idxs = [i for i in range(n_lat) if lat_array[i] >= latmin and lat_array[i] <= latmax]
+        lon_idxs = [j for j in range(n_lon) if lon_array[j] >= lonmin and lon_array[j] <= lonmax]
+       
+        latmin_idx = lat_idxs[0]
+        latmax_idx = lat_idxs[len(lat_idxs)-1]
+        
+        lonmin_idx = lon_idxs[0]
+        lonmax_idx = lon_idxs[len(lon_idxs)-1]
+
+    try:
+        points = []
+
+        for latidx in range(latmin_idx, latmax_idx + 1):
+            for lonidx in range(lonmin_idx, lonmax_idx + 1):
+                points.append((lat_array[latidx], lon_array[lonidx]))
+
+        coordinates = []
+
+        for point in transformer.itransform(points):
+            coordinates.append(float(point[0]))
+            coordinates.append(float(point[1]))
+            coordinates.append(0)
+
+    except Exception as error:
+            msg = f"[thematic_from_wrf]\n{error}"
+            print(colored(f"{msg}", "red"))
+            sys.exit()
+    
+    for variable_key in variables_list:
+        values = []
+        data = wrfout.getVariable(variable_key)
+        layer_id = f"{start_date}_d0{grid_id}_{variable_key}"
+        
+        try:
+            for latidx in range(latmin_idx, latmax_idx + 1):
+                for lonidx in range(lonmin_idx, lonmax_idx + 1):
+                    pt_arr = [round(float(data[tidx][latidx][lonidx]), 2) for tidx in time_idxs]
+                    values.append(pt_arr)
+        
+            abstract_json = {
+                "id": layer_id,
+                "coordinates": coordinates,
+                "values": values
+            }
+
+            json_object = json.dumps(abstract_json)
+
+            directory = os.path.dirname(filepath)
+
+            with open(os.path.join(directory,layer_id+".json"), "w") as outfile:
+                outfile.write(json_object)
+
+        except Exception as error:
+            msg = f"[thematic_from_wrf]\n{error}"
+            print(colored(f"{msg}", "red"))
+            sys.exit()
 
 '''
     Thematic data from numpy array file 
