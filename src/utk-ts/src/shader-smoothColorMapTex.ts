@@ -131,17 +131,17 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
         return this._currentPickedBuildingId;
     }
 
-    public updateShaderGeometry(mesh: Mesh) {
+    public updateShaderGeometry(mesh: Mesh, centroid:number[] | Float32Array = [0,0,0], viewId: number) {
         this._coordsDirty = true;
         this._planeHeightDirty = true;
         this._filteredDirty = true;
-        this._coords = mesh.getCoordinatesVBO();
+        this._coords = mesh.getCoordinatesVBO(centroid, viewId);
         this._normals = mesh.getNormalsVBO();
         this._indices = mesh.getIndicesVBO();
         this._heights = mesh.getHeightsVBO();
         this._minHeights = mesh.getMinHeightsVBO();
-        this._orientedEnvelope = mesh.getOrientedEnvelopesVBO();
-        this._sectionFootprint = mesh.getSectionFootprintVBO();
+        this._orientedEnvelope = mesh.getOrientedEnvelopesVBO(centroid);
+        this._sectionFootprint = mesh.getSectionFootprintVBO(centroid);
 
         this._idsLength = mesh.idsLength();
 

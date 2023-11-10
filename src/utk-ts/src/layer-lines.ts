@@ -50,10 +50,10 @@ export class LinesLayer extends Layer {
         throw Error("Filtering not supported for line layer");
     }
     
-    updateShaders(shaders: (Shader|AuxiliaryShader)[]){
+    updateShaders(shaders: (Shader|AuxiliaryShader)[], centroid:number[] | Float32Array = [0,0,0], viewId: number){
         // updates the shader references
         for (const shader of shaders) {
-            shader.updateShaderGeometry(this._mesh);
+            shader.updateShaderGeometry(this._mesh, centroid, viewId);
         }
     }
 
@@ -78,7 +78,7 @@ export class LinesLayer extends Layer {
         throw new Error("The layer lines only have the COORDINATES level, so no INNERAGG is possible");
     }
 
-    setHighlightElements(elements: number[], level: LevelType, value: boolean): void{
+    setHighlightElements(elements: number[], level: LevelType, value: boolean, shaders: (Shader|AuxiliaryShader)[], centroid:number[] | Float32Array = [0,0,0], viewId: number): void{
         throw new Error("Element highlighting not support for line layer yet");
     }
 
@@ -109,7 +109,7 @@ export class LinesLayer extends Layer {
         return null;
     }
 
-    getCoordsByLevel(level: LevelType): number[][] {
+    getCoordsByLevel(level: LevelType, centroid:number[] | Float32Array = [0,0,0], viewId: number): number[][] {
         let coordByLevel: number[][] = [];
 
         if(level == LevelType.COORDINATES3D){
@@ -119,7 +119,7 @@ export class LinesLayer extends Layer {
         if(level == LevelType.COORDINATES){
 
             if(this._coordsByCOORDINATES.length == 0){
-                let coords = this._mesh.getCoordinatesVBO();
+                let coords = this._mesh.getCoordinatesVBO(centroid, viewId);
 
                 for(let i = 0; i < coords.length/3; i++){
                     coordByLevel.push([coords[i*3],coords[i*3+1],coords[i*3+2]]);
@@ -135,7 +135,7 @@ export class LinesLayer extends Layer {
         if(level == LevelType.OBJECTS){
             if(this._coordsByOBJECTS.length == 0){
 
-                let coords = this._mesh.getCoordinatesVBO();
+                let coords = this._mesh.getCoordinatesVBO(centroid, viewId);
 
                 let readCoords = 0;
                 

@@ -266,7 +266,7 @@ class MapView {
         // not sure if layer should be accessed directly or knot.ts be used
         for(const layer of _this._layerManager.layers){
             if(layer.id == layerId){
-                layer.setHighlightElements([elementIndex], <LevelType>lastLink.out.level, value, shaders);
+                layer.setHighlightElements([elementIndex], <LevelType>lastLink.out.level, value, shaders, this._camera.getWorldOrigin(), this._viewId);
                 break;
             }
         }

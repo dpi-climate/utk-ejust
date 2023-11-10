@@ -79,7 +79,7 @@ export class ShaderAbstractSurface extends Shader{
     }
 
     // TODO: get income data from a mesh object not a list
-    public updateShaderGeometry(mesh: Mesh) {
+    public updateShaderGeometry(mesh: Mesh, centroid:number[] | Float32Array = [0,0,0], viewId: number) {
         let totalNumberOfCoords = mesh.getTotalNumberOfCoords()
 
         for(let i = 0; i < totalNumberOfCoords; i++){

@@ -44,10 +44,10 @@ export class TrianglesLayer extends Layer {
         this._mesh.load(data, false);
     }
 
-    updateShaders(shaders: (Shader|AuxiliaryShader)[]){
+    updateShaders(shaders: (Shader|AuxiliaryShader)[], centroid:number[] | Float32Array = [0,0,0], viewId: number){
         // updates the shader references
         for (const shader of shaders) {
-            shader.updateShaderGeometry(this._mesh);
+            shader.updateShaderGeometry(this._mesh, centroid, viewId);
         }
     }
 
@@ -64,12 +64,12 @@ export class TrianglesLayer extends Layer {
         }
     }
 
-    setHighlightElements(elements: number[], level: LevelType, value: boolean, shaders: (Shader|AuxiliaryShader)[]): void{
+    setHighlightElements(elements: number[], level: LevelType, value: boolean, shaders: (Shader|AuxiliaryShader)[], centroid:number[] | Float32Array = [0,0,0], viewId: number): void{
 
         if(elements[0] == undefined)
             return;
 
-        let coords = this.getCoordsByLevel(level);
+        let coords = this.getCoordsByLevel(level, centroid, viewId);
         
         for(let i = 0; i < elements.length; i++){
             let offsetCoords = 0;
@@ -278,7 +278,7 @@ export class TrianglesLayer extends Layer {
      * 
      * @returns each position of the array contains an element of that level
      */
-    getCoordsByLevel(level: LevelType): number[][] {
+    getCoordsByLevel(level: LevelType, centroid:number[] | Float32Array = [0,0,0], viewId: number): number[][] {
         let coordByLevel: number[][] = [];
 
         if(level == LevelType.COORDINATES){
@@ -287,7 +287,7 @@ export class TrianglesLayer extends Layer {
             }
 
             if(this._coordsByCOORDINATES.length == 0){
-                let coords = this._mesh.getCoordinatesVBO();
+                let coords = this._mesh.getCoordinatesVBO(centroid, viewId);
     
                 for(let i = 0; i < coords.length/2; i++){
                     coordByLevel.push([coords[i*2],coords[i*2+1], 0]);
@@ -306,7 +306,7 @@ export class TrianglesLayer extends Layer {
             }
 
             if(this._coordsByCOORDINATES3D.length == 0){
-                let coords = this._mesh.getCoordinatesVBO();
+                let coords = this._mesh.getCoordinatesVBO(centroid, viewId);
     
                 for(let i = 0; i < coords.length/3; i++){
                     coordByLevel.push([coords[i*3],coords[i*3+1],coords[i*3+2]]);
@@ -323,7 +323,7 @@ export class TrianglesLayer extends Layer {
 
             if(this._coordsByOBJECTS.length == 0){
                 
-                let coords = this._mesh.getCoordinatesVBO();
+                let coords = this._mesh.getCoordinatesVBO(centroid, viewId);
     
                 let readCoords = 0;
                 

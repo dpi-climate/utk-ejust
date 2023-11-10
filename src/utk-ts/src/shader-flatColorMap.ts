@@ -72,10 +72,10 @@ export class ShaderFlatColorMap extends Shader {
         this.createTextures(glContext);
     }
 
-    public updateShaderGeometry(mesh: Mesh) {
+    public updateShaderGeometry(mesh: Mesh, centroid:number[] | Float32Array = [0,0,0], viewId: number) {
         this._coordsDirty = true;
         this._filteredDirty = true;
-        this._coords = mesh.getCoordinatesVBO();
+        this._coords = mesh.getCoordinatesVBO(centroid, viewId);
         this._indices = mesh.getIndicesVBO();
 
         let totalNumberOfCoords = mesh.getTotalNumberOfCoords()

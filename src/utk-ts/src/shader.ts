@@ -26,7 +26,7 @@ export abstract class Shader {
      * Update the VBOs of the layer
      * @param {Mesh} mesh Updates the mesh data 
      */
-    public abstract updateShaderGeometry(mesh: Mesh): void;
+    public abstract updateShaderGeometry(mesh: Mesh, centroid:number[] | Float32Array, viewId: number): void;
 
     /**
      * Update the VBOs of the layer

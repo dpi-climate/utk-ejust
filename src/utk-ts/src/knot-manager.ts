@@ -15,9 +15,9 @@ export class KnotManager {
         return this._knots;
     }
 
-    createKnot(id: string, physicalLayer: Layer, knotSpecification: IKnot, grammarInterpreter: any, visible: boolean, map:any): Knot {
+    createKnot(id: string, physicalLayer: Layer, knotSpecification: IKnot, grammarInterpreter: any, visible: boolean): Knot {
         
-        let knot = new Knot(id, physicalLayer, knotSpecification, grammarInterpreter, visible, map);
+        let knot = new Knot(id, physicalLayer, knotSpecification, grammarInterpreter, visible);
         this._knots.push(knot);
         this.toggleKnot(""); // just to update the knots in the view
         return knot;

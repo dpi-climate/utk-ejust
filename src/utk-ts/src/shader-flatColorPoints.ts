@@ -47,9 +47,9 @@ export class ShaderFlatColorPoints extends Shader {
         this.createVertexArrayObject(glContext);
     }
 
-    public updateShaderGeometry(mesh: Mesh) {
+    public updateShaderGeometry(mesh: Mesh, centroid:number[] | Float32Array = [0,0,0], viewId: number) {
         this._coordsDirty = true;
-        this._coords = mesh.getCoordinatesVBO();
+        this._coords = mesh.getCoordinatesVBO(centroid, viewId);
     }
 
     public updateShaderData(mesh: Mesh, knot: IKnot): void {

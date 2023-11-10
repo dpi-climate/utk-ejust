@@ -79,7 +79,7 @@ export class Knot {
         this._physicalLayer.render(glContext, this._shaders[viewId]);
     }
 
-    loadShaders(glContext: WebGL2RenderingContext, viewId: number): void {
+    loadShaders(glContext: WebGL2RenderingContext, centroid:number[] | Float32Array = [0,0,0], viewId: number): void {
         this._shaders[viewId] = [];
         const color = MapStyle.getColor(this._physicalLayer.style);
 
@@ -175,7 +175,7 @@ export class Knot {
             // console.log("------------------------------------------------------");
         }
 
-        this._physicalLayer.updateShaders(this._shaders[viewId]); // send mesh data to the shaders
+        this._physicalLayer.updateShaders(this._shaders[viewId], centroid, viewId); // send mesh data to the shaders
 
         this._physicalLayer.updateFunction(this._knotSpecification, this._shaders[viewId]);
     }
@@ -523,7 +523,6 @@ export class Knot {
                         }
                     }
                 }
-
 
                 for(const key of Object.keys(this._maps)){
                     let map = this._maps[key]

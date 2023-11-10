@@ -266,12 +266,12 @@ class GrammarInterpreter {
         for(const knotGrammar of this.getKnots()){
             let layerId = this.getKnotOutputLayer(knotGrammar);
             let layer = this._layerManager.searchByLayerId(layerId);
-            let knot = this._knotManager.createKnot(knotGrammar.id, <Layer>layer, knotGrammar, this, true, this);
+            let knot = this._knotManager.createKnot(knotGrammar.id, <Layer>layer, knotGrammar, this, true);
             knot.processThematicData(this._layerManager); // send thematic data to the mesh of the physical layer TODO: put this inside the constructor of Knot
             for(let i = 0; i < this._components_grammar.length; i++){
                 if(this._components_grammar[i].grammar != undefined && this._components_grammar[i].grammar?.grammar_type == GrammarType.MAP){
                     let mapview = MapViewFactory.getInstance(this, this.layerManager, this.knotManager, i) // TODO: have different map intances for each component not a singleton
-                    knot.loadShaders(mapview.glContext, i); // instantiate the shaders inside the knot
+                    knot.loadShaders(mapview.glContext, mapview.camera.getWorldOrigin(), i); // instantiate the shaders inside the knot
                 }
             }
         }
@@ -342,7 +342,7 @@ class GrammarInterpreter {
 
     }
 
-    // Called by views
+    // Called by Views.tsx
     async init(updateStatus: any){
 
         await this.initLayers();
@@ -387,7 +387,17 @@ class GrammarInterpreter {
         updateStatus("layersIds", knotsGroups);
 
         for(let i = 0; i < this._components_grammar.length; i++){
-            MapViewFactory.getInstance(this, this.layerManager, this.knotManager, i).render() // TODO: have multiple maps not a singleton
+            if(this._components_grammar[i].grammar != undefined && this._components_grammar[i].grammar?.grammar_type != GrammarType.MAP){
+                let map = MapViewFactory.getInstance(this, this.layerManager, this.knotManager, i);
+
+                for(const knot of this._knotManager.knots){ // adding the maps on the track list of the knots that are rendered in that map (used to sync interactions)
+                    if(this._components_grammar[i].grammar?.knots.includes(knot.id)){
+                        knot.addMap(map, i);
+                    }
+                }
+
+                map.render() // TODO: have multiple maps not a singleton
+            }
         }
 
     }
@@ -742,7 +752,14 @@ class GrammarInterpreter {
                         continue;
                     }
 
-                    let coordinates = left_layer.getCoordsByLevel(lastLink.out.level);
+                    // let centroid = this.camera.getWorldOrigin();
+
+                    let coordinates: number[][] = [];
+
+                    if(viewId != null){
+                        let map = MapViewFactory.getInstance(this, this.layerManager, this.knotManager, viewId);
+                        coordinates = left_layer.getCoordsByLevel(lastLink.out.level, map.camera.getWorldOrigin(), viewId);
+                    }
 
                     let functionValues = left_layer.getFunctionByLevel(lastLink.out.level, knotId);
 
@@ -768,19 +785,30 @@ class GrammarInterpreter {
 
                     let filtered = left_layer.mesh.filtered;
 
-                    for(let i = 0; i < coordinates.length; i++){
+                    for(let i = 0; i < highlighted.length; i++){
 
                         // if(elements.length >= 1000){ // preventing plot from having too many elements TODO: let the user know that plot is cropped
                         //     break;
                         // }
 
                         if(filtered.length == 0 || filtered[readCoords] == 1){
-                            elements.push({
-                                coordinates: coordinates[i],
-                                abstract: functionValues[i][0],
-                                highlighted: highlighted[i],
-                                index: i
-                            });
+
+                            if(coordinates.length > 0){
+                                elements.push({
+                                    coordinates: coordinates[i],
+                                    abstract: functionValues[i][0],
+                                    highlighted: highlighted[i],
+                                    index: i
+                                });
+                            }else{
+                                elements.push({
+                                    coordinates: [],
+                                    abstract: functionValues[i][0],
+                                    highlighted: highlighted[i],
+                                    index: i
+                                });
+                            }
+
                         }
 
                         readCoords += coordinates[i].length/left_layer.mesh.dimension;
