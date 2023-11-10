@@ -22,13 +22,12 @@ export class LinesLayer extends Layer {
     protected _highlightByCOORDINATES3D: boolean[][] = [];
     protected _highlightByOBJECTS: boolean[][] = [];
 
-    constructor(info: ILayerData, dimensions: number = 2, order: number = 0, centroid: number[] | Float32Array, geometryData: ILayerFeature[]) {
+    constructor(info: ILayerData, dimensions: number = 2, order: number = 0, geometryData: ILayerFeature[]) {
         super(
             info.id,
             info.type,
             info.styleKey,
             info.renderStyle !== undefined ? info.renderStyle : [],
-            centroid,
             dimensions,
             order
         );
@@ -44,7 +43,7 @@ export class LinesLayer extends Layer {
     }
 
     updateMeshGeometry(data: ILayerFeature[]){
-        this._mesh.load(data, false, this._centroid);
+        this._mesh.load(data, false);
     }
 
     getSelectedFiltering(): number[] | null {

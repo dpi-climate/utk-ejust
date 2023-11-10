@@ -20,13 +20,12 @@ export class TrianglesLayer extends Layer {
     protected _highlightByCOORDINATES3D: boolean[][] = [];
     protected _highlightByOBJECTS: boolean[][] = [];
 
-    constructor(info: ILayerData, dimensions: number = 2, zOrder: number = 0, centroid: number[] | Float32Array, geometryData: ILayerFeature[]) {
+    constructor(info: ILayerData, dimensions: number = 2, zOrder: number = 0, geometryData: ILayerFeature[]) {
         super(
             info.id,
             info.type,
             info.styleKey,
             info.renderStyle !== undefined ? info.renderStyle : [],
-            centroid,
             dimensions,
             zOrder
         );
@@ -42,7 +41,7 @@ export class TrianglesLayer extends Layer {
 
     updateMeshGeometry(data: ILayerFeature[]){
         // loads the data
-        this._mesh.load(data, false, this._centroid);
+        this._mesh.load(data, false);
     }
 
     updateShaders(shaders: (Shader|AuxiliaryShader)[]){

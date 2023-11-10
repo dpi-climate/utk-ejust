@@ -27,19 +27,14 @@ export abstract class Layer {
     // layer's camera
     protected _camera: any;
 
-    protected _centroid: number[] | Float32Array;
-
     protected _mesh: Mesh;
 
-    constructor(id: string, type: LayerType, styleKey: keyof IMapStyle, renderStyle: RenderStyle[] = [], centroid:number[] | Float32Array = [0,0,0], dimension: number, zOrder: number) {
+    constructor(id: string, type: LayerType, styleKey: keyof IMapStyle, renderStyle: RenderStyle[] = [], dimension: number, zOrder: number) {
         this._id = id;
         this._type = type;
         this._styleKey = styleKey;
         // this._colorMap = colorMap;
         this._renderStyle = renderStyle;
-
-        this._centroid = centroid;
-
         this._mesh = new Mesh(dimension, zOrder);
     }
 
@@ -83,10 +78,6 @@ export abstract class Layer {
 
     set mesh(mesh: Mesh) {
         this._mesh = mesh;
-    }
-
-    get centroid(){
-        return this._centroid;
     }
 
     get renderStyle(){

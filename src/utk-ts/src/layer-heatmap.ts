@@ -20,14 +20,13 @@ export class HeatmapLayer extends Layer {
     protected _highlightByCOORDINATES3D: boolean[][] = [];
     protected _highlightByOBJECTS: boolean[][] = [];
 
-    constructor(info: ILayerData, zOrder: number = 0, centroid: number[] | Float32Array, geometryData: ILayerFeature[]) {
+    constructor(info: ILayerData, zOrder: number = 0, geometryData: ILayerFeature[]) {
 
         super(
             info.id,
             info.type,
             info.styleKey,
             info.renderStyle !== undefined ? info.renderStyle : [],
-            centroid,
             3,
             zOrder
         );
@@ -37,7 +36,7 @@ export class HeatmapLayer extends Layer {
     }
 
     updateMeshGeometry(data: ILayerFeature[]){
-        this._mesh.load(data, false, this._centroid);
+        this._mesh.load(data, false);
     }
 
     updateShaders(shaders: (Shader|AuxiliaryShader)[]){

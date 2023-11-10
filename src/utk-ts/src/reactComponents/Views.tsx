@@ -20,11 +20,12 @@ type ViewProps = {
   mainDivSize: {width: number, height: number},
   layerManager: LayerManager,
   knotManager: KnotManager,
-  plotManager: PlotManager
+  plotManager: PlotManager,
+  grammarInterpreter: any
 }
 
 // Render components
-function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, layerManager, knotManager, plotManager}: ViewProps) {
+function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, layerManager, knotManager, plotManager, grammarInterpreter}: ViewProps) {
 
   const [camera, setCamera] = useState<{position: number[], direction: {right: number[], lookAt: number[], up: number[]}}>({position: [], direction: {right: [], lookAt: [], up: []}}); // TODO: if we have multiple map instances we have multiple cameras
   const [filterKnots, setFilterKnots] = useState<number[]>([]);
@@ -171,6 +172,8 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, layerManag
 
   // Executes after component rendered
   useEffect(() => {
+
+    grammarInterpreter.init(updateStatus);
 
     for(let i = 0; i < viewObjs.length; i++){
       let viewObj = viewObjs[i].obj;

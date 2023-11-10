@@ -17,13 +17,12 @@ export class PointsLayer extends Layer {
     // protected _zOrder: number;
     protected _coordsByCOORDINATES3D: number[][] = [];
 
-    constructor(info: ILayerData, zOrder: number = 0, centroid: number[] | Float32Array, geometryData: ILayerFeature[]) {
+    constructor(info: ILayerData, zOrder: number = 0, geometryData: ILayerFeature[]) {
         super(
             info.id,
             info.type,
             info.styleKey,
             info.renderStyle !== undefined ? info.renderStyle : [],
-            centroid,
             3,
             zOrder
         );
@@ -39,7 +38,7 @@ export class PointsLayer extends Layer {
     }
 
     updateMeshGeometry(data: ILayerFeature[]){
-        this._mesh.load(data, false, this._centroid);
+        this._mesh.load(data, false);
     }
 
     updateShaders(shaders: (Shader|AuxiliaryShader)[]){
