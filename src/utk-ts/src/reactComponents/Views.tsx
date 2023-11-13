@@ -10,6 +10,7 @@ import './View.css';
 import { LayerManager } from '../layer-manager';
 import { KnotManager } from '../knot-manager';
 import { PlotManager } from '../plot-manager';
+import { GenericFixedPlotContainer } from './GenericFixedPlotContainer';
 
 // declaring the types of the props
 type ViewProps = {
@@ -27,7 +28,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
   const [camera, setCamera] = useState<{position: number[], direction: {right: number[], lookAt: number[], up: number[]}}>({position: [], direction: {right: [], lookAt: [], up: []}}); // TODO: if we have multiple map instances we have multiple cameras
   const [filterKnots, setFilterKnots] = useState<number[]>([]);
   const [systemMessages, setSystemMessages] = useState<{text: string, color: string}[]>([]);
-  const [genericPlots, setGenericPlots] = useState<{id: number, hidden: boolean, svgId: string, label: string, checked: boolean, edit: boolean}[]>([]);
+  const [genericPlots, setGenericPlots] = useState<{id: number, hidden: boolean, svgId: string, label: string, checked: boolean, edit: boolean, floating: boolean, position: IComponentPosition | undefined}[]>([]);
   const [knotVisibility, setKnotVisibility] = useState<any>({});
   const [currentPlotId, setCurrentPlotId] = useState(0);
   const [layersIds, setLayersIds] = useState<any>({});
@@ -39,7 +40,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
     setSystemMessages([{text: msg, color: color}]);
   }
 
-  const linkedContainerGenerator = (n: number, names: string[] = []) => {
+  const linkedContainerGenerator = (n: number, names: string[] = [], floating_values: boolean[], positions: (IComponentPosition | undefined)[]) => {
 
     let createdIds: number[] = [];
 
@@ -47,7 +48,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
       return [];
     }
 
-    createdIds = addNewGenericPlot(n, names);
+    createdIds = addNewGenericPlot(n, names, floating_values, positions);
 
     // promise is only resolved when the container is created
     return new Promise(async function (resolve, reject) {
@@ -83,7 +84,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
 
   }
 
-  const addNewGenericPlot = (n: number = 1, names: string[] = []) => {
+  const addNewGenericPlot = (n: number = 1, names: string[] = [], floating_values: boolean[], positions: (IComponentPosition | undefined)[]) => {
 
     let createdIds = [];
     let tempPlots = [];
@@ -92,9 +93,9 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
 
     for(let i = 0; i < n; i++){
       if(names.length > 0 && names[i] != '' && names[i] != undefined){
-        tempPlots.push({id: tempId, hidden: true, svgId: "genericPlotSvg"+tempId, label: names[i], checked: false, edit: false});
+        tempPlots.push({id: tempId, hidden: true, svgId: "genericPlotSvg"+tempId, label: names[i], checked: false, edit: false, floating: floating_values[i], position: positions[i]});
       }else{
-        tempPlots.push({id: tempId, hidden: true, svgId: "genericPlotSvg"+tempId, label: "Plot "+tempId, checked: false, edit: false});
+        tempPlots.push({id: tempId, hidden: true, svgId: "genericPlotSvg"+tempId, label: "Plot "+tempId, checked: false, edit: false, floating: floating_values[i], position: positions[i]});
       }
       createdIds.push(tempId);
       tempId += 1;
@@ -109,9 +110,9 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
     let modifiedPlots = [];
     for(const plot of genericPlots){
       if(plot.id == plotId){
-        modifiedPlots.push({id: plot.id, hidden: !plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit});
+        modifiedPlots.push({id: plot.id, hidden: !plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position});
       }else{
-        modifiedPlots.push({id: plot.id, hidden: plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit});
+        modifiedPlots.push({id: plot.id, hidden: plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position});
       }
     }
     setGenericPlots(modifiedPlots);
@@ -121,7 +122,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
     let modifiedPlots = [];
 
     for(const plot of genericPlots){
-      modifiedPlots.push({id: plot.id, hidden: !plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit});
+      modifiedPlots.push({id: plot.id, hidden: !plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position});
     }
 
     setGenericPlots(modifiedPlots);
@@ -144,7 +145,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
     }else if(state == "knotVisibility"){
       setKnotVisibility(value);
     }else if(state == "containerGenerator"){
-      return linkedContainerGenerator(value.n, value.names);
+      return linkedContainerGenerator(value.n, value.names, value.floating_values, value.positions);
     }
   }
 
@@ -239,8 +240,22 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
               </React.Fragment>
             } 
           })
-
-          // TODO: generic fixed plot container
+        }
+        {
+          genericPlots.map((item: any) => {
+            if(!item.floating){
+              return (
+                <div className='component' style={{position: "absolute", left: getTopLeft(item.position).left, top: getTopLeft(item.position).top, width: getSizes(item.position).width, height: getSizes(item.position).height}}>
+                  <GenericFixedPlotContainer 
+                    id={item.id}
+                    svgId={item.svgId}
+                  />
+                </div>
+              )
+            }else{
+              return null;
+            }
+          })
         }
       </div>
     </React.Fragment>

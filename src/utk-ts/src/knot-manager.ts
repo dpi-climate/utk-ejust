@@ -9,6 +9,7 @@ export class KnotManager {
 
     public init(updateStatusCallback: any){
         this._updateStatusCallback = updateStatusCallback;
+        this.toggleKnot(""); // just to update the knots in the view
     }
 
     get knots(): Knot[] {
@@ -19,7 +20,6 @@ export class KnotManager {
         
         let knot = new Knot(id, physicalLayer, knotSpecification, grammarInterpreter, visible);
         this._knots.push(knot);
-        // this.toggleKnot(""); // just to update the knots in the view
         return knot;
     }
 

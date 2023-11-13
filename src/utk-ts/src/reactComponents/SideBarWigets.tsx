@@ -73,7 +73,7 @@ export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibi
                   }
                 })
               }
-              {genericPlots.length > 0 ? <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faChartSimple} onClick={handleTogglePlots} /> : null}
+              {genericPlots.filter((plot: any) => {return plot.floating;}).length > 0 ? <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faChartSimple} onClick={handleTogglePlots} /> : null}
             </Row>
           </div> : null}
             {
@@ -104,15 +104,21 @@ export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibi
               })
             }
         {
-          genericPlots.map((item: any) => (
-              <GenericScreenPlotContainer
-                id={item.id}
-                disp = {!item.hidden}
-                svgId={item.svgId}
-                x={mapHeight/2}
-                y={mapWidth/2}
-              />
-          ))
+          genericPlots.map((item: any) => {
+            if(item.floating){
+              return (
+                <GenericScreenPlotContainer
+                  id={item.id}
+                  disp = {!item.hidden}
+                  svgId={item.svgId}
+                  x={mapHeight/2}
+                  y={mapWidth/2}
+                />
+              )
+            }else{
+              return null;
+            }
+          })
         }
       </React.Fragment>
     );

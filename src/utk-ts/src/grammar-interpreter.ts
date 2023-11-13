@@ -29,7 +29,7 @@ import { DataApi } from './data-api';
 class GrammarInterpreter {
 
     protected _grammar: IMasterGrammar;
-    protected _components_grammar: {id: string, originalGrammar: (IMapGrammar | IPlotGrammar), grammar: (IMapGrammar | IPlotGrammar | undefined)}[] = [];
+    protected _components_grammar: {id: string, originalGrammar: (IMapGrammar | IPlotGrammar), grammar: (IMapGrammar | IPlotGrammar | undefined), position: (IComponentPosition | undefined)}[] = [];
     protected _lastValidationTimestep: number;
     protected _components: {type: ComponentIdentifier, obj: any, position: IComponentPosition}[] = [];
     protected _maps_widgets: {type: WidgetType, obj: any, grammarDefinition: IGenericWidget | undefined}[] = [];
@@ -113,7 +113,7 @@ class GrammarInterpreter {
         }
 
         if(grammar.grammar_position != undefined){
-            this._components.push({type: ComponentIdentifier.GRAMMAR, obj: this, position: grammar.grammar_position});
+            this._components.push({type: ComponentIdentifier.GRAMMAR, obj: {init: () => {}}, position: grammar.grammar_position});
         }
         
         this.renderViews(mainDiv, originalGrammar);
@@ -244,7 +244,7 @@ class GrammarInterpreter {
                 let component_grammar = <IMapGrammar | IPlotGrammar> await DataLoader.getJsonData(url);
 
                 if(this.validateComponentGrammar(component_grammar)){
-                    this._components_grammar.push({id: component.id, originalGrammar: component_grammar, grammar: undefined});
+                    this._components_grammar.push({id: component.id, originalGrammar: component_grammar, grammar: undefined, position: component.position});
                 }
             }
             
@@ -387,7 +387,7 @@ class GrammarInterpreter {
         updateStatus("layersIds", knotsGroups);
 
         for(let i = 0; i < this._components_grammar.length; i++){
-            if(this._components_grammar[i].grammar != undefined && this._components_grammar[i].grammar?.grammar_type != GrammarType.MAP){
+            if(this._components_grammar[i].grammar != undefined && this._components_grammar[i].grammar?.grammar_type == GrammarType.MAP){
                 let map = MapViewFactory.getInstance(this, this._layerManager, this._knotManager, i);
 
                 for(const knot of this._knotManager.knots){ // adding the maps on the track list of the knots that are rendered in that map (used to sync interactions)
@@ -518,14 +518,14 @@ class GrammarInterpreter {
     }
 
     // If mapId is specified get all the plots that are embedded in that map
-    public getPlots(mapId: number | null = null) : {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar}[] {
-        let plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar}[] = [];
+    public getPlots(mapId: number | null = null) : {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined}[] {
+        let plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined}[] = [];
         let map_component: any = null;
         let currentMapId = 0;
 
         for(const component of this._components_grammar){
             if(component.grammar != undefined && component.grammar.grammar_type == GrammarType.PLOT){
-                plots.push(<{id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar}>component);
+                plots.push(<{id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined}>component);
             }
 
             if(component.grammar != undefined && mapId != null && component.grammar.grammar_type == GrammarType.MAP){
@@ -779,7 +779,7 @@ class GrammarInterpreter {
                             let highlighted_map = left_layer.getHighlightsByLevel(lastLink.out.level, (<Knot>knotStructure).shaders[i]); // getting higlights for the layer for each map
                         
                             if(highlighted.length == 0){
-                                highlighted_map = highlighted;
+                                highlighted = highlighted_map;
                             }else{
                                 for(let j = 0; j < highlighted_map.length; j++){
                                     highlighted[j] = highlighted_map[j] || highlighted[j];
@@ -798,7 +798,7 @@ class GrammarInterpreter {
                         //     break;
                         // }
 
-                        if(filtered.length == 0 || filtered[readCoords] == 1){
+                        if(coordinates.length == 0 || filtered.length == 0 || filtered[readCoords] == 1){
 
                             if(coordinates.length > 0){
                                 elements.push({
@@ -818,7 +818,8 @@ class GrammarInterpreter {
 
                         }
 
-                        readCoords += coordinates[i].length/left_layer.mesh.dimension;
+                        if(coordinates.length > 0)
+                            readCoords += coordinates[i].length/left_layer.mesh.dimension;
                     }
 
                     let knotData = {

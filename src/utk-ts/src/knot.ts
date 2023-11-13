@@ -482,9 +482,9 @@ export class Knot {
             if(this._physicalLayer instanceof BuildingsLayer){ // TODO: generalize this
                 for(const key of Object.keys(this._maps)){
                     let map = this._maps[key]
-                    this._physicalLayer.createFootprintPlot(map.glContext, cursorPosition[0], cursorPosition[1], true, this._shaders);
+                    this._physicalLayer.createFootprintPlot(map.glContext, cursorPosition[0], cursorPosition[1], true, this._shaders[key]);
                     map.render(); // TODO: get rid of the need to render the map
-                    await this._physicalLayer.updateFootprintPlot(map.glContext, map.plotManager, -1, eventObject.deltaY * 0.02, 'vega', this._shaders);
+                    await this._physicalLayer.updateFootprintPlot(map.glContext, map.plotManager, -1, eventObject.deltaY * 0.02, 'vega', this._shaders[key]);
                 }
             }
         }
@@ -547,9 +547,9 @@ export class Knot {
 
                     for(const key of Object.keys(this._maps)){
                         let map = this._maps[key]
-                        this._physicalLayer.createFootprintPlot(map.glContext, cursorPosition[0], cursorPosition[1], false, this._shaders);
+                        this._physicalLayer.createFootprintPlot(map.glContext, cursorPosition[0], cursorPosition[1], false, this._shaders[key]);
                         map.render();
-                        let buildingId = await this._physicalLayer.applyFootprintPlot(map.glContext, map.plotManager, 1, 'vega', this._shaders);
+                        let buildingId = await this._physicalLayer.applyFootprintPlot(map.glContext, map.plotManager, 1, 'vega', this._shaders[key]);
                         elementsIndex.push(buildingId);
                     }
 

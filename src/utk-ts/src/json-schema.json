@@ -50,7 +50,7 @@
                         "required": ["width", "height"]
                     }
                 },
-                "required": ["id", "position"]
+                "required": ["id"]
             }
         },
         "knots": {
