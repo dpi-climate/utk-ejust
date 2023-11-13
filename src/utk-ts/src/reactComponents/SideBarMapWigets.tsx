@@ -5,12 +5,11 @@ import { ToggleKnotsWidget } from './ToggleKnotsWidget';
 import { SearchWidget } from './SearchWidget';
 import {Row} from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faLayerGroup, faChartSimple, faEyeSlash, faSearch, faEye } from '@fortawesome/free-solid-svg-icons'
+import { faLayerGroup, faChartSimple, faEyeSlash, faSearch, faEye, faCode } from '@fortawesome/free-solid-svg-icons'
 import * as d3 from "d3";
-import { GenericScreenPlotContainer } from "./GenericScreenPlotContainer";
 import { InteractionChannel } from "../interaction-channel";
 
-type SideBarWidgetsProps = {
+type SideBarMapWidgetsProps = {
     x: number,
     y: number,
     mapWidth: number,
@@ -21,10 +20,12 @@ type SideBarWidgetsProps = {
     genericPlots: any,
     togglePlots: any,
     mapWidgets: {type: WidgetType, obj: any, grammarDefinition: IGenericWidget | undefined}[] // each viewObj has a an object representing its logic
+    componentId: string,
+    editGrammar: any
 }
 
 export var GrammarPanelVisibility = true;
-export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibility, inputBarId, genericPlots, togglePlots, mapWidgets}:SideBarWidgetsProps) =>{
+export const SideBarMapWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibility, inputBarId, genericPlots, togglePlots, mapWidgets, componentId, editGrammar}:SideBarMapWidgetsProps) =>{
 
     const handleClickLayers = (e: any) => {
 
@@ -49,13 +50,13 @@ export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibi
       InteractionChannel.getModifyGrammarVisibility()();
     }
 
-    const handleTogglePlots = (e: any) => {
-      togglePlots();
-    }
+    // const handleTogglePlots = (e: any) => {
+    //   togglePlots();
+    // }
 
     return (
         <React.Fragment>
-          {genericPlots.length > 0 || mapWidgets.length > 1 ? <div style={{backgroundColor: "white", width: "75px", position: "absolute", left: "10px", top: "10px", padding: "5px", borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)"}}>
+          {mapWidgets.length > 1 ? <div style={{backgroundColor: "white", width: "75px", position: "absolute", left: "10px", top: "10px", padding: "5px", borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)"}}>
             <Row>
               {
                 mapWidgets.map((component, index) => {
@@ -73,7 +74,8 @@ export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibi
                   }
                 })
               }
-              {genericPlots.filter((plot: any) => {return plot.floating;}).length > 0 ? <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faChartSimple} onClick={handleTogglePlots} /> : null}
+              <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faCode} onClick={editGrammar(componentId)} />
+              {/* {genericPlots.filter((plot: any) => {return plot.floating;}).length > 0 ? <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faChartSimple} onClick={handleTogglePlots} /> : null} */}
             </Row>
           </div> : null}
             {
@@ -103,23 +105,6 @@ export const SideBarWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVisibi
                 }
               })
             }
-        {
-          genericPlots.map((item: any) => {
-            if(item.floating){
-              return (
-                <GenericScreenPlotContainer
-                  id={item.id}
-                  disp = {!item.hidden}
-                  svgId={item.svgId}
-                  x={mapHeight/2}
-                  y={mapWidth/2}
-                />
-              )
-            }else{
-              return null;
-            }
-          })
-        }
       </React.Fragment>
     );
 }

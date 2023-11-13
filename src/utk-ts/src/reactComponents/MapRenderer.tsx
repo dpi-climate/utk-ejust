@@ -1,6 +1,6 @@
 import React from "react";
 import './MapRenderer.css';
-import { SideBarWidgets } from "./SideBarWigets";
+import { SideBarMapWidgets } from "./SideBarMapWigets";
 import { WidgetType } from "../constants";
 import { IGenericWidget } from "../interfaces";
 
@@ -17,10 +17,12 @@ type MapRendererProps = {
   knotVisibility: any,
   genericPlots: any,
   togglePlots: any,
-  inputBarId: string
+  inputBarId: string,
+  componentId: string,
+  editGrammar: any
 }
 
-export const MapRendererContainer = ({obj, viewId, mapWidgets, x, y, width, height, layersIds, knotVisibility, genericPlots, togglePlots, inputBarId}:MapRendererProps) =>{
+export const MapRendererContainer = ({obj, viewId, mapWidgets, x, y, width, height, layersIds, knotVisibility, genericPlots, togglePlots, inputBarId, componentId, editGrammar}:MapRendererProps) =>{
 
     return(
       <React.Fragment>
@@ -33,7 +35,7 @@ export const MapRendererContainer = ({obj, viewId, mapWidgets, x, y, width, heig
           </div>
         </div>
 
-        <SideBarWidgets 
+        <SideBarMapWidgets 
           mapWidgets={mapWidgets}
           x={x}
           y={y}
@@ -44,6 +46,8 @@ export const MapRendererContainer = ({obj, viewId, mapWidgets, x, y, width, heig
           inputBarId={inputBarId}
           genericPlots={genericPlots}
           togglePlots={togglePlots}
+          componentId={componentId}
+          editGrammar={editGrammar}
         />
 
         {/* <div style={{position: "absolute", height: "160px", bottom: 0, width: (divWidth/12)*window.innerWidth, backgroundColor: "rgba(200,200,200,0.3)", padding: 0}}>

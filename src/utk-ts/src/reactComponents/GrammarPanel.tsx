@@ -14,17 +14,18 @@ import './GrammarPanel.css';
 
 // const params = require('./pythonServerConfig.json');
 
-import { IMasterGrammar } from "../interfaces";
+import { IComponentPosition, IMapGrammar, IMasterGrammar, IPlotGrammar } from "../interfaces";
 
 import schema from '../json-schema.json';
 import schema_categories from '../json-schema-categories.json';
-import { GrammarPanelVisibility } from "./SideBarWigets";
+import { GrammarPanelVisibility } from "./SideBarMapWigets";
 
 // declaring the types of the props
 type GrammarPanelProps = {
     obj: any,
     viewId: string,
     initialGrammar: IMasterGrammar,
+    componentsGrammar: { id: string, originalGrammar: IMapGrammar | IPlotGrammar, grammar: IMapGrammar | IPlotGrammar | undefined, position: IComponentPosition | undefined }[],
     camera: {position: number[], direction: {right: number[], lookAt: number[], up: number[]}},
     filterKnots: number[],
     inputId: string,
@@ -32,19 +33,22 @@ type GrammarPanelProps = {
     addNewMessage: any,
     applyGrammarButtonId: string,
     linkMapAndGrammarId: string,
+    activeGrammar: string
 }
 
 export const GrammarPanelContainer = ({
     obj,
     viewId,
     initialGrammar,
+    componentsGrammar,
     camera,
     filterKnots,
     inputId,
     setCamera,
     addNewMessage,
     applyGrammarButtonId,
-    linkMapAndGrammarId
+    linkMapAndGrammarId, 
+    activeGrammar
 }: GrammarPanelProps
 ) =>{
     const [mode, setMode] = useState('code');
@@ -67,9 +71,6 @@ export const GrammarPanelContainer = ({
 
     const [refresh, setRefresh] = useState(false);
 
-    const [showEditor, setShowEditor] = useState(true);
-    const [readOnly, setReadOnly] = useState(false);
-
     // const url = process.env.REACT_APP_BACKEND_SERVICE_URL;
     const url = `${Environment.backend}`
 
@@ -90,7 +91,6 @@ export const GrammarPanelContainer = ({
             }
         }
 
-        // let sendGrammar = addCamera(grammar, camera);
         let sendGrammar = '';
 
         let currentGrammar = grammarStateRef.current;
@@ -127,20 +127,6 @@ export const GrammarPanelContainer = ({
             obj.processGrammar(JSON.parse(grammarStateRef.current));
         });
     }
-
-    // ================
-    const getGrammar = () => {
-        console.log("getGrammar");
-        return grammarStateRef.current;
-    }
-
-    const modifyGrammar = (new_grammar: string) => {
-        console.log("modifyGrammar");
-        setCode(new_grammar);
-        // apply grammar
-        
-    }
-    // ================
 
     const addCameraAndFilter = (grammar: string, camera: {position: number[], direction: {right: number[], lookAt: number[], up: number[]}}, filterKnots: number[]) => {
         if(grammar == ''){
@@ -257,6 +243,23 @@ export const GrammarPanelContainer = ({
         });
 
     }, []);
+
+    useEffect(() => {
+        if(activeGrammar == "grammar"){
+            let stringData = JSON.stringify(initialGrammar, null, 4);
+            setCode(stringData);
+        }else{
+            for(const component of componentsGrammar){
+                if(component.id == activeGrammar && component.grammar != undefined){
+                    let stringData = JSON.stringify(component.grammar, null, 4);
+                    setCode(stringData);
+                }
+            }
+        }
+        
+        setTempGrammar('');
+    }, [activeGrammar]);
+
       
     const checkIfAddCameraAndFilter = (grammar: string, camera: {position: number[], direction: {right: number[], lookAt: number[], up: number[]}}, tempGrammar: string, filterKnots: number[]) => {
  
@@ -312,28 +315,24 @@ export const GrammarPanelContainer = ({
 
     return(
         <React.Fragment>
-            {showEditor && (
-                <>
-                <div className="my-editor" style={{overflow: "auto", fontSize: "24px", height: "max(90%,calc(100% - 40px))"}}>
-                    <JSONEditorReact
-                        content={checkIfAddCameraAndFilter(grammar, camera, tempGrammar, filterKnots)}
-                        schema={schema}
-                        schemaRefs={{"categories": schema_categories}}
-                        mode={'code'}
-                        modes={modes}
-                        onChangeText={updateGrammarContent}
-                        onModeChange={onModeChange}
-                        allowSchemaSuggestions={true}
-                        indentation={2}
-                    />
-                </div>
-                <div className="d-flex align-items-center justify-content-center" style={{overflow: "auto", height: "min(10%, 40px)"}}>
-                    <Button variant="secondary" id={applyGrammarButtonId} style={{marginRight: "10px"}}>Apply Grammar</Button>
-                    <input name="linkMapAndGrammar" type="checkbox" id={linkMapAndGrammarId} style={{marginRight: "5px"}}></input>
-                    <label htmlFor="linkMapAndGrammar">Link</label>
-                </div>
-                </>
-            )}
+            <div className="my-editor" style={{overflow: "auto", fontSize: "24px", height: "max(90%,calc(100% - 40px))"}}>
+                <JSONEditorReact
+                    content={checkIfAddCameraAndFilter(grammar, camera, tempGrammar, filterKnots)}
+                    schema={schema}
+                    schemaRefs={{"categories": schema_categories}}
+                    mode={'code'}
+                    modes={modes}
+                    onChangeText={updateGrammarContent}
+                    onModeChange={onModeChange}
+                    allowSchemaSuggestions={true}
+                    indentation={2}
+                />
+            </div>
+            <div className="d-flex align-items-center justify-content-center" style={{overflow: "auto", height: "min(10%, 40px)"}}>
+                <Button variant="secondary" id={applyGrammarButtonId} style={{marginRight: "10px"}}>Apply Grammar</Button>
+                <input name="linkMapAndGrammar" type="checkbox" id={linkMapAndGrammarId} style={{marginRight: "5px"}}></input>
+                <label htmlFor="linkMapAndGrammar">Link</label>
+            </div>
         </React.Fragment>
     )
 }

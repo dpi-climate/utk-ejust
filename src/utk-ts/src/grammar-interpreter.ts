@@ -31,7 +31,7 @@ class GrammarInterpreter {
     protected _grammar: IMasterGrammar;
     protected _components_grammar: {id: string, originalGrammar: (IMapGrammar | IPlotGrammar), grammar: (IMapGrammar | IPlotGrammar | undefined), position: (IComponentPosition | undefined)}[] = [];
     protected _lastValidationTimestep: number;
-    protected _components: {type: ComponentIdentifier, obj: any, position: IComponentPosition}[] = [];
+    protected _components: {id: string, type: ComponentIdentifier, obj: any, position: IComponentPosition}[] = [];
     protected _maps_widgets: {type: WidgetType, obj: any, grammarDefinition: IGenericWidget | undefined}[] = [];
     protected _frontEndCallback: any;
     protected _layerManager: LayerManager;
@@ -91,7 +91,7 @@ class GrammarInterpreter {
 
             if(component.grammar != undefined && comp_position != undefined){
                 if(component.grammar.grammar_type == "MAP"){
-                    this._components.push({type: ComponentIdentifier.MAP, obj: MapViewFactory.getInstance(this, this._layerManager, this._knotManager, components_id), position: comp_position});
+                    this._components.push({id: component.id, type: ComponentIdentifier.MAP, obj: MapViewFactory.getInstance(this, this._layerManager, this._knotManager, components_id), position: comp_position});
                     if((<IMapGrammar>component.grammar).widgets != undefined){
                         for(const widget of <IGenericWidget[]>(<IMapGrammar>component.grammar).widgets){
                             if(widget.type == WidgetType.TOGGLE_KNOT){
@@ -105,7 +105,7 @@ class GrammarInterpreter {
                         }
                     }
                 }else if(component.grammar.grammar_type == "PLOT"){
-                    this._components.push({type: ComponentIdentifier.PLOT, obj: {grammar: component.grammar.plot, init: () => {}}, position: comp_position});
+                    this._components.push({id: component.id, type: ComponentIdentifier.PLOT, obj: {grammar: component.grammar.plot, init: () => {}}, position: comp_position});
                 }
             }
 
@@ -113,7 +113,7 @@ class GrammarInterpreter {
         }
 
         if(grammar.grammar_position != undefined){
-            this._components.push({type: ComponentIdentifier.GRAMMAR, obj: {init: () => {}}, position: grammar.grammar_position});
+            this._components.push({id: "grammar", type: ComponentIdentifier.GRAMMAR, obj: {init: () => {}}, position: grammar.grammar_position});
         }
         
         this.renderViews(mainDiv, originalGrammar);
@@ -518,14 +518,17 @@ class GrammarInterpreter {
     }
 
     // If mapId is specified get all the plots that are embedded in that map
-    public getPlots(mapId: number | null = null) : {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined}[] {
-        let plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined}[] = [];
+    public getPlots(mapId: number | null = null) : {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[] {
+        let plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[] = [];
         let map_component: any = null;
         let currentMapId = 0;
 
         for(const component of this._components_grammar){
             if(component.grammar != undefined && component.grammar.grammar_type == GrammarType.PLOT){
-                plots.push(<{id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined}>component);
+                plots.push({
+                    componentId: component.id,
+                    ...<{id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined}>component
+                });
             }
 
             if(component.grammar != undefined && mapId != null && component.grammar.grammar_type == GrammarType.MAP){
@@ -872,7 +875,13 @@ class GrammarInterpreter {
         //     viewIds.push(this._maps_widgets[i].type+i);
         // }
 
-        this._root.render(React.createElement(Views, {viewObjs: this._components, mapsWidgets: this._maps_widgets, viewIds: viewIds, grammar: grammar, mainDivSize: {width: mainDiv.offsetWidth, height: mainDiv.offsetHeight}, grammarInterpreter: this}));
+        let grammars = [];
+
+        for(const component of this._components_grammar){
+            grammars.push(component);
+        }
+
+        this._root.render(React.createElement(Views, {viewObjs: this._components, mapsWidgets: this._maps_widgets, viewIds: viewIds, grammar: grammar, componentsGrammar: grammars, mainDivSize: {width: mainDiv.offsetWidth, height: mainDiv.offsetHeight}, grammarInterpreter: this}));
     }
 
 }

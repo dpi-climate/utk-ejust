@@ -26,8 +26,8 @@ export const GenericScreenPlotContainer = ({
     const nodeRef = useRef(null)
     
     return(
-        <Draggable nodeRef={nodeRef} key={id} defaultPosition={{x: x, y: -y}}>
-            <div ref={nodeRef} className="drag-box" style={{display: disp ? 'block' : 'none', backgroundColor: "white", borderRadius: "8px", padding: "10px", border: "1px solid #dadce0", boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)", overflow: "auto", maxWidth: window.innerWidth/2, maxHeight: window.innerHeight}}>
+        <Draggable nodeRef={nodeRef} key={id} defaultPosition={{x: x, y: y}}>
+            <div ref={nodeRef} className="drag-box" style={{display: disp ? 'block' : 'none', backgroundColor: "white", borderRadius: "8px", padding: "10px", border: "1px solid #dadce0", boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)", overflow: "auto", maxWidth: window.innerWidth/2, maxHeight: window.innerHeight, zIndex: 10}}>
                 <div id={svgId}>
                 </div>
             </div>

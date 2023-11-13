@@ -5,33 +5,36 @@ import { ComponentIdentifier, WidgetType} from '../constants';
 import {GrammarMethods} from '../grammar-methods';
 import './Dragbox.css'
 import * as d3 from "d3";
-import { IComponentPosition, IGenericWidget, IMasterGrammar, } from '../interfaces';
+import { IComponentPosition, IGenericWidget, IMapGrammar, IMasterGrammar, IPlotGrammar, } from '../interfaces';
 import './View.css';
-import { LayerManager } from '../layer-manager';
-import { KnotManager } from '../knot-manager';
-import { PlotManager } from '../plot-manager';
 import { GenericFixedPlotContainer } from './GenericFixedPlotContainer';
+import { MasterWidgets } from './MasterWidgets';
+import { faCode } from '@fortawesome/free-solid-svg-icons'
+import {Row} from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
 // declaring the types of the props
 type ViewProps = {
-  viewObjs: {type: ComponentIdentifier, obj: any, position: IComponentPosition}[] // each view has a an object representing its logic
+  viewObjs: {id: string, type: ComponentIdentifier, obj: any, position: IComponentPosition}[] // each view has a an object representing its logic
   mapsWidgets: {type: WidgetType, obj: any, grammarDefinition: IGenericWidget | undefined}[] // each view has a an object representing its logic
   viewIds: string[]
   grammar: IMasterGrammar
-  mainDivSize: {width: number, height: number},
+  componentsGrammar: { id: string, originalGrammar: IMapGrammar | IPlotGrammar, grammar: IMapGrammar | IPlotGrammar | undefined, position: IComponentPosition | undefined }[]
+  mainDivSize: {width: number, height: number}
   grammarInterpreter: any
 }
 
 // Render components
-function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInterpreter}: ViewProps) {
+function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, mainDivSize, grammarInterpreter}: ViewProps) {
 
   const [camera, setCamera] = useState<{position: number[], direction: {right: number[], lookAt: number[], up: number[]}}>({position: [], direction: {right: [], lookAt: [], up: []}}); // TODO: if we have multiple map instances we have multiple cameras
   const [filterKnots, setFilterKnots] = useState<number[]>([]);
   const [systemMessages, setSystemMessages] = useState<{text: string, color: string}[]>([]);
-  const [genericPlots, setGenericPlots] = useState<{id: number, hidden: boolean, svgId: string, label: string, checked: boolean, edit: boolean, floating: boolean, position: IComponentPosition | undefined}[]>([]);
+  const [genericPlots, setGenericPlots] = useState<{id: number, hidden: boolean, svgId: string, label: string, checked: boolean, edit: boolean, floating: boolean, position: IComponentPosition | undefined, componentId: string}[]>([]);
   const [knotVisibility, setKnotVisibility] = useState<any>({});
   const [currentPlotId, setCurrentPlotId] = useState(0);
   const [layersIds, setLayersIds] = useState<any>({});
+  const [activeGrammar, setActiveGrammar] = useState("grammar"); // store active component id
   let inputBarId = "searchBar";
 
   const nodeRef = useRef(null);
@@ -40,7 +43,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
     setSystemMessages([{text: msg, color: color}]);
   }
 
-  const linkedContainerGenerator = (n: number, names: string[] = [], floating_values: boolean[], positions: (IComponentPosition | undefined)[]) => {
+  const linkedContainerGenerator = (n: number, names: string[] = [], floating_values: boolean[], positions: (IComponentPosition | undefined)[], componentIds: string[]) => {
 
     let createdIds: number[] = [];
 
@@ -48,7 +51,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
       return [];
     }
 
-    createdIds = addNewGenericPlot(n, names, floating_values, positions);
+    createdIds = addNewGenericPlot(n, names, floating_values, positions, componentIds);
 
     // promise is only resolved when the container is created
     return new Promise(async function (resolve, reject) {
@@ -84,7 +87,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
 
   }
 
-  const addNewGenericPlot = (n: number = 1, names: string[] = [], floating_values: boolean[], positions: (IComponentPosition | undefined)[]) => {
+  const addNewGenericPlot = (n: number = 1, names: string[] = [], floating_values: boolean[], positions: (IComponentPosition | undefined)[], componentIds: string[]) => {
 
     let createdIds = [];
     let tempPlots = [];
@@ -93,9 +96,9 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
 
     for(let i = 0; i < n; i++){
       if(names.length > 0 && names[i] != '' && names[i] != undefined){
-        tempPlots.push({id: tempId, hidden: true, svgId: "genericPlotSvg"+tempId, label: names[i], checked: false, edit: false, floating: floating_values[i], position: positions[i]});
+        tempPlots.push({id: tempId, hidden: true, svgId: "genericPlotSvg"+tempId, label: names[i], checked: false, edit: false, floating: floating_values[i], position: positions[i], componentId: componentIds[i]});
       }else{
-        tempPlots.push({id: tempId, hidden: true, svgId: "genericPlotSvg"+tempId, label: "Plot "+tempId, checked: false, edit: false, floating: floating_values[i], position: positions[i]});
+        tempPlots.push({id: tempId, hidden: true, svgId: "genericPlotSvg"+tempId, label: "Plot "+tempId, checked: false, edit: false, floating: floating_values[i], position: positions[i], componentId: componentIds[i]});
       }
       createdIds.push(tempId);
       tempId += 1;
@@ -110,9 +113,9 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
     let modifiedPlots = [];
     for(const plot of genericPlots){
       if(plot.id == plotId){
-        modifiedPlots.push({id: plot.id, hidden: !plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position});
+        modifiedPlots.push({id: plot.id, hidden: !plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position, componentId: plot.componentId});
       }else{
-        modifiedPlots.push({id: plot.id, hidden: plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position});
+        modifiedPlots.push({id: plot.id, hidden: plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position, componentId: plot.componentId});
       }
     }
     setGenericPlots(modifiedPlots);
@@ -122,7 +125,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
     let modifiedPlots = [];
 
     for(const plot of genericPlots){
-      modifiedPlots.push({id: plot.id, hidden: !plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position});
+      modifiedPlots.push({id: plot.id, hidden: !plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position, componentId: plot.componentId});
     }
 
     setGenericPlots(modifiedPlots);
@@ -145,7 +148,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
     }else if(state == "knotVisibility"){
       setKnotVisibility(value);
     }else if(state == "containerGenerator"){
-      return linkedContainerGenerator(value.n, value.names, value.floating_values, value.positions);
+      return linkedContainerGenerator(value.n, value.names, value.floating_values, value.positions, value.componentIds);
     }
   }
 
@@ -199,6 +202,15 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
     <React.Fragment>
       <div style={{backgroundColor: "#EAEAEA", height: "100%", width: "100%", position: "relative"}}>
         {
+          <MasterWidgets
+            width={mainDivSize.width}
+            height={mainDivSize.height}
+            genericPlots={genericPlots}
+            togglePlots={toggleAllPlots}
+            editGrammar={setActiveGrammar}
+          />
+        }
+        {
           viewObjs.map((component, index) => {
             if (component.type == ComponentIdentifier.MAP) {
               return <React.Fragment key={component.type+index}>
@@ -217,6 +229,8 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
                     inputBarId={inputBarId}
                     genericPlots={genericPlots}
                     togglePlots={toggleAllPlots}
+                    componentId={component.id}
+                    editGrammar={setActiveGrammar}
                   />
                 </div>
               </React.Fragment>
@@ -235,6 +249,8 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
                     addNewMessage = {addNewMessage}
                     applyGrammarButtonId = {"applyGrammarButton"}
                     linkMapAndGrammarId = {"linkMapAndGrammar"}
+                    activeGrammar = {activeGrammar}
+                    componentsGrammar = {componentsGrammar}
                   />
                 </div>
               </React.Fragment>
@@ -246,6 +262,11 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, mainDivSize, grammarInt
             if(!item.floating){
               return (
                 <div className='component' style={{position: "absolute", left: getTopLeft(item.position).left, top: getTopLeft(item.position).top, width: getSizes(item.position).width, height: getSizes(item.position).height}}>
+                  <div style={{zIndex: 5, backgroundColor: "white", width: "75px", position: "absolute", left: "10px", top: "10px", padding: "5px", borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)"}}>
+                    <Row>
+                      <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faCode} onClick={() => setActiveGrammar(item.componentId)} />
+                    </Row>
+                  </div>
                   <GenericFixedPlotContainer 
                     id={item.id}
                     svgId={item.svgId}

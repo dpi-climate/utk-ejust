@@ -27,7 +27,7 @@ class LockFlag {
 
 export class PlotManager {
 
-    protected _plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined}[];
+    protected _plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[];
     protected _updateStatusCallback: any;
     protected _setGrammarUpdateCallback: any;
     protected _plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[];
@@ -41,7 +41,7 @@ export class PlotManager {
      * @param viewData 
      * @param setGrammarUpdateCallback Function that sets the callback that will be called in the frontend to update the grammar
      */
-    constructor(plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined}[], plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
+    constructor(plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[], plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
 
         this._setHighlightElementCallback = setHighlightElementCallback;
         this._plotsReferences = new Array(plots.length);
@@ -237,6 +237,7 @@ export class PlotManager {
         let names = [];
         let floating_values = []; // which plots are fixed on the screen or floating on top of it
         let positions: (IComponentPosition | undefined)[] = []; // positions of each plot (undefined if it is floating)
+        let componentIds: string[] = [];
 
         for(let i = 0; i < this._plots.length; i++){
             if(this._plots[i].grammar.arrangement == PlotArrangementType.LINKED){
@@ -255,10 +256,12 @@ export class PlotManager {
                 }
 
                 positions.push(this._plots[i].position);
+
+                componentIds.push(this._plots[i].componentId);
             }
         }
 
-        let ids = await this._updateStatusCallback("containerGenerator", {n: linkedPlots.length, names: names, floating_values: floating_values, positions: positions}); 
+        let ids = await this._updateStatusCallback("containerGenerator", {n: linkedPlots.length, names: names, floating_values: floating_values, positions: positions, componentIds: componentIds}); 
 
         for(let i = 0; i < linkedPlots.length; i++){
 
