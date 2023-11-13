@@ -78,8 +78,8 @@ def thematic_from_netcdf(filepath, layer_id, value_variable, latitude_variable, 
     ncfile = Dataset(filepath)
 
     xlong = []
-    xlat = []
-    temp = []
+    xlat  = []
+    temp  = []
 
     ## Data coords
     if(len(ncfile.variables[longitude_variable].shape) == 3 and timestep != None):
