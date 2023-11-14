@@ -53,7 +53,8 @@ export enum PlotArrangementType{
 
 export enum GrammarType{
     PLOT = "PLOT",
-    MAP = "MAP"
+    MAP = "MAP",
+    MASTER = "MASTER"
 }
 
 export enum SpatialRelationType{

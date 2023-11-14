@@ -17,8 +17,12 @@ import './GrammarPanel.css';
 import { IComponentPosition, IMapGrammar, IMasterGrammar, IPlotGrammar } from "../interfaces";
 
 import schema from '../json-schema.json';
+import schema_map from '../json-schema-maps.json';
+import schema_plot from '../json-schema-plots.json';
+
 import schema_categories from '../json-schema-categories.json';
 import { GrammarPanelVisibility } from "./SideBarMapWigets";
+import { GrammarType } from "../constants";
 
 // declaring the types of the props
 type GrammarPanelProps = {
@@ -33,7 +37,8 @@ type GrammarPanelProps = {
     addNewMessage: any,
     applyGrammarButtonId: string,
     linkMapAndGrammarId: string,
-    activeGrammar: string
+    activeGrammar: string,
+    activeGrammarType: GrammarType
 }
 
 export const GrammarPanelContainer = ({
@@ -48,10 +53,14 @@ export const GrammarPanelContainer = ({
     addNewMessage,
     applyGrammarButtonId,
     linkMapAndGrammarId, 
-    activeGrammar
+    activeGrammar,
+    activeGrammarType
 }: GrammarPanelProps
 ) =>{
+
     const [mode, setMode] = useState('code');
+
+    const [activeSchema, setActiveSchema] = useState<any>(schema);
 
     const [grammar, _setCode] = useState('');
 
@@ -98,7 +107,7 @@ export const GrammarPanelContainer = ({
             currentGrammar = grammar;
         }
 
-        if(!d3.select('#'+linkMapAndGrammarId).empty() && d3.select('#'+linkMapAndGrammarId).property("checked")){
+        if(activeGrammarType == GrammarType.MAP && !d3.select('#'+linkMapAndGrammarId).empty() && d3.select('#'+linkMapAndGrammarId).property("checked")){
             if(tempGrammarStateRef.current == ''){
                 sendGrammar = addCameraAndFilter(currentGrammar, camera, filterKnots);
             }else{
@@ -116,16 +125,28 @@ export const GrammarPanelContainer = ({
             sendGrammar = checkGrammarVisibility(sendGrammar);
         }
 
-        updateTimeBtn(sendGrammar);
+        // updateTimeBtn(sendGrammar);
 
         setCode(sendGrammar);
         setTempGrammar('');
 
         const data = sendGrammar;
 
-        GrammarMethods.applyGrammar(url, JSON.parse(data), "GrammarPanel", (response: Object) => {
-            obj.processGrammar(JSON.parse(grammarStateRef.current));
-        });
+        if(activeGrammarType == GrammarType.MASTER){
+            GrammarMethods.applyGrammar(url, JSON.parse(data), "GrammarPanel", (response: Object) => {
+                obj.processGrammar(JSON.parse(grammarStateRef.current));
+            }, "grammar");
+        }else{
+            for(const component_grammar of componentsGrammar){
+                if(component_grammar.id == activeGrammar){
+                    GrammarMethods.applyGrammar(url, JSON.parse(data), "GrammarPanel", (response: Object) => {
+                        obj.updateComponentGrammar(JSON.parse(grammarStateRef.current), component_grammar);
+                        obj.replaceVariablesAndInitViews();
+                    }, component_grammar.id);
+                }
+            }
+        }
+
     }
 
     const addCameraAndFilter = (grammar: string, camera: {position: number[], direction: {right: number[], lookAt: number[], up: number[]}}, filterKnots: number[]) => {
@@ -166,15 +187,15 @@ export const GrammarPanelContainer = ({
         return JSON.stringify(parsedGrammar, null, 4);
     }
 
-    const updateTimeBtn = (grammar:string) => {
-        var parsedGrammar = JSON.parse(grammar);
-        let currentTime = parseInt(parsedGrammar.variables[0].value);
+    // const updateTimeBtn = (grammar:string) => {
+    //     var parsedGrammar = JSON.parse(grammar);
+    //     let currentTime = parseInt(parsedGrammar.variables[0].value);
         
-        let updateTimeFunction = InteractionChannel.getPassedVariable("timestamp");
-        if(currentTime>0 && currentTime<11){
-            updateTimeFunction(currentTime);
-        }
-    }
+    //     let updateTimeFunction = InteractionChannel.getPassedVariable("timestamp");
+    //     if(currentTime>0 && currentTime<11){
+    //         updateTimeFunction(currentTime);
+    //     }
+    // }
 
     const updateLocalNominatim = (camera: { position: number[], direction: { right: number[], lookAt: number[], up: number[] } }, filterKnots: number[]) => {
         setTempGrammar(addCameraAndFilter(grammarStateRef.current, camera, filterKnots)); // overwrite previous changes with grammar integrated with camera and filter knots
@@ -248,11 +269,17 @@ export const GrammarPanelContainer = ({
         if(activeGrammar == "grammar"){
             let stringData = JSON.stringify(initialGrammar, null, 4);
             setCode(stringData);
+            setActiveSchema(schema);
         }else{
             for(const component of componentsGrammar){
                 if(component.id == activeGrammar && component.grammar != undefined){
                     let stringData = JSON.stringify(component.grammar, null, 4);
                     setCode(stringData);
+                    if(component.grammar.grammar_type == GrammarType.MAP){
+                        setActiveSchema(schema_map);
+                    }else if(component.grammar.grammar_type == GrammarType.PLOT){
+                        setActiveSchema(schema_plot);
+                    }
                 }
             }
         }
@@ -260,7 +287,6 @@ export const GrammarPanelContainer = ({
         setTempGrammar('');
     }, [activeGrammar]);
 
-      
     const checkIfAddCameraAndFilter = (grammar: string, camera: {position: number[], direction: {right: number[], lookAt: number[], up: number[]}}, tempGrammar: string, filterKnots: number[]) => {
  
         let inputLink = d3.select('#'+linkMapAndGrammarId)
@@ -318,7 +344,7 @@ export const GrammarPanelContainer = ({
             <div className="my-editor" style={{overflow: "auto", fontSize: "24px", height: "max(90%,calc(100% - 40px))"}}>
                 <JSONEditorReact
                     content={checkIfAddCameraAndFilter(grammar, camera, tempGrammar, filterKnots)}
-                    schema={schema}
+                    schema={activeSchema}
                     schemaRefs={{"categories": schema_categories}}
                     mode={'code'}
                     modes={modes}

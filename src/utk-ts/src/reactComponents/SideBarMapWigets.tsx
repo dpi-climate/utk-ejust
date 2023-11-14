@@ -1,5 +1,5 @@
 import React from "react";
-import { WidgetType } from "../constants";
+import { GrammarType, WidgetType } from "../constants";
 import { IGenericWidget } from "../interfaces";
 import { ToggleKnotsWidget } from './ToggleKnotsWidget';
 import { SearchWidget } from './SearchWidget';
@@ -74,7 +74,7 @@ export const SideBarMapWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVis
                   }
                 })
               }
-              <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faCode} onClick={editGrammar(componentId)} />
+              <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faCode} onClick={() => editGrammar(componentId, GrammarType.MAP)} />
               {/* {genericPlots.filter((plot: any) => {return plot.floating;}).length > 0 ? <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faChartSimple} onClick={handleTogglePlots} /> : null} */}
             </Row>
           </div> : null}

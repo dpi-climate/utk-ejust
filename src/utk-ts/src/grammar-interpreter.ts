@@ -29,6 +29,7 @@ import { DataApi } from './data-api';
 class GrammarInterpreter {
 
     protected _grammar: IMasterGrammar;
+    protected _preProcessedGrammar: IMasterGrammar;
     protected _components_grammar: {id: string, originalGrammar: (IMapGrammar | IPlotGrammar), grammar: (IMapGrammar | IPlotGrammar | undefined), position: (IComponentPosition | undefined)}[] = [];
     protected _lastValidationTimestep: number;
     protected _components: {id: string, type: ComponentIdentifier, obj: any, position: IComponentPosition}[] = [];
@@ -64,6 +65,8 @@ class GrammarInterpreter {
         this._ajv_plots = new Ajv2019({schemas: [schema_plots]});
 
         this._url = <string>Environment.backend;
+
+        this._preProcessedGrammar = grammar;
 
         this._frontEndCallback = null;
         this._mainDiv = mainDiv;
@@ -243,25 +246,33 @@ class GrammarInterpreter {
 
                 let component_grammar = <IMapGrammar | IPlotGrammar> await DataLoader.getJsonData(url);
 
-                if(this.validateComponentGrammar(component_grammar)){
-                    this._components_grammar.push({id: component.id, originalGrammar: component_grammar, grammar: undefined, position: component.position});
-                }
+                this.updateComponentGrammar(component_grammar, component);
             }
             
-            for(const component_grammar of this._components_grammar){
-                let aux = JSON.stringify(component_grammar.originalGrammar);
-                if(component_grammar.originalGrammar.variables != undefined){
-                    for(let variable of component_grammar.originalGrammar.variables) {
-                        aux = aux.replaceAll("$"+variable.name+"$", variable.value);
-                    }
-                }
-                component_grammar.grammar = JSON.parse(aux);
-            }            
-
-            await this.initLayers();
-        
-            this.initViews(this._mainDiv, processedGrammar, grammar, this._components_grammar); 
+            await this.replaceVariablesAndApplyGrammars();
         }
+    }
+
+    public updateComponentGrammar(component_grammar: IMapGrammar | IPlotGrammar, componentInfo: any = undefined){
+        if(this.validateComponentGrammar(component_grammar)){
+            this._components_grammar.push({id: componentInfo.id, originalGrammar: component_grammar, grammar: undefined, position: componentInfo.position});
+        }
+    }
+
+    public async replaceVariablesAndApplyGrammars(){
+        for(const component_grammar of this._components_grammar){
+            let aux = JSON.stringify(component_grammar.originalGrammar);
+            if(component_grammar.originalGrammar.variables != undefined){
+                for(let variable of component_grammar.originalGrammar.variables) {
+                    aux = aux.replaceAll("$"+variable.name+"$", variable.value);
+                }
+            }
+            component_grammar.grammar = JSON.parse(aux);
+        }            
+
+        await this.initLayers();
+    
+        this.initViews(this._mainDiv, this._grammar, this._preProcessedGrammar , this._components_grammar); 
     }
 
     initKnots(){

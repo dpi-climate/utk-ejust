@@ -1,7 +1,7 @@
 import React, {useEffect, useState, useRef} from 'react';
 import { GrammarPanelContainer } from './GrammarPanel';
 import { MapRendererContainer } from './MapRenderer';
-import { ComponentIdentifier, WidgetType} from '../constants';
+import { ComponentIdentifier, GrammarType, WidgetType} from '../constants';
 import {GrammarMethods} from '../grammar-methods';
 import './Dragbox.css'
 import * as d3 from "d3";
@@ -35,6 +35,8 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
   const [currentPlotId, setCurrentPlotId] = useState(0);
   const [layersIds, setLayersIds] = useState<any>({});
   const [activeGrammar, setActiveGrammar] = useState("grammar"); // store active component id
+  const [activeGrammarType, setActiveGrammarType] = useState(GrammarType.MASTER); // type of active grammar
+
   let inputBarId = "searchBar";
 
   const nodeRef = useRef(null);
@@ -85,6 +87,11 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
 
     });
 
+  }
+  
+  const setActiveGrammarAndType = (grammar: string, grammarType: GrammarType) => {
+    setActiveGrammar(grammar);
+    setActiveGrammarType(grammarType);
   }
 
   const addNewGenericPlot = (n: number = 1, names: string[] = [], floating_values: boolean[], positions: (IComponentPosition | undefined)[], componentIds: string[]) => {
@@ -207,7 +214,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
             height={mainDivSize.height}
             genericPlots={genericPlots}
             togglePlots={toggleAllPlots}
-            editGrammar={setActiveGrammar}
+            editGrammar={setActiveGrammarAndType}
           />
         }
         {
@@ -230,7 +237,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
                     genericPlots={genericPlots}
                     togglePlots={toggleAllPlots}
                     componentId={component.id}
-                    editGrammar={setActiveGrammar}
+                    editGrammar={setActiveGrammarAndType}
                   />
                 </div>
               </React.Fragment>
@@ -239,7 +246,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
               return <React.Fragment key={component.type+index}>
                 <div className='component' style={{position: "absolute", left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}>
                   <GrammarPanelContainer 
-                    obj = {component.obj}
+                    obj = {grammarInterpreter}
                     viewId={viewIds[index]}
                     initialGrammar={grammar}
                     camera = {camera}
@@ -250,6 +257,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
                     applyGrammarButtonId = {"applyGrammarButton"}
                     linkMapAndGrammarId = {"linkMapAndGrammar"}
                     activeGrammar = {activeGrammar}
+                    activeGrammarType={activeGrammarType}
                     componentsGrammar = {componentsGrammar}
                   />
                 </div>
@@ -264,7 +272,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
                 <div className='component' style={{position: "absolute", left: getTopLeft(item.position).left, top: getTopLeft(item.position).top, width: getSizes(item.position).width, height: getSizes(item.position).height}}>
                   <div style={{zIndex: 5, backgroundColor: "white", width: "75px", position: "absolute", left: "10px", top: "10px", padding: "5px", borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)"}}>
                     <Row>
-                      <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faCode} onClick={() => setActiveGrammar(item.componentId)} />
+                      <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faCode} onClick={() => setActiveGrammarAndType(item.componentId, GrammarType.PLOT)} />
                     </Row>
                   </div>
                   <GenericFixedPlotContainer 
