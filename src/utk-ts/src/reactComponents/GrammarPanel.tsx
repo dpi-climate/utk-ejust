@@ -290,12 +290,12 @@ export const GrammarPanelContainer = ({
             setActiveSchema(schema);
         }else{
             for(const component of componentsGrammar){
-                if(component.id == activeGrammar && component.grammar != undefined){
-                    let stringData = JSON.stringify(component.grammar, null, 4);
+                if(component.id == activeGrammar && component.originalGrammar != undefined){
+                    let stringData = JSON.stringify(component.originalGrammar, null, 4);
                     setCode(stringData);
-                    if(component.grammar.grammar_type == GrammarType.MAP){
+                    if(component.originalGrammar.grammar_type == GrammarType.MAP){
                         setActiveSchema(schema_map);
-                    }else if(component.grammar.grammar_type == GrammarType.PLOT){
+                    }else if(component.originalGrammar.grammar_type == GrammarType.PLOT){
                         setActiveSchema(schema_plot);
                     }
                 }

@@ -58,6 +58,7 @@ export const SideBarMapWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVis
         <React.Fragment>
           {mapWidgets.length > 1 ? <div style={{backgroundColor: "white", width: "75px", position: "absolute", left: "10px", top: "10px", padding: "5px", borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)"}}>
             <Row>
+              <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faCode} onClick={() => editGrammar(componentId, GrammarType.MAP)} />
               {
                 mapWidgets.map((component, index) => {
                   if(component.type == WidgetType.TOGGLE_KNOT){
@@ -74,7 +75,6 @@ export const SideBarMapWidgets = ({x, y, mapWidth, mapHeight, layersIds, knotVis
                   }
                 })
               }
-              <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faCode} onClick={() => editGrammar(componentId, GrammarType.MAP)} />
               {/* {genericPlots.filter((plot: any) => {return plot.floating;}).length > 0 ? <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faChartSimple} onClick={handleTogglePlots} /> : null} */}
             </Row>
           </div> : null}

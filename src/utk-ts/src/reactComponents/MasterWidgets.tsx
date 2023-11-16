@@ -22,12 +22,14 @@ export const MasterWidgets = ({width, height, genericPlots, togglePlots, editGra
 
     return (
         <React.Fragment>
-          {genericPlots.filter((plot: any) => {return plot.floating;}).length > 0 ? <div style={{zIndex: 5, backgroundColor: "white", width: "75px", position: "absolute", left: "10px", top: "10px", padding: "5px", borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)"}}>
             <Row>
-                <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faChartSimple} onClick={handleTogglePlots} />
-                <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faCode} onClick={() => editGrammar("grammar", GrammarType.MASTER)} />
+                <div style={{zIndex: 5, backgroundColor: "white", width: "75px", position: "absolute", left: "10px", top: "10px", padding: "5px", borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)"}}>
+                    <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faCode} onClick={() => editGrammar("grammar", GrammarType.MASTER)} />
+                    {genericPlots.filter((plot: any) => {return plot.floating;}).length > 0 ? 
+                        <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faChartSimple} onClick={handleTogglePlots} />
+                        : null}
+                </div>
             </Row>
-          </div> : null}
           {
             genericPlots.map((item: any) => {
                 if(item.floating){
