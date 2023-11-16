@@ -1,4 +1,3 @@
-import { GrammarManager } from "./grammar-manager";
 import { IKnot } from "./interfaces";
 import { Knot } from "./knot";
 import { Layer } from "./layer";
@@ -8,19 +7,19 @@ export class KnotManager {
     protected _knots: Knot[] = [];
     protected _updateStatusCallback: any;
 
-
-    constructor(updateStatusCallback: any) {
+    public init(updateStatusCallback: any){
         this._updateStatusCallback = updateStatusCallback;
+        this.toggleKnot(""); // just to update the knots in the view
     }
 
     get knots(): Knot[] {
         return this._knots;
     }
 
-    createKnot(id: string, physicalLayer: Layer, knotSpecification: IKnot, grammarInterpreter: any, viewId: number, visible: boolean, map:any): Knot {
-        let knot = new Knot(id, physicalLayer, knotSpecification, grammarInterpreter, viewId, visible, map);
+    createKnot(id: string, physicalLayer: Layer, knotSpecification: IKnot, grammarInterpreter: any, visible: boolean): Knot {
+        
+        let knot = new Knot(id, physicalLayer, knotSpecification, grammarInterpreter, visible);
         this._knots.push(knot);
-        this.toggleKnot(""); // just to update the knots in the view
         return knot;
     }
 
@@ -39,7 +38,9 @@ export class KnotManager {
             knotVisibility[knot.id] = knot.visible;
         }
 
-        this._updateStatusCallback("knotVisibility", knotVisibility);
+        if(this._updateStatusCallback != undefined){
+            this._updateStatusCallback("knotVisibility", knotVisibility);
+        }
     }
 
     getKnotById(knotId: string){

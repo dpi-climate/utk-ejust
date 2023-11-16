@@ -98,6 +98,12 @@ export default function GrammarEditor({
     }
   }, [mode]);
 
+  useEffect(() => {
+    if (refEditor.current) {
+      refEditor.current.setSchema(schema);
+    }
+  }, [schema]);
+
 //   componentWillUnmount () {
 //     if (this.jsoneditor) {
 //       this.jsoneditor.destroy();

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import {Environment, DataLoader, GrammarInterpreterFactory, InteractionChannel} from 'utk';
 // import {Environment, DataLoader, GrammarInterpreterFactory} from 'utk';
 import $ from 'jquery';
-import { IGrammar } from 'utk';
+import { IMasterGrammar } from 'utk';
 
 interface MapProps {
   time: number,
@@ -20,10 +20,13 @@ const Map = ({ time, setTime } : MapProps) => {
       Environment.setEnvironment({backend: Environment.backend});
       
       const url = `${Environment.backend}/getGrammar`;
-      const grammar = await DataLoader.getJsonData(url) as IGrammar;
+      const grammar = await DataLoader.getJsonData(url) as IMasterGrammar;
 
-      const currentTime = parseInt(grammar.variables[0].value);
-      if(currentTime>0 && currentTime<11) setTime(currentTime);
+      if(grammar.variables != undefined){
+        const currentTime = parseInt(grammar.variables[0].value);
+        if(currentTime>0 && currentTime<11) setTime(currentTime);
+      }
+      
       const mainDiv = document.querySelector('#spatial-div') as HTMLElement;
 
       const setTimeFunction = setTime;

@@ -27,21 +27,18 @@ export class Knot {
     protected _thematicData: number[] | null;
     protected _knotSpecification: IKnot;
     protected _id: string;
-    protected _shaders: (Shader|AuxiliaryShader)[] = [];
+    protected _shaders: any = {};
     protected _visible: boolean;
     protected _grammarInterpreter: any;
-    protected _viewId: number;
-    protected _map: any
+    protected _maps: any = {};
 
-    constructor(id: string, physicalLayer: Layer, knotSpecification: IKnot, grammarInterpreter: any, viewId: number, visible: boolean, map: any) {
+    constructor(id: string, physicalLayer: Layer, knotSpecification: IKnot, grammarInterpreter: any, visible: boolean) {
         this._physicalLayer = physicalLayer;
         this._knotSpecification = knotSpecification;
         this._id = id;
         this._visible = visible;
         this._grammarInterpreter = grammarInterpreter;
-        this._viewId = viewId;
-        this._map = map;
-    }   
+    }
 
     get id(){
         return this._id;
@@ -71,15 +68,19 @@ export class Knot {
         this._thematicData = thematicData;
     }
 
-    render(glContext: WebGL2RenderingContext, camera: any): void {
+    addMap(map: any, viewId: number) {
+        this._maps[viewId] = map;
+    }
+
+    render(glContext: WebGL2RenderingContext, camera: any, viewId: number): void {
         if (!this._visible) { return; } 
 
         this._physicalLayer.camera = camera;
-        this._physicalLayer.render(glContext, this._shaders);
+        this._physicalLayer.render(glContext, this._shaders[viewId]);
     }
 
-    loadShaders(glContext: WebGL2RenderingContext): void {
-        this._shaders = [];
+    loadShaders(glContext: WebGL2RenderingContext, centroid:number[] | Float32Array = [0,0,0], viewId: number): void {
+        this._shaders[viewId] = [];
         const color = MapStyle.getColor(this._physicalLayer.style);
 
         let cmap = 'interpolateReds';
@@ -126,8 +127,8 @@ export class Knot {
                     if(this._physicalLayer instanceof TrianglesLayer){
                         let auxShader = undefined;
     
-                        if(this._shaders.length > 0){
-                            auxShader = this._shaders[this._shaders.length-1];
+                        if(this._shaders[viewId].length > 0){
+                            auxShader = this._shaders[viewId][this._shaders[viewId].length-1];
                         }
     
                         if(auxShader && auxShader instanceof AuxiliaryShaderTriangles){
@@ -138,8 +139,8 @@ export class Knot {
                     }else if(this._physicalLayer instanceof BuildingsLayer){
                         let auxShader = undefined;
 
-                        if(this._shaders.length > 0){
-                            auxShader = this._shaders[this._shaders.length-1];
+                        if(this._shaders[viewId].length > 0){
+                            auxShader = this._shaders[viewId][this._shaders[viewId].length-1];
                         }
     
                         if(auxShader && auxShader instanceof AuxiliaryShader){
@@ -164,7 +165,7 @@ export class Knot {
                 break;
             }
 
-            this._shaders.push(<Shader | AuxiliaryShader>shader);
+            this._shaders[viewId].push(<Shader | AuxiliaryShader>shader);
 
             // // load message
             // console.log("------------------------------------------------------");
@@ -174,8 +175,9 @@ export class Knot {
             // console.log("------------------------------------------------------");
         }
 
-        this._physicalLayer.updateShaders(this._shaders); // send mesh data to the shaders
-        this._physicalLayer.updateFunction(this._knotSpecification, this._shaders);
+        this._physicalLayer.updateShaders(this._shaders[viewId], centroid, viewId); // send mesh data to the shaders
+
+        this._physicalLayer.updateFunction(this._knotSpecification, this._shaders[viewId]);
     }
 
     // send function values to the mesh of the layer
@@ -202,7 +204,7 @@ export class Knot {
 
             for(const scheme of this._knotSpecification.integration_scheme){
                 if(functionsPerKnot[scheme.out.name] == undefined){
-                    let knot = this._grammarInterpreter.getKnotById(scheme.out.name, this._viewId);
+                    let knot = this._grammarInterpreter.getKnotById(scheme.out.name);
 
                     if(knot == undefined){
                         throw Error("Could not retrieve knot that composes knot_op "+this._knotSpecification.id);
@@ -212,7 +214,7 @@ export class Knot {
                 }
 
                 if(scheme.in != undefined && functionsPerKnot[<string>scheme.in.name] == undefined){
-                    let knot = this._grammarInterpreter.getKnotById(<string>scheme.in.name, this._viewId);
+                    let knot = this._grammarInterpreter.getKnotById(<string>scheme.in.name);
 
                     if(knot == undefined){
                         throw Error("Could not retrieve knot that composes knot_op "+this._knotSpecification.id);
@@ -342,8 +344,8 @@ export class Knot {
         let plotArrangements = [];
 
         for(const plot of plotsGrammar){
-            if(plot.knots.includes(this._id)){
-                plotArrangements.push(plot.arrangement);
+            if(plot.grammar.knots.includes(this._id)){
+                plotArrangements.push(plot.grammar.arrangement);
             }
         }
 
@@ -382,33 +384,45 @@ export class Knot {
 
             let result = this._getPickingArea(glContext, cursorPosition[0], cursorPosition[1], cursorPosition[0], cursorPosition[1]);
 
-            for(const shader of this._shaders){
-                if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles){
-                    shader.clearPicking();
-                    if(highlightCellInteraction)
-                        shader.updatePickPosition(result.pixelAnchorX, result.pixelAnchorY, result.width, result.height);
+            for(const key of Object.keys(this._shaders)){
+                let shaders = this._shaders[key];
+                for(const shader of shaders){
+                    if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles){
+                        shader.clearPicking();
+                        if(highlightCellInteraction)
+                            shader.updatePickPosition(result.pixelAnchorX, result.pixelAnchorY, result.width, result.height);
+                    }
                 }
             }
 
         }
 
         if(eventName == 'right-alt'){
-            for(const shader of this._shaders){
-                if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles){
-                    shader.clearPicking();
+            
+            for(const key of Object.keys(this._shaders)){
+                let shaders = this._shaders[key];
+                for(const shader of shaders){
+                    if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles){
+                        shader.clearPicking();
+                    }
                 }
             }
+            for(const map of this._maps){
+                map.updateGrammarPlotsHighlight(this._physicalLayer.id, null, null, true); // letting plots manager know that this knot was interacted with
+            }
 
-            this._map.updateGrammarPlotsHighlight(this._physicalLayer.id, null, null, true); // letting plots manager know that this knot was interacted with
         }
 
         // mouse move
         if(eventName == "left+drag+alt-brushing" && cursorPosition != null && highlightCellInteraction){
             let result = this._getPickingArea(glContext, cursorPosition[0], cursorPosition[1], cursorPosition[0], cursorPosition[1]);
 
-            for(const shader of this._shaders){
-                if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles){
-                    shader.updatePickPosition(result.pixelAnchorX, result.pixelAnchorY, result.width, result.height);
+            for(const key of Object.keys(this._shaders)){
+                let shaders = this._shaders[key];
+                for(const shader of shaders){
+                    if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles){
+                        shader.updatePickPosition(result.pixelAnchorX, result.pixelAnchorY, result.width, result.height);
+                    }
                 }
             }
         }
@@ -416,17 +430,23 @@ export class Knot {
         if(eventName == "left+drag+alt+brushing" && cursorPosition != null && brushingPivot != null){
             let result = this._getPickingArea(glContext, cursorPosition[0], cursorPosition[1], brushingPivot[0], brushingPivot[1]);
 
-            for(const shader of this._shaders){
-                if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles){
-                    shader.updatePickPosition(result.pixelAnchorX, result.pixelAnchorY, result.width, result.height);
+            for(const key of Object.keys(this._shaders)){
+                let shaders = this._shaders[key];
+                for(const shader of shaders){
+                    if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles){
+                        shader.updatePickPosition(result.pixelAnchorX, result.pixelAnchorY, result.width, result.height);
+                    }
                 }
             }
         }
 
         if(eventName == "left+drag-alt+brushing" || eventName == "-drag-alt+brushing"){
-            for(const shader of this._shaders){
-                if(shader instanceof ShaderPicking){
-                    shader.applyBrushing();
+            for(const key of Object.keys(this._shaders)){
+                let shaders = this._shaders[key];
+                for(const shader of shaders){
+                    if(shader instanceof ShaderPicking){
+                        shader.applyBrushing();
+                    }
                 }
             }
         }
@@ -434,9 +454,12 @@ export class Knot {
         if(eventName == "right+drag-brushingFilter" && cursorPosition != null){
             let result = this._getPickingArea(glContext, cursorPosition[0], cursorPosition[1], cursorPosition[0], cursorPosition[1]);
 
-            for(const shader of this._shaders){
-                if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles){
-                    shader.updatePickFilterPosition(result.pixelAnchorX, result.pixelAnchorY, result.width, result.height);
+            for(const key of Object.keys(this._shaders)){
+                let shaders = this._shaders[key];
+                for(const shader of shaders){
+                    if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles){
+                        shader.updatePickFilterPosition(result.pixelAnchorX, result.pixelAnchorY, result.width, result.height);
+                    }
                 }
             }
         }
@@ -444,9 +467,12 @@ export class Knot {
         if(eventName == "right+drag+brushingFilter" && cursorPosition != null && brushingPivot != null){
             let result = this._getPickingArea(glContext, cursorPosition[0], cursorPosition[1], brushingPivot[0], brushingPivot[1]);
 
-            for(const shader of this._shaders){
-                if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles){
-                    shader.updatePickFilterPosition(result.pixelAnchorX, result.pixelAnchorY, result.width, result.height);
+            for(const key of Object.keys(this._shaders)){
+                let shaders = this._shaders[key];
+                for(const shader of shaders){
+                    if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles){
+                        shader.updatePickFilterPosition(result.pixelAnchorX, result.pixelAnchorY, result.width, result.height);
+                    }
                 }
             }
         }
@@ -454,21 +480,31 @@ export class Knot {
         // mouse wheel
         if(eventName == "wheel+alt" && cursorPosition != null && embedFootInteraction){
             if(this._physicalLayer instanceof BuildingsLayer){ // TODO: generalize this
-                this._physicalLayer.createFootprintPlot(this._map.glContext, cursorPosition[0], cursorPosition[1], true, this._shaders);
-                this._map.render(); // TODO: get rid of the need to render the map
-                await this._physicalLayer.updateFootprintPlot(this._map.glContext, this._map.grammarManager, -1, eventObject.deltaY * 0.02, 'vega', this._shaders);
+                for(const key of Object.keys(this._maps)){
+                    let map = this._maps[key]
+                    this._physicalLayer.createFootprintPlot(map.glContext, cursorPosition[0], cursorPosition[1], true, this._shaders[key]);
+                    map.render(); // TODO: get rid of the need to render the map
+                    await this._physicalLayer.updateFootprintPlot(map.glContext, map.plotManager, -1, eventObject.deltaY * 0.02, 'vega', this._shaders[key]);
+                }
             }
         }
 
-        if(eventName == "Enter" && highlightCellInteraction && embedSurfaceInteraction){
+        if(eventName == "enter" && highlightCellInteraction && embedSurfaceInteraction){
             if(this._physicalLayer instanceof BuildingsLayer){ // TODO: generalize this
-                await this._physicalLayer.applyTexSelectedCells(this._map.glContext, this._map.grammarManager, 'vega', this._shaders);
+                for(const key of Object.keys(this._maps)){
+                    let map = this._maps[key];
+                    let shaders = this._shaders[key];
+                    await this._physicalLayer.applyTexSelectedCells(map.glContext, map.plotManager, 'vega', shaders);
+                }
             }
         }
 
         if(eventName == "r"){
             if(this._physicalLayer instanceof BuildingsLayer){ // TODO: generalize this
-                this._physicalLayer.clearAbsSurface(this._shaders);
+                for(const key of Object.keys(this._shaders)){
+                    let shaders = this._shaders[key];
+                    this._physicalLayer.clearAbsSurface(shaders);
+                }
             }
         }
 
@@ -478,16 +514,29 @@ export class Knot {
 
                 //triangles layer interactions
                 if(this._physicalLayer instanceof TrianglesLayer){ // TODO: generalize this
-                    let currentPoint = this._map.mouse.currentPoint;
-                    this._physicalLayer.highlightElement(this._map.glContext, currentPoint[0], currentPoint[1], this._shaders);
+                    for(const key of Object.keys(this._maps)){
+                        let map = this._maps[key]
+                        let currentPoint = map.mouse.currentPoint;
+                        for(const key of Object.keys(this._shaders)){
+                            let shaders = this._shaders[key];
+                            this._physicalLayer.highlightElement(map.glContext, currentPoint[0], currentPoint[1], shaders);
+                        }
+                    }
                 }
 
-                this._map.render();
-                this._map.render();
+                for(const key of Object.keys(this._maps)){
+                    let map = this._maps[key]
+                    map.render();
+                    map.render();
+                }
 
                 if(this._physicalLayer instanceof TrianglesLayer){ // TODO: generalize this
-                    let objectId = this._physicalLayer.getIdLastHighlightedElement(this._shaders);
-                    this._map.updateGrammarPlotsHighlight(this._physicalLayer.id, LevelType.OBJECTS, objectId); // letting plots manager know that this knot was interacted with
+                    for(const key of Object.keys(this._shaders)){
+                        let shaders = this._shaders[key];
+                        let objectId = this._physicalLayer.getIdLastHighlightedElement(shaders);
+                        let map = this._maps[key]
+                        map.updateGrammarPlotsHighlight(this._physicalLayer.id, LevelType.OBJECTS, objectId); // letting plots manager know that this knot was interacted with
+                    }
                 }
             }
 
@@ -495,34 +544,58 @@ export class Knot {
                 let elementsIndex = [];
     
                 if(this._physicalLayer instanceof BuildingsLayer){
-                    this._physicalLayer.createFootprintPlot(this._map.glContext, cursorPosition[0], cursorPosition[1], false, this._shaders);
-                    this._map.render();
-                    let buildingId = await this._physicalLayer.applyFootprintPlot(this._map.glContext, this._map.grammarManager, 1, 'vega', this._shaders);
-                    elementsIndex.push(buildingId);
+
+                    for(const key of Object.keys(this._maps)){
+                        let map = this._maps[key]
+                        this._physicalLayer.createFootprintPlot(map.glContext, cursorPosition[0], cursorPosition[1], false, this._shaders[key]);
+                        map.render();
+                        let buildingId = await this._physicalLayer.applyFootprintPlot(map.glContext, map.plotManager, 1, 'vega', this._shaders[key]);
+                        elementsIndex.push(buildingId);
+                    }
+
                 }
-                this._map.render();
+                for(const key of Object.keys(this._maps)){
+                    let map = this._maps[key]
+                    map.render();
+                }
             }
 
             if(highlightBuildingInteraction && cursorPosition != null){
                 // call functions to highlight building
                 
                 if(this._physicalLayer instanceof BuildingsLayer){
-                    this._physicalLayer.highlightBuilding(this._map.glContext, cursorPosition[0], cursorPosition[1], this._shaders);
+                    for(const key of Object.keys(this._maps)){
+                        let map = this._maps[key]
+                        for(const key of Object.keys(this._shaders)){
+                            let shaders = this._shaders[key];
+                            this._physicalLayer.highlightBuilding(map.glContext, cursorPosition[0], cursorPosition[1], shaders);
+                        }
+                    }
                 }
 
-                // the two renderings are required
-                this._map.render();
-                this._map.render();
+
+                for(const key of Object.keys(this._maps)){
+                    let map = this._maps[key]
+                    // the two renderings are required
+                    map.render();
+                    map.render();
+                }
     
                 if(this._physicalLayer instanceof BuildingsLayer){
-                    let buildingId = this._physicalLayer.getIdLastHighlightedBuilding(this._shaders);
-                    this._map.updateGrammarPlotsHighlight(this._physicalLayer.id, LevelType.OBJECTS, buildingId); // letting plots manager know that this knot was interacted with
+                    for(const key of Object.keys(this._shaders)){
+                        let shaders = this._shaders[key];
+                        let buildingId = this._physicalLayer.getIdLastHighlightedBuilding(shaders);
+                        let map = this._maps[key]
+                        map.updateGrammarPlotsHighlight(this._physicalLayer.id, LevelType.OBJECTS, buildingId); // letting plots manager know that this knot was interacted with
+                    }
                 }
             }
 
         }
-
-        this._map.render(); 
+        for(const key of Object.keys(this._maps)){
+            let map = this._maps[key]
+            map.render(); 
+        }
     }   
 
 }
