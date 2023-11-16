@@ -134,14 +134,16 @@ export const GrammarPanelContainer = ({
 
         if(activeGrammarType == GrammarType.MASTER){
             GrammarMethods.applyGrammar(url, JSON.parse(data), "GrammarPanel", (response: Object) => {
-                obj.processGrammar(JSON.parse(grammarStateRef.current));
+                // obj.processGrammar(JSON.parse(grammarStateRef.current));
+                obj.resetGrammarInterpreter(JSON.parse(grammarStateRef.current), obj.mainDiv);
             }, "grammar");
         }else{
             for(const component_grammar of componentsGrammar){
                 if(component_grammar.id == activeGrammar){
                     GrammarMethods.applyGrammar(url, JSON.parse(data), "GrammarPanel", (response: Object) => {
-                        obj.updateComponentGrammar(JSON.parse(grammarStateRef.current), component_grammar);
-                        obj.replaceVariablesAndInitViews();
+                        obj.resetGrammarInterpreter(obj.preprocessedGrammar, obj.mainDiv);
+                        // obj.updateComponentGrammar(JSON.parse(grammarStateRef.current), component_grammar);
+                        // obj.replaceVariablesAndInitViews();
                     }, component_grammar.id);
                 }
             }
@@ -288,35 +290,48 @@ export const GrammarPanelContainer = ({
     }, [activeGrammar]);
 
     const checkIfAddCameraAndFilter = (grammar: string, camera: {position: number[], direction: {right: number[], lookAt: number[], up: number[]}}, tempGrammar: string, filterKnots: number[]) => {
- 
-        let inputLink = d3.select('#'+linkMapAndGrammarId)
-        
+
         let returnedGrammar: any = {};
 
-        if(inputLink.empty()){
-            if(tempGrammar != ''){
-                returnedGrammar.text = tempGrammar;
-            }else if(grammar != ''){
-                returnedGrammar.json = JSON.parse(grammar);
-            }else{
-                returnedGrammar.json = {};
+        if(activeGrammarType == GrammarType.MAP){
+            let inputLink = d3.select('#'+linkMapAndGrammarId)
+                
+            if(inputLink.empty()){
+                if(tempGrammar != ''){
+                    returnedGrammar.text = tempGrammar;
+                }else if(grammar != ''){
+                    returnedGrammar.json = JSON.parse(grammar);
+                }else{
+                    returnedGrammar.json = {};
+                }
+                return returnedGrammar;
             }
-            return returnedGrammar;
-        }
-
-        let mapAndGrammarLinked = inputLink.property("checked");
-
-        if(mapAndGrammarLinked){
-            let mergedGrammar = addCameraAndFilter(grammar, camera, filterKnots);
-
-            if(mergedGrammar != ''){
-                returnedGrammar.json = JSON.parse(mergedGrammar);
+    
+            let mapAndGrammarLinked = inputLink.property("checked");
+    
+            if(mapAndGrammarLinked){
+                let mergedGrammar = addCameraAndFilter(grammar, camera, filterKnots);
+    
+                if(mergedGrammar != ''){
+                    returnedGrammar.json = JSON.parse(mergedGrammar);
+                }else{
+                    returnedGrammar.json = {};
+                }
+    
+                return returnedGrammar
             }else{
-                returnedGrammar.json = {};
+                if(tempGrammar != ''){
+                    returnedGrammar.text = tempGrammar;
+                }else if(grammar != ''){
+                    returnedGrammar.json = JSON.parse(grammar);
+                }else{
+                    returnedGrammar.json = {};
+                }
+    
+                return returnedGrammar;
             }
-
-            return returnedGrammar
         }else{
+
             if(tempGrammar != ''){
                 returnedGrammar.text = tempGrammar;
             }else if(grammar != ''){
@@ -327,6 +342,7 @@ export const GrammarPanelContainer = ({
 
             return returnedGrammar;
         }
+
     }
 
     const updateGrammarContent = (grammarObj: any) => {

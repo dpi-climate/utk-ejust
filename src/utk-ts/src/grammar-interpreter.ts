@@ -55,7 +55,19 @@ class GrammarInterpreter {
         return this._knotManager;
     }
 
+    get mainDiv(): HTMLElement{
+        return this._mainDiv;
+    }
+
+    get preprocessedGrammar(): IMasterGrammar{
+        return this._preProcessedGrammar;
+    }
+
     resetGrammarInterpreter(grammar: IMasterGrammar, mainDiv: HTMLElement) {
+
+        this._components_grammar = [];
+        this._components = [];
+        this._maps_widgets = [];
 
         this._layerManager = new LayerManager(this);
         this._knotManager = new KnotManager();
@@ -227,6 +239,9 @@ class GrammarInterpreter {
 
     public async processGrammar(grammar: IMasterGrammar){
         if(this.validateMasterGrammar(grammar)){
+
+            this._preProcessedGrammar = grammar;
+
             // changing grammar to be the processed grammar
             let aux = JSON.stringify(grammar);
             if(grammar.variables != undefined){
@@ -249,17 +264,31 @@ class GrammarInterpreter {
                 this.updateComponentGrammar(component_grammar, component);
             }
             
-            await this.replaceVariablesAndApplyGrammars();
+            await this.replaceVariablesAndInitViews();
         }
     }
 
     public updateComponentGrammar(component_grammar: IMapGrammar | IPlotGrammar, componentInfo: any = undefined){
         if(this.validateComponentGrammar(component_grammar)){
-            this._components_grammar.push({id: componentInfo.id, originalGrammar: component_grammar, grammar: undefined, position: componentInfo.position});
+            let replace = false;
+
+            for(let i = 0; i < this._components_grammar.length; i++){
+                let component = this._components_grammar[i];
+
+                if(component.id == componentInfo.id){
+                    replace = true;
+                    this._components_grammar[i] = {id: <string>componentInfo.id, originalGrammar: component_grammar, grammar: <IMapGrammar | IPlotGrammar | undefined>undefined, position: <IComponentPosition | undefined>componentInfo.position};
+                    break;
+                }
+            }
+
+            if(!replace){
+                this._components_grammar.push({id: <string>componentInfo.id, originalGrammar: component_grammar, grammar: <IMapGrammar | IPlotGrammar | undefined>undefined, position: <IComponentPosition | undefined>componentInfo.position});
+            }
         }
     }
 
-    public async replaceVariablesAndApplyGrammars(){
+    public async replaceVariablesAndInitViews(){
         for(const component_grammar of this._components_grammar){
             let aux = JSON.stringify(component_grammar.originalGrammar);
             if(component_grammar.originalGrammar.variables != undefined){
@@ -873,6 +902,7 @@ class GrammarInterpreter {
             this._root = createRoot(mainDiv);
         }else{
             this._root.unmount();
+            mainDiv.innerHTML = "";
             this._root = createRoot(mainDiv);
         }
 
