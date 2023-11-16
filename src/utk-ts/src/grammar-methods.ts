@@ -1,14 +1,14 @@
-import { IGrammar } from './interfaces';
+import { IMasterGrammar } from './interfaces';
 
 export class GrammarMethods {
 
-    static grammar: IGrammar;
+    static grammar: IMasterGrammar;
 
     static subscribers: any = {};
 
     // identifier should be equal to the identifier used in the subscribe function
     // the callback function is executed after the promise is answered
-    static applyGrammar(url_string: string | undefined, grammar: Object, identifier: string, callback_function: Function): Promise<any> {
+    static applyGrammar(url_string: string | undefined, grammar: Object, identifier: string, callback_function: Function, filename: string): Promise<any> {
 
         let url = "http://localhost:5001";
 
@@ -22,16 +22,20 @@ export class GrammarMethods {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({"grammar": grammar})
+            body: JSON.stringify({"grammar": grammar, "filename": filename})
         })
 
         fetch_promise.then((response) => {
-            for(const [key, value] of Object.entries(GrammarMethods.subscribers)){
-                if(key != identifier){ // the source of the grammar knows that a new grammar was applied
-                    (<Function>value)(grammar);
-                }
-            }
 
+            if(filename == "grammar"){ // it is the master grammar
+                for(const [key, value] of Object.entries(GrammarMethods.subscribers)){
+                    if(key != identifier){ // the source of the grammar knows that a new grammar was applied
+                        (<Function>value)(grammar);
+                    }
+                }
+    
+            }
+            
             callback_function(response);
         })
 
@@ -43,7 +47,7 @@ export class GrammarMethods {
         GrammarMethods.subscribers[identifier] = subscription_callback;
     }
 
-    static updateGrammar(data: IGrammar): void {
+    static updateGrammar(data: IMasterGrammar): void {
         GrammarMethods.grammar = data;
     }
 

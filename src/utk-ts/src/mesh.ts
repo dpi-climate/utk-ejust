@@ -60,7 +60,7 @@ export class Mesh {
     protected _dimension: number;
     protected _zOrder: number;
     protected _components: MeshComponent[];
-    protected _allCoordinates: number[];
+    protected _allCoordinates: any; // dict were indices are viewIds and the elements are the cached coordinates
     protected _allIds: number[];
     protected _allIndices: number[];
     protected _allNormals: number[];
@@ -79,7 +79,7 @@ export class Mesh {
         // erases the components
         this._components = [];
 
-        this._allCoordinates = [];
+        this._allCoordinates = {};
         this._allIds = [];
         this._allIndices = [];
         this._allNormals = [];
@@ -157,7 +157,7 @@ export class Mesh {
      * @param data Layer data
      * @param updateNormals Force normals computation
      */
-    load(data: ILayerFeature[], updateNormals = false, centroid:number[] | Float32Array = [0,0,0]): void {
+    load(data: ILayerFeature[], updateNormals = false): void {
 
         // boolean
         let computeNormals = false;
@@ -167,7 +167,7 @@ export class Mesh {
 
             const geometry = feature.geometry;
 
-            this.addComponent(geometry, centroid);
+            this.addComponent(geometry);
 
             // if a component doesnt have normals
             if ( !('normals' in geometry) ) {
@@ -239,8 +239,7 @@ export class Mesh {
      * Adds a new component to the mesh.
      * @param geometry triangulation of the feature
      */
-    // addComponent(geometry: IFeatureGeometry | IFeatureGeometry[], centroid : any) {
-    addComponent(geometry: IFeatureGeometry, centroid : any) {
+    addComponent(geometry: IFeatureGeometry) {
         // new component
         const comp = new MeshComponent(this._dimension);
        
@@ -253,19 +252,7 @@ export class Mesh {
         for (const part of _geometry) {
 
             part.coordinates.forEach( (v, i)  => {
-                if(i%3 == 0) {
-                    comp.coordinates.push(v - centroid[0]);
-                }
-                else if(i%3 == 1) {
-                    comp.coordinates.push(v - centroid[1])
-                }else if(i%3 === 2) {
-                    // comp.coordinates.push(v + this._zOrder);
-                    comp.coordinates.push(v);
-                }
-                
-                    // } else {
-                    // comp.coordinates.push(v)
-                // }
+                comp.coordinates.push(v);
             });
 
             if(part['varyOpByFunc'] !== undefined){
@@ -325,11 +312,7 @@ export class Mesh {
                     envelope.forEach((v, i) => {
                         let index = comp.orientedEnvelope.length - 1;
 
-                        if(i%2 == 0){
-                            comp.orientedEnvelope[index].push(v - centroid[0]);
-                        }else if(i%2 == 1){
-                            comp.orientedEnvelope[index].push(v - centroid[1]);
-                        }
+                        comp.orientedEnvelope[index].push(v);
                     });
                     
                 });
@@ -341,11 +324,7 @@ export class Mesh {
                     footprint.forEach((v, i) => {
                         let index = comp.sectionFootprint.length - 1;
 
-                        if(i%2 == 0){
-                            comp.sectionFootprint[index].push(v - centroid[0]);
-                        }else if(i%2 == 1){
-                            comp.sectionFootprint[index].push(v - centroid[1]);
-                        }
+                        comp.sectionFootprint[index].push(v);
                     });
                     
                 });
@@ -540,22 +519,26 @@ export class Mesh {
         }
     }
 
-    getCoordinatesVBO(): number[] {
-        // const vbo: number[] = [];
+    // The viewId is used to cache the centroid transformation
+    getCoordinatesVBO(centroid:number[] | Float32Array = [0,0,0], viewId:number): number[] {
+        if(this._allCoordinates[viewId] == undefined){
+            this._allCoordinates[viewId] = [];
 
-        // for (const comp of this._components) {
-        //     comp.coordinates.forEach( v => vbo.push(v) );
-        // }
-
-        if(this._allCoordinates.length == 0){
             for (const comp of this._components) {
-                comp.coordinates.forEach( v => this._allCoordinates.push(v) );
+                comp.coordinates.forEach( (v,i) => {
+                    if(i%3 == 0) {
+                        this._allCoordinates[viewId].push(v - centroid[0]);
+                    }
+                    else if(i%3 == 1) {
+                        this._allCoordinates[viewId].push(v - centroid[1])
+                    }else if(i%3 === 2) {
+                        this._allCoordinates[viewId].push(v);
+                    }
+                } );
             }   
         }
 
-        return this._allCoordinates;
-
-        // return vbo;
+        return this._allCoordinates[viewId];
     }
 
     getNormalsVBO(): number[] {
@@ -699,21 +682,47 @@ export class Mesh {
         return vbo; 
     }
 
-    getOrientedEnvelopesVBO(){
+    getOrientedEnvelopesVBO(centroid:number[] | Float32Array = [0,0,0]){
         let vbo: number[][][] = [];
         
         for (const comp of this._components) {
-            vbo.push(comp.orientedEnvelope); 
+            vbo.push([]);
+
+            comp.orientedEnvelope.forEach((envelope) => {
+                let indexVBO = vbo.length - 1;
+                vbo[indexVBO].push([]);
+                envelope.forEach((v, i) => {
+                    let index = vbo[indexVBO].length - 1;
+                    if(i%2 == 0){
+                        vbo[indexVBO][index].push(v - centroid[0]);
+                    }else if(i%2 == 1){
+                        vbo[indexVBO][index].push(v - centroid[1]);
+                    }
+                })
+            })            
         }
 
         return vbo; 
     }
 
-    getSectionFootprintVBO(){
+    getSectionFootprintVBO(centroid:number[] | Float32Array = [0,0,0]){
         let vbo: number[][][] = [];
         
         for (const comp of this._components) {
-            vbo.push(comp.sectionFootprint); 
+            vbo.push([]);
+
+            comp.sectionFootprint.forEach((footprint) => {
+                let indexVBO = vbo.length - 1;
+                vbo[indexVBO].push([]);
+                footprint.forEach((v, i) => {
+                    let index = vbo[indexVBO].length - 1;
+                    if(i%2 == 0){
+                        vbo[indexVBO][index].push(v - centroid[0]);
+                    }else if(i%2 == 1){
+                        vbo[indexVBO][index].push(v - centroid[1]);
+                    }
+                })
+            })   
         }
 
         return vbo; 

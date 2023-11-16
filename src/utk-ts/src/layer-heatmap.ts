@@ -20,14 +20,13 @@ export class HeatmapLayer extends Layer {
     protected _highlightByCOORDINATES3D: boolean[][] = [];
     protected _highlightByOBJECTS: boolean[][] = [];
 
-    constructor(info: ILayerData, zOrder: number = 0, centroid: number[] | Float32Array, geometryData: ILayerFeature[]) {
+    constructor(info: ILayerData, zOrder: number = 0, geometryData: ILayerFeature[]) {
 
         super(
             info.id,
             info.type,
             info.styleKey,
             info.renderStyle !== undefined ? info.renderStyle : [],
-            centroid,
             3,
             zOrder
         );
@@ -37,13 +36,13 @@ export class HeatmapLayer extends Layer {
     }
 
     updateMeshGeometry(data: ILayerFeature[]){
-        this._mesh.load(data, false, this._centroid);
+        this._mesh.load(data, false);
     }
 
-    updateShaders(shaders: (Shader|AuxiliaryShader)[]){
+    updateShaders(shaders: (Shader|AuxiliaryShader)[], centroid:number[] | Float32Array = [0,0,0], viewId: number){
         // updates the shader references
         for (const shader of shaders) {
-            shader.updateShaderGeometry(this._mesh);
+            shader.updateShaderGeometry(this._mesh, centroid, viewId);
         }
     }
 
@@ -68,7 +67,7 @@ export class HeatmapLayer extends Layer {
         return true;
     }
 
-    setHighlightElements(elements: number[], level: LevelType, value: boolean, shaders: (Shader|AuxiliaryShader)[]): void{
+    setHighlightElements(elements: number[], level: LevelType, value: boolean, shaders: (Shader|AuxiliaryShader)[], centroid:number[] | Float32Array = [0,0,0], viewId: number): void{
         throw Error("It is not possible to highlight a heatmap layer");
     }
 
@@ -244,7 +243,7 @@ export class HeatmapLayer extends Layer {
      * 
      * @returns each position of the array contains an element of that level
      */
-    getCoordsByLevel(level: LevelType): number[][] {
+    getCoordsByLevel(level: LevelType, centroid:number[] | Float32Array = [0,0,0], viewId: number): number[][] {
         let coordByLevel: number[][] = [];
 
         if(level == LevelType.COORDINATES || level == LevelType.OBJECTS){
@@ -253,7 +252,7 @@ export class HeatmapLayer extends Layer {
 
         if(level == LevelType.COORDINATES3D){
             if(this._coordsByCOORDINATES3D.length == 0){
-                let coords = this._mesh.getCoordinatesVBO();
+                let coords = this._mesh.getCoordinatesVBO(centroid, viewId);
     
                 for(let i = 0; i < coords.length/3; i++){
                     coordByLevel.push([coords[i*3],coords[i*3+1],coords[i*3+2]]);

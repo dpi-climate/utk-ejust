@@ -27,19 +27,14 @@ export abstract class Layer {
     // layer's camera
     protected _camera: any;
 
-    protected _centroid: number[] | Float32Array;
-
     protected _mesh: Mesh;
 
-    constructor(id: string, type: LayerType, styleKey: keyof IMapStyle, renderStyle: RenderStyle[] = [], centroid:number[] | Float32Array = [0,0,0], dimension: number, zOrder: number) {
+    constructor(id: string, type: LayerType, styleKey: keyof IMapStyle, renderStyle: RenderStyle[] = [], dimension: number, zOrder: number) {
         this._id = id;
         this._type = type;
         this._styleKey = styleKey;
         // this._colorMap = colorMap;
         this._renderStyle = renderStyle;
-
-        this._centroid = centroid;
-
         this._mesh = new Mesh(dimension, zOrder);
     }
 
@@ -85,10 +80,6 @@ export abstract class Layer {
         this._mesh = mesh;
     }
 
-    get centroid(){
-        return this._centroid;
-    }
-
     get renderStyle(){
         return this._renderStyle;
     }
@@ -100,7 +91,7 @@ export abstract class Layer {
 
     abstract updateMeshGeometry(data: ILayerFeature[]): void;
 
-    abstract updateShaders(shaders: (Shader|AuxiliaryShader)[]): void;
+    abstract updateShaders(shaders: (Shader|AuxiliaryShader)[], centroid:number[] | Float32Array, viewId: number): void;
 
     abstract updateFunction(knot: IKnot, shaders: (Shader|AuxiliaryShader)[]): void;
 
@@ -126,7 +117,7 @@ export abstract class Layer {
      */
     abstract getFunctionValueIndexOfId(id: number, level: LevelType): number | null;
 
-    abstract getCoordsByLevel(level: LevelType): number[][];
+    abstract getCoordsByLevel(level: LevelType, centroid:number[] | Float32Array, viewId: number): number[][];
 
     abstract getFunctionByLevel(level: LevelType, knotId: string): number[][];
 
@@ -138,7 +129,7 @@ export abstract class Layer {
      * 
      * @param elements array of elements indices (follow the order they appear in the layer json file)
      */
-    abstract setHighlightElements(elements: number[], level: LevelType, value: boolean, shaders: (Shader|AuxiliaryShader)[]): void;
+    abstract setHighlightElements(elements: number[], level: LevelType, value: boolean, shaders: (Shader|AuxiliaryShader)[], centroid:number[] | Float32Array, viewId: number): void;
 
     // bypass the data extraction from link and data directly into the mesh
     abstract directAddMeshFunction(functionValues: number[], knotId: string): void;
