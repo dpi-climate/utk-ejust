@@ -38,7 +38,9 @@ export class KnotManager {
             knotVisibility[knot.id] = knot.visible;
         }
 
-        this._updateStatusCallback("knotVisibility", knotVisibility);
+        if(this._updateStatusCallback != undefined){
+            this._updateStatusCallback("knotVisibility", knotVisibility);
+        }
     }
 
     getKnotById(knotId: string){

@@ -683,27 +683,38 @@ class GrammarInterpreter {
         for(const component of this._components_grammar){
             if(component.grammar != undefined && component.grammar.grammar_type == GrammarType.MAP){
                 if(currentMapId == mapId){
-
-                    if((<IMapGrammar>component.grammar).knotVisibility == undefined)
-                        return knot.visible;
         
-                    let map: any = MapViewFactory.getInstance(this, this._layerManager, this._knotManager, components_id); // TODO: suppor the use of multiple maps
-            
-                    let zoom = map.camera.getZoomLevel();
-                    let timeElapsed = Date.now() - this._lastValidationTimestep;
-            
-                    for(const visibility of <IKnotVisibility[]>(<IMapGrammar>component.grammar).knotVisibility){
-                        if(visibility.knot == knot.id){
-                            let testString = visibility.test;
-            
-                            testString = testString.replaceAll("zoom", zoom+'');
-                            testString = testString.replaceAll("timeElapsed", timeElapsed+'');
-                        
-                            let testResult = eval(testString);
-            
-                            return testResult;
+                    if((<IMapGrammar>component.grammar).knotVisibility != undefined && component.grammar.knots.includes(knot.id)){
+
+                        let map: any = MapViewFactory.getInstance(this, this._layerManager, this._knotManager, components_id); // TODO: suppor the use of multiple maps
+                
+                        let zoom = map.camera.getZoomLevel();
+                        let timeElapsed = Date.now() - this._lastValidationTimestep;
+                
+                        for(const visibility of <IKnotVisibility[]>(<IMapGrammar>component.grammar).knotVisibility){
+                            if(visibility.knot == knot.id){
+                                let testString = visibility.test;
+                
+                                testString = testString.replaceAll("zoom", zoom+'');
+                                testString = testString.replaceAll("timeElapsed", timeElapsed+'');
+                            
+                                let testResult = eval(testString);
+                
+                                if(testResult && !knot.visible){
+                                    this._knotManager.toggleKnot(knot.id, true);
+                                }else if(!testResult && knot.visible){
+                                    this._knotManager.toggleKnot(knot.id, false);
+                                }
+
+                                return testResult;
+                            }
                         }
-                    }
+
+                    }else if(component.grammar.knots.includes(knot.id)){
+                        return knot.visible;
+                    }else{
+                        return false; // the knot is not being rendered in this map
+                    }   
 
                 }
 
@@ -713,7 +724,7 @@ class GrammarInterpreter {
             components_id += 1;
         }
 
-        return knot.visible;
+        return false;
     }
 
     public getKnotById(knotId: string){

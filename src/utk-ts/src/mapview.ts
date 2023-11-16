@@ -450,14 +450,19 @@ class MapView {
         // }
 
         for(const knot of this._knotManager.knots){
+
             if(this._grammarInterpreter.evaluateKnotVisibility(knot, this._viewId)){
-                if(!knot.visible)
-                    this._knotManager.toggleKnot(knot.id, true);
                 knot.render(this._glContext, this.camera, this._viewId);
-            }else{
-                if(knot.visible)
-                    this._knotManager.toggleKnot(knot.id, false);
             }
+
+            // if(this._grammarInterpreter.evaluateKnotVisibility(knot, this._viewId)){
+            //     if(!knot.visible)
+            //         this._knotManager.toggleKnot(knot.id, true);
+            //     knot.render(this._glContext, this.camera, this._viewId);
+            // }else{
+            //     if(knot.visible)
+            //         this._knotManager.toggleKnot(knot.id, false);
+            // }
         }
 
     }

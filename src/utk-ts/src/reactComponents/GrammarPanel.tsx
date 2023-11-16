@@ -70,6 +70,22 @@ export const GrammarPanelContainer = ({
         _setCode(data);
     };
 
+    const [grammarType, _setGrammarType] = useState(GrammarType.MASTER);
+
+    const grammarTypeRef = useRef(grammarType);
+    const setGrammarType = (data: GrammarType) => {
+        grammarTypeRef.current = data;
+        _setGrammarType(data);
+    };
+
+    const [activeGrammarId, _setActiveGrammarId] = useState("grammar");
+
+    const activeGrammarIdRef = useRef(activeGrammarId);
+    const setActiveGrammarId = (data: string) => {
+        activeGrammarIdRef.current = data;
+        _setActiveGrammarId(data);
+    };
+
     const [tempGrammar, _setTempGrammar] = useState('');
 
     const tempGrammarStateRef = useRef(tempGrammar);
@@ -107,7 +123,7 @@ export const GrammarPanelContainer = ({
             currentGrammar = grammar;
         }
 
-        if(activeGrammarType == GrammarType.MAP && !d3.select('#'+linkMapAndGrammarId).empty() && d3.select('#'+linkMapAndGrammarId).property("checked")){
+        if(grammarTypeRef.current == GrammarType.MAP && !d3.select('#'+linkMapAndGrammarId).empty() && d3.select('#'+linkMapAndGrammarId).property("checked")){
             if(tempGrammarStateRef.current == ''){
                 sendGrammar = addCameraAndFilter(currentGrammar, camera, filterKnots);
             }else{
@@ -132,14 +148,14 @@ export const GrammarPanelContainer = ({
 
         const data = sendGrammar;
 
-        if(activeGrammarType == GrammarType.MASTER){
+        if(grammarTypeRef.current == GrammarType.MASTER){
             GrammarMethods.applyGrammar(url, JSON.parse(data), "GrammarPanel", (response: Object) => {
                 // obj.processGrammar(JSON.parse(grammarStateRef.current));
                 obj.resetGrammarInterpreter(JSON.parse(grammarStateRef.current), obj.mainDiv);
             }, "grammar");
         }else{
             for(const component_grammar of componentsGrammar){
-                if(component_grammar.id == activeGrammar){
+                if(component_grammar.id == activeGrammarIdRef.current){
                     GrammarMethods.applyGrammar(url, JSON.parse(data), "GrammarPanel", (response: Object) => {
                         obj.resetGrammarInterpreter(obj.preprocessedGrammar, obj.mainDiv);
                         // obj.updateComponentGrammar(JSON.parse(grammarStateRef.current), component_grammar);
@@ -286,14 +302,19 @@ export const GrammarPanelContainer = ({
             }
         }
         
+        setActiveGrammarId(activeGrammar);
         setTempGrammar('');
     }, [activeGrammar]);
+
+    useEffect(() => {
+        setGrammarType(activeGrammarType);
+    }, [activeGrammarType]);
 
     const checkIfAddCameraAndFilter = (grammar: string, camera: {position: number[], direction: {right: number[], lookAt: number[], up: number[]}}, tempGrammar: string, filterKnots: number[]) => {
 
         let returnedGrammar: any = {};
 
-        if(activeGrammarType == GrammarType.MAP){
+        if(grammarTypeRef.current == GrammarType.MAP){
             let inputLink = d3.select('#'+linkMapAndGrammarId)
                 
             if(inputLink.empty()){

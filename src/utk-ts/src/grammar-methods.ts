@@ -34,9 +34,9 @@ export class GrammarMethods {
                     }
                 }
     
-                callback_function(response);
             }
-
+            
+            callback_function(response);
         })
 
         return fetch_promise;
