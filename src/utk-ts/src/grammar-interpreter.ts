@@ -793,7 +793,7 @@ class GrammarInterpreter {
             }
         }
 
-        let plotsKnotData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[] = [];
+        let plotsKnotData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[] = [];
 
         for(const knotId of plotsKnots){
             for(const knot of this.getKnots()){
@@ -831,7 +831,7 @@ class GrammarInterpreter {
                     for(let i = 0; i < this._components_grammar.length; i++){ // if one map higlighted something that will appear hilighted in every view that depends on that knot
                         if(this._components_grammar[i].grammar != undefined && this._components_grammar[i].grammar?.grammar_type == GrammarType.MAP){
                             let highlighted_map = left_layer.getHighlightsByLevel(lastLink.out.level, (<Knot>knotStructure).shaders[i]); // getting higlights for the layer for each map
-                        
+
                             if(highlighted.length == 0){
                                 highlighted = highlighted_map;
                             }else{
@@ -859,6 +859,7 @@ class GrammarInterpreter {
                                     coordinates: coordinates[i],
                                     abstract: functionValues[i][0],
                                     highlighted: highlighted[i],
+                                    filteredIn: highlighted[i],
                                     index: i
                                 });
                             }else{
@@ -866,6 +867,7 @@ class GrammarInterpreter {
                                     coordinates: [],
                                     abstract: functionValues[i][0],
                                     highlighted: highlighted[i],
+                                    filteredIn: highlighted[i],
                                     index: i
                                 });
                             }

@@ -1,5 +1,5 @@
 import { IComponentPosition, IMasterGrammar, IPlotArgs, IPlotGrammar } from './interfaces';
-import { PlotInteractionType, PlotArrangementType } from './constants';
+import { PlotInteractionType, PlotArrangementType, InteractionEffectType } from './constants';
 import {radians} from './utils';
 
 const vega = require('vega')
@@ -30,7 +30,7 @@ export class PlotManager {
     protected _plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[];
     protected _updateStatusCallback: any;
     protected _setGrammarUpdateCallback: any;
-    protected _plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[];
+    protected _plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[];
     protected _setHighlightElementCallback: {function: any, arg: any};
     protected _plotsReferences: any[];
     protected _needToUnHighlight: boolean;
@@ -41,7 +41,7 @@ export class PlotManager {
      * @param viewData 
      * @param setGrammarUpdateCallback Function that sets the callback that will be called in the frontend to update the grammar
      */
-    constructor(plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[], plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
+    constructor(plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[], plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
 
         this._setHighlightElementCallback = setHighlightElementCallback;
         this._plotsReferences = new Array(plots.length);
@@ -55,7 +55,7 @@ export class PlotManager {
         this.updateGrammarPlotsData(this._plotsKnotsData);
     }
 
-    async updateGrammarPlotsData(plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[]){
+    async updateGrammarPlotsData(plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[]){
         
         this._plotsKnotsData = plotsKnotsData;
 
@@ -81,12 +81,40 @@ export class PlotManager {
                 value[knotData.knotId+"_index"] = element.index;
                 value[knotData.knotId+"_abstract"] = element.abstract;
                 value[knotData.knotId+"_highlight"] = element.highlighted;
+                value[knotData.knotId+"_filteredIn"] = element.filteredIn;
 
                 processedKnotData[knotData.knotId].values.push(value);
             }   
         }
 
         return processedKnotData;
+    }
+
+    clearFiltersLocally(knotsIds: string[]){
+        // update local data
+        for(const plotKnotData of this._plotsKnotsData){
+            if(knotsIds.includes(plotKnotData.knotId)){
+                for(const element of plotKnotData.elements){
+                    element.filteredIn = false;
+                }
+            }
+        }
+
+        // update plots data
+        for(let i = 0; i < this._plots.length; i++){
+            let elem = this._plots[i].grammar;
+
+            if(elem.plot.data != undefined){
+                for(const value of elem.plot.data.values){  
+                    for(const knotId of knotsIds){
+                        if(value[knotId+"_index"] != undefined){
+                            value[knotId+"_filteredIn"] = false;
+                        }
+                    }
+                }
+            }
+        }
+
     }
 
     clearHighlightsLocally(knotsIds: string[]){
@@ -112,33 +140,48 @@ export class PlotManager {
                     }
                 }
     
-                let valuesCopy = [];
+                // let valuesCopy = [];
     
-                for(const value of elem.plot.data.values){
-                    let valueCopy: any = {};
+                // for(const value of elem.plot.data.values){
+                //     let valueCopy: any = {};
     
-                    let valueKeys = Object.keys(value);
+                //     let valueKeys = Object.keys(value);
 
-                    for(const key of valueKeys){
-                        if(key != "Symbol(vega_id)"){
-                            valueCopy[key] = value[key];
-                        }
-                    }
+                //     for(const key of valueKeys){
+                //         if(key != "Symbol(vega_id)"){
+                //             valueCopy[key] = value[key];
+                //         }
+                //     }
     
-                    valuesCopy.push(valueCopy);
-                }
+                //     valuesCopy.push(valueCopy);
+                // }
     
-                let changeset = vega.changeset().remove(() => true).insert(valuesCopy);
+                // let changeset = vega.changeset().remove(() => true).insert(valuesCopy);
                 
-                if(this._plotsReferences[i] != undefined){
-                    this._plotsReferences[i].change('source_0', changeset).runAsync();
-                }
+                // if(this._plotsReferences[i] != undefined){
+                //     this._plotsReferences[i].change('source_0', changeset).runAsync();
+                // }
             }
 
         }
     }
 
-    // if toggle if activate ignore the truth value and just toggle the highlight
+    applyInteractionEffectsLocally(elements: any, truthValue: boolean, toggle: boolean = false, fromMap: boolean = false){
+        this.setHighlightElementsLocally(elements, truthValue, toggle);
+        if(fromMap){ // only filter elements if the interaction comes from map
+            this.setFilterElementsLocally(elements, truthValue, toggle);
+        }
+        this.updatePlotsNewData();
+    }
+
+    // always called by a map
+    clearInteractionEffectsLocally(knotsIds: string[]){
+        this.clearHighlightsLocally(knotsIds);
+        this.clearFiltersLocally(knotsIds);
+        this.updatePlotsNewData();
+    }
+
+    // if toggle is activated ignore the truth value and just toggle the highlight
     setHighlightElementsLocally(elements: any, truthValue: boolean, toggle: boolean = false){
 
         // update local data
@@ -176,7 +219,58 @@ export class PlotManager {
                         }
                     }
                 }
-    
+            }
+        }
+
+    }
+
+    setFilterElementsLocally(elements: any, truthValue: boolean, toggle: boolean = false){
+        // update local data
+        for(const plotKnotData of this._plotsKnotsData){
+            if(elements[plotKnotData.knotId] != undefined){
+                for(const element of plotKnotData.elements){
+                    if(element.index == elements[plotKnotData.knotId]){
+                        if(toggle){
+                            element.filteredIn = !element.filteredIn;
+                        }else{
+                            element.filteredIn = truthValue;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        // update plots data
+        for(let i = 0; i < this._plots.length; i++){
+            let elem = this._plots[i].grammar
+
+            if(elem.plot.data != undefined){
+                for(const value of elem.plot.data.values){
+                    
+                    let elementsKeys = Object.keys(elements);
+
+                    for(const knotId of elementsKeys){
+                        if(value[knotId+"_index"] != undefined && value[knotId+"_index"] == elements[knotId]){
+                            if(toggle){
+                                value[knotId+"_filteredIn"] = !value[knotId+"_filteredIn"];
+                            }else{
+                                value[knotId+"_filteredIn"] = truthValue;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+    updatePlotsNewData(){
+        // update plots data
+        for(let i = 0; i < this._plots.length; i++){
+            let elem = this._plots[i].grammar
+
+            if(elem.plot.data != undefined){
                 let valuesCopy = [];
     
                 for(const value of elem.plot.data.values){
@@ -190,18 +284,17 @@ export class PlotManager {
                         }
                     }
     
+                    // if filter is activated do not include filtered out elements
                     valuesCopy.push(valueCopy);
                 }
-    
+                
                 let changeset = vega.changeset().remove(() => true).insert(valuesCopy);
                 
                 if(this._plotsReferences[i] != undefined){
                     this._plotsReferences[i].change('source_0', changeset).runAsync();
                 }
             }
-
         }
-
     }
 
     async attachPlots(processedKnotData: any){
@@ -276,7 +369,11 @@ export class PlotManager {
             let mergedKnots = processedKnotData[<string>elem.knots[0]];
 
             for(let j = 1; j < elem.knots.length; j++){
-                mergedKnots = mergeKnotData(mergedKnots.values, processedKnotData[<string>elem.knots[j]].values);
+
+                let currentProcessedKnotData = processedKnotData[<string>elem.knots[j]];
+
+                mergedKnots = mergeKnotData(mergedKnots.values, currentProcessedKnotData.values);
+                
             }
 
             elem.plot.data = mergedKnots;

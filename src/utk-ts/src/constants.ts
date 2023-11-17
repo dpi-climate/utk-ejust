@@ -87,6 +87,11 @@ export enum PlotInteractionType{
     BRUSH = "BRUSH"
 }
 
+export enum InteractionEffectType{
+    FILTER = "FILTER",
+    HIGHLIGHT = "HIGHLIGHT"
+}
+
 // export enum ComponentIdentifier{
 //     MAP = "MAP",
 //     GRAMMAR = "GRAMMAR",

@@ -221,7 +221,9 @@ class MapView {
                 }
             }
             
-            this.plotManager.setHighlightElementsLocally(elements, true, true);
+            this.plotManager.applyInteractionEffectsLocally(elements, true, true, true); // highlight and filter
+            // this.plotManager.setHighlightElementsLocally(elements, true, true);
+            // this.plotManager.setFilterElementsLocally(elements)
         }else{
             let knotsToClear: string[] = [];
 
@@ -233,7 +235,8 @@ class MapView {
                 }
             }
 
-            this.plotManager.clearHighlightsLocally(knotsToClear);
+            // this.plotManager.clearHighlightsLocally(knotsToClear);
+            this.plotManager.clearInteractionEffectsLocally(knotsToClear); // higlight and filter
         }
 
     }

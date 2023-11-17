@@ -1,4 +1,4 @@
-import { LayerType, RenderStyle, ColorHEX, OperationType, GrammarType, ViewArrangementType, PlotArrangementType, SpatialRelationType, LevelType, InteractionType, PlotInteractionType, WidgetType } from "./constants";
+import { LayerType, RenderStyle, ColorHEX, OperationType, GrammarType, ViewArrangementType, PlotArrangementType, SpatialRelationType, LevelType, InteractionType, PlotInteractionType, WidgetType, InteractionEffectType } from "./constants";
 
 /**
  * Interface for master grammar
@@ -37,6 +37,7 @@ export interface IPlotGrammar {
     knots: string[],
     interaction: string,
     args?: IPlotArgs,
+    interaction_effect?: InteractionEffectType,
     grammar_type: GrammarType
 }
 

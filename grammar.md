@@ -10,7 +10,7 @@ The grammar is not a unique artifact in our system but a set of `.json` files wh
 
 ## Master Grammar
 
-The master grammar must be defined inside a file called `grammar_map.json`.  
+The master grammar must be defined inside a file called `grammar.json`.  
 
 ### Grid System
 
@@ -339,7 +339,9 @@ When creating a JSON for a map component it is required to include the `grammar_
 
 `direction := (right, lookAt, up)`
 
-`interactions := (BRUSHING, PICKING, NONE)`
+`interactions := (BRUSHING, PICKING, AREA_PICKING, NONE)`
+
+`area_picking_radius := (*number*)`
 
 In order to configure the map component it is necessary to define `camera`, `knots` and `interactions`.  
 
@@ -386,6 +388,10 @@ The `knots` reference the ids of knots defined in the Master Grammar and for eac
     ],
     grammar_type: "MAP"
 ```
+
+The difference between `PICKING` and `AREA_PICKING` is that the first one selects one object from the layer at the time and the second selects all objects in a certain area of knots that also have the `AREA_PICKING` activated. The area has a radius of 200 meters.
+
+For any interaction if two knots have the same physical layer and both are activated for interaction than the interaction will affect all of them.
 
 ### Widgets
 
@@ -573,13 +579,22 @@ When creating a JSON for a map component it is required to include the `grammar_
 
 `interaction := (CLICK | HOVER | BRUSH)`
 
+`interaction_effect := (HIGHLIGHT | FILTER)`
+
 Plots are specified through the usage of another grammar-based visualization tool called Vega-Lite. To the vega-lite specification is injected the data defined through the knots.   
 
 The `plot` field contains the vega-lite specification, with the only difference being that the user should not specify a `data` field and should make reference to knot information by using the keywords `_abstract`, `_index` and `_highlight` after the id of the knot. `_abstract` is a reference to the thematic data of the knot, `_index` is a reference to the index of the data element and `_highlight` is a boolean that indicates if the element was interacted with.    
 
+It is also possible to make reference to the knots in the plot by using its physical layer name. In that case the name will serve as a placeholder for all knots that share the same physical layer. It is possible to select what knot to visualize through the interface.
+
 The `knots` field should contain a list of knots ids (defined in the master grammar) that feed the plot.  
 
 The `args` are special arguments used with some types of plots. Currently only binning is supported for `FOOTPRINT` arrangement through the `bins` argument.  
+
+The `interaction` field determines how interactions with the plot are done.
+
+The interaction effect is used to determine how interactions with the knots that feed the plot will affect it. `HIGHLIGHT` (default) uses the `_highlight` field to indicate that the object was selected. `FILTER` changes the size of the dataset sent to the plot, only including selected objects.
+
 
 ```js
 {
