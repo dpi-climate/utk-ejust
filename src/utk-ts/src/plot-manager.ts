@@ -278,14 +278,21 @@ export class PlotManager {
     
                     let valueKeys = Object.keys(value);
 
+                    let include = true;
+
                     for(const key of valueKeys){
                         if(key != "Symbol(vega_id)"){
                             valueCopy[key] = value[key];
                         }
+
+                        if(key.includes("_filteredIn") && !value[key] && elem.interaction_effect == InteractionEffectType.FILTER){
+                            include = false;
+                        }
                     }
     
                     // if filter is activated do not include filtered out elements
-                    valuesCopy.push(valueCopy);
+                    if(include)
+                        valuesCopy.push(valueCopy);
                 }
                 
                 let changeset = vega.changeset().remove(() => true).insert(valuesCopy);
@@ -410,7 +417,7 @@ export class PlotManager {
                                 _this.setHighlightElementsLocally(elementsToHighlight, true);
                                 _this._needToUnHighlight = true;
                                 _this._highlightedVegaElements.push(item);
-
+                                _this.updatePlotsNewData();
 
                             }
 
@@ -429,6 +436,7 @@ export class PlotManager {
                             }
 
                             _this.setHighlightElementsLocally(elementsToUnHighlight, false);
+                            _this.updatePlotsNewData();
                         }
 
                         for(const highlightedItem of _this._highlightedVegaElements){
@@ -440,6 +448,7 @@ export class PlotManager {
                             }
 
                             _this.setHighlightElementsLocally(elementsToUnHighlight, false);
+                            _this.updatePlotsNewData();
                         }
 
                         _this._highlightedVegaElements = [];
@@ -471,6 +480,7 @@ export class PlotManager {
                             }
     
                             _this.setHighlightElementsLocally(elementsToUnHighlight, false);
+                            _this.updatePlotsNewData();
 
                         }else{
 
@@ -493,6 +503,7 @@ export class PlotManager {
                                 }
 
                                 _this.setHighlightElementsLocally(elementsToUnHighlight, false);
+                                _this.updatePlotsNewData();
                             }else{
                                 let elementsToHighlight: any = {};
 
@@ -503,6 +514,7 @@ export class PlotManager {
                                 }
 
                                 _this.setHighlightElementsLocally(elementsToHighlight, true);
+                                _this.updatePlotsNewData();
                             }
 
                         }

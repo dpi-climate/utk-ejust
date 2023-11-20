@@ -75,6 +75,10 @@ class MapView {
         return this._mouse;
     }
 
+    get viewId(): number{
+        return this._viewId;
+    }
+
     /**
      * gets the map div
      */
@@ -221,7 +225,8 @@ class MapView {
                 }
             }
             
-            this.plotManager.applyInteractionEffectsLocally(elements, true, true, true); // highlight and filter
+            this.plotManager.applyInteractionEffectsLocally(elements, true, true, true); // apply to the local plot manager
+            this._grammarInterpreter.plotManager.applyInteractionEffectsLocally(elements, true, true, true); // apply to the global plot manager
             // this.plotManager.setHighlightElementsLocally(elements, true, true);
             // this.plotManager.setFilterElementsLocally(elements)
         }else{
@@ -236,7 +241,8 @@ class MapView {
             }
 
             // this.plotManager.clearHighlightsLocally(knotsToClear);
-            this.plotManager.clearInteractionEffectsLocally(knotsToClear); // higlight and filter
+            this.plotManager.clearInteractionEffectsLocally(knotsToClear); // apply to the local plot manager
+            this._grammarInterpreter.plotManager.clearInteractionEffectsLocally(knotsToClear);  // apply to the global plot manager
         }
 
     }
@@ -264,12 +270,12 @@ class MapView {
 
         let knotObject = _this.knotManager.getKnotById(knotId);
 
-        let shaders = knotObject.shaders[this._viewId];
+        let shaders = knotObject.shaders[_this.viewId];
 
         // not sure if layer should be accessed directly or knot.ts be used
         for(const layer of _this._layerManager.layers){
             if(layer.id == layerId){
-                layer.setHighlightElements([elementIndex], <LevelType>lastLink.out.level, value, shaders, this._camera.getWorldOrigin(), this._viewId);
+                layer.setHighlightElements([elementIndex], <LevelType>lastLink.out.level, value, shaders, _this._camera.getWorldOrigin(), _this.viewId);
                 break;
             }
         }

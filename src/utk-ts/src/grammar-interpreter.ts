@@ -63,6 +63,10 @@ class GrammarInterpreter {
         return this._preProcessedGrammar;
     }
 
+    get plotManager(): PlotManager{
+        return this._plotManager;
+    }
+
     resetGrammarInterpreter(grammar: IMasterGrammar, mainDiv: HTMLElement) {
 
         this._components_grammar = [];
@@ -442,7 +446,26 @@ class GrammarInterpreter {
 
         let plotsKnotData = this.parsePlotsKnotData(); // parse all plots knots
 
-        this._plotManager = new PlotManager(this.getPlots(), plotsKnotData, {"function": (param1: any, param2: any, param3: any, param4: any) => {}, "arg": this}); // change function to program highlight callback
+        const setHighlightElementForAll = (knotId: string, elementIndex: number, value: boolean, _this: any) => {
+
+            let components_id = 0;
+
+            for(const component of _this._components_grammar){
+
+                if(component.grammar?.grammar_type == GrammarType.MAP){
+                    let map = MapViewFactory.getInstance(_this, _this._layerManager, _this._knotManager, components_id);
+                    
+                    if(component.grammar?.knots.includes(knotId)){
+                        map.setHighlightElement(knotId, elementIndex, value, map);
+                    }
+                }
+
+                components_id += 1;
+            }
+
+        }
+
+        this._plotManager = new PlotManager(this.getPlots(), plotsKnotData, {"function": setHighlightElementForAll, "arg": this}); 
 
         this._layerManager.init(updateStatus);
         this._knotManager.init(updateStatus);
