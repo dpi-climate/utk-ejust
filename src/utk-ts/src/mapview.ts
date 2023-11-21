@@ -210,25 +210,27 @@ class MapView {
         this._plotManager.updateGrammarPlotsData(plotsKnotData);
 
     }
+ 
+    // if clear == true, elements and level are ignored and all selections are deactivated
+    updateGrammarPlotsHighlight(layerId: string, level: LevelType | null, elements: number[] | null, clear: boolean = false){
 
-    // if clear == true, elementIndex and level are ignored and all selections are deactivated
-    updateGrammarPlotsHighlight(layerId: string, level: LevelType | null, elementIndex: number | null, clear: boolean = false){
-
-        if(!clear){
-            let elements: any = {};
-        
-            for(const knot of this._grammarInterpreter.getKnots()){
-                let lastLink = this._grammarInterpreter.getKnotLastLink(knot);
-    
-                if(lastLink.out.name == layerId && lastLink.out.level == level){
-                    elements[knot.id] = elementIndex;
-                }
-            }
+        if(!clear && elements != null){
+            for(const elementIndex of elements){
+                let elements: any = {};
             
-            this.plotManager.applyInteractionEffectsLocally(elements, true, true, true); // apply to the local plot manager
-            this._grammarInterpreter.plotManager.applyInteractionEffectsLocally(elements, true, true, true); // apply to the global plot manager
-            // this.plotManager.setHighlightElementsLocally(elements, true, true);
-            // this.plotManager.setFilterElementsLocally(elements)
+                for(const knot of this._grammarInterpreter.getKnots()){
+                    let lastLink = this._grammarInterpreter.getKnotLastLink(knot);
+        
+                    if(lastLink.out.name == layerId && lastLink.out.level == level){
+                        elements[knot.id] = elementIndex;
+                    }
+                }
+                
+                this.plotManager.applyInteractionEffectsLocally(elements, true, true, true); // apply to the local plot manager
+                this._grammarInterpreter.plotManager.applyInteractionEffectsLocally(elements, true, true, true); // apply to the global plot manager
+                // this.plotManager.setHighlightElementsLocally(elements, true, true);
+                // this.plotManager.setFilterElementsLocally(elements)
+            }
         }else{
             let knotsToClear: string[] = [];
 

@@ -355,6 +355,9 @@ export class Knot {
         let embedSurfaceInteraction = false;
         let highlightTriangleObject = false;
 
+        let areaHighlightTriangleObjects = false;
+        let areaHighlightBuildingInteraction = false;
+
         if(interaction == InteractionType.BRUSHING){
             highlightCellInteraction = true;
 
@@ -364,7 +367,7 @@ export class Knot {
         }
 
         if(interaction == InteractionType.PICKING){
-            if(plotArrangements.includes(PlotArrangementType.FOOT_EMBEDDED)){
+            if(plotArrangements.includes(PlotArrangementType.FOOT_EMBEDDED)){ // TODO: this logic should happen in the context of a specific map
                 embedFootInteraction = true;
             }
 
@@ -376,6 +379,23 @@ export class Knot {
             if(plotArrangements.length == 0){
                 highlightBuildingInteraction = true;
                 highlightTriangleObject = true;
+            }
+        }
+
+        if(interaction == InteractionType.AREA_PICKING){
+
+            if(plotArrangements.includes(PlotArrangementType.FOOT_EMBEDDED)){ 
+                throw new Error("FOOT_EMBEDDED plots are not compatible with AREA_PICKING");
+            }
+
+            if(plotArrangements.includes(PlotArrangementType.LINKED)){
+                areaHighlightBuildingInteraction = true;
+                areaHighlightTriangleObjects = true;
+            }
+
+            if(plotArrangements.length == 0){
+                areaHighlightBuildingInteraction = true;
+                areaHighlightTriangleObjects = true;
             }
         }
 
@@ -510,16 +530,22 @@ export class Knot {
 
         // keyUp
         if(eventName == "t"){
-            if(highlightTriangleObject){
+            if(highlightTriangleObject || areaHighlightTriangleObjects){
 
                 //triangles layer interactions
                 if(this._physicalLayer instanceof TrianglesLayer){ // TODO: generalize this
                     for(const key of Object.keys(this._maps)){
-                        let map = this._maps[key]
+                        let map = this._maps[key];
                         let currentPoint = map.mouse.currentPoint;
                         for(const key of Object.keys(this._shaders)){
                             let shaders = this._shaders[key];
-                            this._physicalLayer.highlightElement(map.glContext, currentPoint[0], currentPoint[1], shaders);
+
+                            if(highlightTriangleObject){
+                                this._physicalLayer.highlightElement(map.glContext, currentPoint[0], currentPoint[1], shaders);
+                            }else if(areaHighlightTriangleObjects){
+                                this._physicalLayer.highlightElementsInArea(map.glContext, currentPoint[0], currentPoint[1], shaders, 50); // 50 pixels of radius
+                            }
+
                         }
                     }
                 }
@@ -533,9 +559,15 @@ export class Knot {
                 if(this._physicalLayer instanceof TrianglesLayer){ // TODO: generalize this
                     for(const key of Object.keys(this._shaders)){
                         let shaders = this._shaders[key];
-                        let objectId = this._physicalLayer.getIdLastHighlightedElement(shaders);
+                        let objectIds = this._physicalLayer.getIdLastHighlightedElement(shaders);
                         let map = this._maps[key]
-                        map.updateGrammarPlotsHighlight(this._physicalLayer.id, LevelType.OBJECTS, objectId); // letting plots manager know that this knot was interacted with
+
+                        if(objectIds != undefined){
+                            if(objectIds.length > 1){ // if more than one id is being highlighted at the same time that is an area interaction
+                                map.updateGrammarPlotsHighlight(this._physicalLayer.id, LevelType.OBJECTS, null, true); // clear
+                            }
+                            map.updateGrammarPlotsHighlight(this._physicalLayer.id, LevelType.OBJECTS, objectIds);
+                        }
                     }
                 }
             }

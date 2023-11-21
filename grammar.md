@@ -389,7 +389,7 @@ The `knots` reference the ids of knots defined in the Master Grammar and for eac
     grammar_type: "MAP"
 ```
 
-The difference between `PICKING` and `AREA_PICKING` is that the first one selects one object from the layer at the time and the second selects all objects in a certain area of knots that also have the `AREA_PICKING` activated. The area has a radius of 200 meters.
+The difference between `PICKING` and `AREA_PICKING` is that the first one selects one object from the layer at the time and the second selects all objects in a certain area of knots that also have the `AREA_PICKING` activated. The area has a radius of 50 pixels.
 
 For any interaction if two knots have the same physical layer and both are activated for interaction than the interaction will affect all of them.
 

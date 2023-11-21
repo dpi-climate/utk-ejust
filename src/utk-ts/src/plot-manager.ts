@@ -94,6 +94,9 @@ export class PlotManager {
     clearFiltersLocally(knotsIds: string[]){
         // update local data
         for(const plotKnotData of this._plotsKnotsData){
+
+            plotKnotData.allFilteredIn = true;
+
             if(knotsIds.includes(plotKnotData.knotId)){
                 for(const element of plotKnotData.elements){
                     element.filteredIn = true;

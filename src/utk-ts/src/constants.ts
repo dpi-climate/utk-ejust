@@ -75,9 +75,11 @@ export enum LevelType{
     COORDINATES3D = "COORDINATES3D"
 }
 
+// interactions with the knots on the map
 export enum InteractionType{
     BRUSHING = "BRUSHING",
     PICKING = "PICKING",
+    AREA_PICKING = "AREA_PICKING",
     NONE = "NONE"
 }
 
