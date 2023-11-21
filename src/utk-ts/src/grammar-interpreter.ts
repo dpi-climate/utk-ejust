@@ -816,7 +816,7 @@ class GrammarInterpreter {
             }
         }
 
-        let plotsKnotData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[] = [];
+        let plotsKnotData: {knotId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[] = [];
 
         for(const knotId of plotsKnots){
             for(const knot of this.getKnots()){
@@ -882,7 +882,7 @@ class GrammarInterpreter {
                                     coordinates: coordinates[i],
                                     abstract: functionValues[i][0],
                                     highlighted: highlighted[i],
-                                    filteredIn: highlighted[i],
+                                    filteredIn: true,
                                     index: i
                                 });
                             }else{
@@ -890,7 +890,7 @@ class GrammarInterpreter {
                                     coordinates: [],
                                     abstract: functionValues[i][0],
                                     highlighted: highlighted[i],
-                                    filteredIn: highlighted[i],
+                                    filteredIn: true,
                                     index: i
                                 });
                             }
@@ -903,6 +903,7 @@ class GrammarInterpreter {
 
                     let knotData = {
                         knotId: knotId,
+                        allFilteredIn: true,
                         elements: elements
                     }
 

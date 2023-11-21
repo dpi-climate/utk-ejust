@@ -28,9 +28,10 @@ class LockFlag {
 export class PlotManager {
 
     protected _plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[];
+    protected _filtered: any = {}; // which plots have filters active (plotNumber -> boolean)
     protected _updateStatusCallback: any;
     protected _setGrammarUpdateCallback: any;
-    protected _plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[];
+    protected _plotsKnotsData: {knotId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[];
     protected _setHighlightElementCallback: {function: any, arg: any};
     protected _plotsReferences: any[];
     protected _needToUnHighlight: boolean;
@@ -41,7 +42,7 @@ export class PlotManager {
      * @param viewData 
      * @param setGrammarUpdateCallback Function that sets the callback that will be called in the frontend to update the grammar
      */
-    constructor(plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[], plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
+    constructor(plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[], plotsKnotsData: {knotId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
 
         this._setHighlightElementCallback = setHighlightElementCallback;
         this._plotsReferences = new Array(plots.length);
@@ -55,7 +56,7 @@ export class PlotManager {
         this.updateGrammarPlotsData(this._plotsKnotsData);
     }
 
-    async updateGrammarPlotsData(plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[]){
+    async updateGrammarPlotsData(plotsKnotsData: {knotId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[]){
         
         this._plotsKnotsData = plotsKnotsData;
 
@@ -95,7 +96,7 @@ export class PlotManager {
         for(const plotKnotData of this._plotsKnotsData){
             if(knotsIds.includes(plotKnotData.knotId)){
                 for(const element of plotKnotData.elements){
-                    element.filteredIn = false;
+                    element.filteredIn = true;
                 }
             }
         }
@@ -108,7 +109,7 @@ export class PlotManager {
                 for(const value of elem.plot.data.values){  
                     for(const knotId of knotsIds){
                         if(value[knotId+"_index"] != undefined){
-                            value[knotId+"_filteredIn"] = false;
+                            value[knotId+"_filteredIn"] = true;
                         }
                     }
                 }
@@ -225,9 +226,26 @@ export class PlotManager {
     }
 
     setFilterElementsLocally(elements: any, truthValue: boolean, toggle: boolean = false){
+
+        let allFilteredInDict: any = {}; // knotId -> filteredIn
+        let allFilteredOutDict: any = {};
+
         // update local data
         for(const plotKnotData of this._plotsKnotsData){
             if(elements[plotKnotData.knotId] != undefined){
+
+                allFilteredInDict[plotKnotData.knotId] = plotKnotData.allFilteredIn;
+
+                if(plotKnotData.allFilteredIn){ // no object is selected (all are filtered in)
+                    for(const element of plotKnotData.elements){
+                        element.filteredIn = false;
+                    }
+
+                    plotKnotData.allFilteredIn = false;
+                }
+
+                let allFilteredOut = true;
+
                 for(const element of plotKnotData.elements){
                     if(element.index == elements[plotKnotData.knotId]){
                         if(toggle){
@@ -235,28 +253,56 @@ export class PlotManager {
                         }else{
                             element.filteredIn = truthValue;
                         }
-                        break;
                     }
+                    if(element.filteredIn)
+                        allFilteredOut = false;
                 }
+
+                allFilteredOutDict[plotKnotData.knotId] = allFilteredOut;
+
+                if(allFilteredOut){ // if no object is selected then include all (all are filtered in)
+                    for(const element of plotKnotData.elements){
+                        if(element.index == elements[plotKnotData.knotId]){
+                            element.filteredIn = true;
+                        }
+                    }
+                    plotKnotData.allFilteredIn = true;
+                } 
             }
         }
 
         // update plots data
         for(let i = 0; i < this._plots.length; i++){
-            let elem = this._plots[i].grammar
+            let elem = this._plots[i].grammar;
 
             if(elem.plot.data != undefined){
+
+                this._filtered[i] = false;
+
                 for(const value of elem.plot.data.values){
                     
                     let elementsKeys = Object.keys(elements);
 
                     for(const knotId of elementsKeys){
+                        if(allFilteredInDict[knotId]){ // if every object is filtered in no object is selected therefore filteredIn should be reset because the next interaction will filter in the object
+                            value[knotId+"_filteredIn"] = false;    
+                        }
+
                         if(value[knotId+"_index"] != undefined && value[knotId+"_index"] == elements[knotId]){
+                            
                             if(toggle){
                                 value[knotId+"_filteredIn"] = !value[knotId+"_filteredIn"];
                             }else{
                                 value[knotId+"_filteredIn"] = truthValue;
                             }
+                        }
+
+                        if(allFilteredOutDict[knotId]){
+                            value[knotId+"_filteredIn"] = true;
+                        }
+
+                        if(!value[knotId+"_filteredIn"]){
+                            this._filtered[i] = true;
                         }
                     }
                 }
@@ -402,56 +448,61 @@ export class PlotManager {
 
                     view.addEventListener('mouseover', function(event: any, item: any) {
 
-                        if(item != undefined && item.datum != undefined){
+                        if(item != undefined && item.datum != undefined){ // the plot needs to be unfiltered
 
-                            let elementsToHighlight: any = {};
+                            if(elem.interaction_effect != InteractionEffectType.FILTER || !_this._filtered[i]){
+                                let elementsToHighlight: any = {};
+        
+                                for(const key of elem.knots){
+                                    if(item.datum[key+'_highlight'] == false){
+                                        _this._setHighlightElementCallback.function(key, item.datum[key+'_index'], true, _this._setHighlightElementCallback.arg);
+                                        elementsToHighlight[<string>key] = item.datum[key+"_index"];
+                                    }
+                                }
     
-                            for(const key of elem.knots){
-                                if(item.datum[key+'_highlight'] == false){
-                                    _this._setHighlightElementCallback.function(key, item.datum[key+'_index'], true, _this._setHighlightElementCallback.arg);
-                                    elementsToHighlight[<string>key] = item.datum[key+"_index"];
+                                if(Object.keys(elementsToHighlight).length > 0){
+                                    _this.setHighlightElementsLocally(elementsToHighlight, true);
+                                    _this._needToUnHighlight = true;
+                                    _this._highlightedVegaElements.push(item);
+                                    _this.updatePlotsNewData();
+    
                                 }
                             }
-
-                            if(Object.keys(elementsToHighlight).length > 0){
-                                _this.setHighlightElementsLocally(elementsToHighlight, true);
-                                _this._needToUnHighlight = true;
-                                _this._highlightedVegaElements.push(item);
-                                _this.updatePlotsNewData();
-
-                            }
-
                         }
 
                     });
         
                     view.addEventListener('mouseout', function(event: any, item: any) {
 
-                        if(item != undefined && item.datum != undefined){
-                            let elementsToUnHighlight: any = {};
-        
-                            for(const key of elem.knots){
-                                _this._setHighlightElementCallback.function(key, item.datum[key+'_index'], false, _this._setHighlightElementCallback.arg);
-                                elementsToUnHighlight[<string>key] = item.datum[key+"_index"];
+                        if(elem.interaction_effect != InteractionEffectType.FILTER || !_this._filtered[i]){
+                            
+                            if(item != undefined && item.datum != undefined){
+                                let elementsToUnHighlight: any = {};
+            
+                                for(const key of elem.knots){
+                                    _this._setHighlightElementCallback.function(key, item.datum[key+'_index'], false, _this._setHighlightElementCallback.arg);
+                                    elementsToUnHighlight[<string>key] = item.datum[key+"_index"];
+                                }
+    
+                                _this.setHighlightElementsLocally(elementsToUnHighlight, false);
+                                _this.updatePlotsNewData();
                             }
-
-                            _this.setHighlightElementsLocally(elementsToUnHighlight, false);
-                            _this.updatePlotsNewData();
-                        }
-
-                        for(const highlightedItem of _this._highlightedVegaElements){
-                            let elementsToUnHighlight: any = {};
-        
-                            for(const key of elem.knots){
-                                _this._setHighlightElementCallback.function(key, highlightedItem.datum[key+'_index'], false, _this._setHighlightElementCallback.arg);
-                                elementsToUnHighlight[<string>key] = highlightedItem.datum[key+"_index"];
+    
+                            for(const highlightedItem of _this._highlightedVegaElements){
+                                let elementsToUnHighlight: any = {};
+            
+                                for(const key of elem.knots){
+                                    _this._setHighlightElementCallback.function(key, highlightedItem.datum[key+'_index'], false, _this._setHighlightElementCallback.arg);
+                                    elementsToUnHighlight[<string>key] = highlightedItem.datum[key+"_index"];
+                                }
+    
+                                _this.setHighlightElementsLocally(elementsToUnHighlight, false);
+                                _this.updatePlotsNewData();
                             }
-
-                            _this.setHighlightElementsLocally(elementsToUnHighlight, false);
-                            _this.updatePlotsNewData();
+    
+                            _this._highlightedVegaElements = [];
+                        
                         }
-
-                        _this._highlightedVegaElements = [];
 
                     });
                 }
@@ -465,59 +516,64 @@ export class PlotManager {
 
                     view.addEventListener('click', function(event: any, item: any) {
 
-                        if(item == undefined || item.datum == undefined){
-
-                            let elementsToUnHighlight: any = {};
-        
-                            for(const key of elem.knots){
-                                // unhighlight all elements of this plot
-                                for(const value of elem.plot.data.values){
-                                    if(value[key+'_index'] != undefined){
-                                        _this._setHighlightElementCallback.function(key, value[key+'_index'], false, _this._setHighlightElementCallback.arg);
-                                        elementsToUnHighlight[<string>key] = value[key+'_index'];
+                        if(elem.interaction_effect != InteractionEffectType.FILTER || !_this._filtered[i]){
+                        
+                            if(item == undefined || item.datum == undefined){
+    
+                                let elementsToUnHighlight: any = {};
+            
+                                for(const key of elem.knots){
+                                    // unhighlight all elements of this plot
+                                    for(const value of elem.plot.data.values){
+                                        if(value[key+'_index'] != undefined){
+                                            _this._setHighlightElementCallback.function(key, value[key+'_index'], false, _this._setHighlightElementCallback.arg);
+                                            elementsToUnHighlight[<string>key] = value[key+'_index'];
+                                        }
                                     }
                                 }
-                            }
-    
-                            _this.setHighlightElementsLocally(elementsToUnHighlight, false);
-                            _this.updatePlotsNewData();
-
-                        }else{
-
-                            let unhighlight = false;
-
-                            for(const key of elem.knots){
-                                if(item.datum[key+"_highlight"] == true){
-                                    unhighlight = true;
-                                    break;
-                                }
-                            }
-
-                            if(unhighlight){
-                                let elementsToUnHighlight: any = {};
-
-                                // highlight the clicked element
-                                for(const key of elem.knots){
-                                    _this._setHighlightElementCallback.function(key, item.datum[key+'_index'], false, _this._setHighlightElementCallback.arg);
-                                    elementsToUnHighlight[<string>key] = item.datum[key+"_index"];
-                                }
-
+        
                                 _this.setHighlightElementsLocally(elementsToUnHighlight, false);
                                 _this.updatePlotsNewData();
+    
                             }else{
-                                let elementsToHighlight: any = {};
-
-                                // highlight the clicked element
+    
+                                let unhighlight = false;
+    
                                 for(const key of elem.knots){
-                                    _this._setHighlightElementCallback.function(key, item.datum[key+'_index'], true, _this._setHighlightElementCallback.arg);
-                                    elementsToHighlight[<string>key] = item.datum[key+"_index"];
+                                    if(item.datum[key+"_highlight"] == true){
+                                        unhighlight = true;
+                                        break;
+                                    }
                                 }
-
-                                _this.setHighlightElementsLocally(elementsToHighlight, true);
-                                _this.updatePlotsNewData();
+    
+                                if(unhighlight){
+                                    let elementsToUnHighlight: any = {};
+    
+                                    // highlight the clicked element
+                                    for(const key of elem.knots){
+                                        _this._setHighlightElementCallback.function(key, item.datum[key+'_index'], false, _this._setHighlightElementCallback.arg);
+                                        elementsToUnHighlight[<string>key] = item.datum[key+"_index"];
+                                    }
+    
+                                    _this.setHighlightElementsLocally(elementsToUnHighlight, false);
+                                    _this.updatePlotsNewData();
+                                }else{
+                                    let elementsToHighlight: any = {};
+    
+                                    // highlight the clicked element
+                                    for(const key of elem.knots){
+                                        _this._setHighlightElementCallback.function(key, item.datum[key+'_index'], true, _this._setHighlightElementCallback.arg);
+                                        elementsToHighlight[<string>key] = item.datum[key+"_index"];
+                                    }
+    
+                                    _this.setHighlightElementsLocally(elementsToHighlight, true);
+                                    _this.updatePlotsNewData();
+                                }
+    
                             }
-
+                        
                         }
+
 
                     });
                 }
