@@ -597,7 +597,7 @@ export class Knot {
                 }
             }
 
-            if(highlightBuildingInteraction && cursorPosition != null){
+            if((highlightBuildingInteraction || areaHighlightBuildingInteraction) && cursorPosition != null){
                 // call functions to highlight building
                 
                 if(this._physicalLayer instanceof BuildingsLayer){
@@ -605,11 +605,16 @@ export class Knot {
                         let map = this._maps[parseInt(key)]
                         for(const key of Object.keys(this._shaders)){
                             let shaders = this._shaders[parseInt(key)];
-                            this._physicalLayer.highlightBuilding(map.glContext, cursorPosition[0], cursorPosition[1], shaders);
+
+                            if(highlightBuildingInteraction){
+                                this._physicalLayer.highlightBuilding(map.glContext, cursorPosition[0], cursorPosition[1], shaders);
+                            }else{
+                                this._physicalLayer.highlightBuildingsInArea(map.glContext, cursorPosition[0], cursorPosition[1], shaders, 50);
+                            }
+
                         }
                     }
                 }
-
 
                 for(const key of Object.keys(this._maps)){
                     let map = this._maps[parseInt(key)]
@@ -621,9 +626,15 @@ export class Knot {
                 if(this._physicalLayer instanceof BuildingsLayer){
                     for(const key of Object.keys(this._shaders)){
                         let shaders = this._shaders[parseInt(key)];
-                        let buildingId = this._physicalLayer.getIdLastHighlightedBuilding(shaders);
+                        let buildingIds = this._physicalLayer.getIdLastHighlightedBuilding(shaders);
                         let map = this._maps[parseInt(key)]
-                        map.updateGrammarPlotsHighlight(this._physicalLayer.id, LevelType.OBJECTS, buildingId); // letting plots manager know that this knot was interacted with
+
+                        if(buildingIds != undefined){
+                            if(buildingIds.length > 1){ // if more than one id is being highlighted at the same time that is an area interaction
+                                map.updateGrammarPlotsHighlight(this._physicalLayer.id, LevelType.OBJECTS, null, true); // clear
+                            }
+                            map.updateGrammarPlotsHighlight(this._physicalLayer.id, LevelType.OBJECTS, buildingIds); // letting plots manager know that this knot was interacted with
+                        }
                     }
                 }
             }

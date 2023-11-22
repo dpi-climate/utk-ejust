@@ -35,6 +35,7 @@ export class ShaderPicking extends Shader {
     protected _footDirty: boolean = false;
     protected _pickObjectDirty: boolean = false;
     protected _pickingForUpdate: boolean = false;
+    protected _pickObjectAreaDirty: boolean = false;
 
     // Id of each property in the VAO
     protected _coordsId = -1;
@@ -78,6 +79,8 @@ export class ShaderPicking extends Shader {
     protected _auxiliaryShader: AuxiliaryShader;
 
     protected _coordsPerComp: number[];
+
+    protected _pickingRadius: number;
 
     /**
      * 
@@ -442,8 +445,47 @@ export class ShaderPicking extends Shader {
         let idBuildingLevel = this.objectFromCell(id);
 
         if(this.isFilteredIn(idBuildingLevel)){ // filtered in, therefore can be interacted
-            this._auxiliaryShader.setPickedObject(id);
+            this._auxiliaryShader.setPickedObject([id]);
         }
+
+    }
+
+    public pickObjectArea(glContext: WebGL2RenderingContext){
+        // const data = new Uint8Array(4);
+
+        const data = new Uint8Array(Math.ceil(Math.abs(this._pickingRadius)*Math.abs(this._pickingRadius)*4));
+
+        for(let i = 0; i < data.length; i++){ // initializing data array with 255 to recognize not used positions
+            data[i] = 255;
+        }
+
+        glContext.readPixels(
+            this._objectPixelX,            // x
+            this._objectPixelY,            // y
+            this._pickingRadius,                 // width
+            this._pickingRadius,                 // height
+            glContext.RGBA,           // format
+            glContext.UNSIGNED_BYTE,  // type
+            data);             // typed array to hold result
+
+
+        let ids = new Set<number>();
+
+        let dataByFour = Math.floor(data.length/4);
+
+        for(let i = 0; i < dataByFour; i++){
+            if(data[i*4] == 255 && data[i*4+1] == 255 && data[i*4+2] == 255 && data[i*4+3] == 255){ // some portions of the data array are not used
+                continue;
+            }else{
+                ids.add(data[i*4] + (data[i*4+1] << 8) + (data[i*4+2] << 16) + (data[i*4+3] << 24));
+            }
+        }
+
+        let arrayFromIds = Array.from(ids);
+
+        this._auxiliaryShader.clearPicking();
+
+        this._auxiliaryShader.setPickedObject(arrayFromIds);
 
     }
 
@@ -451,6 +493,13 @@ export class ShaderPicking extends Shader {
         this._pickObjectDirty = true;
         this._objectPixelX = pixelX;
         this._objectPixelY = pixelY;
+    }
+
+    public updatePickObjectArea(pixelX: number, pixelY: number, radius: number){
+        this._pickObjectAreaDirty = true;
+        this._objectPixelX = pixelX;
+        this._objectPixelY = pixelY;
+        this._pickingRadius = radius;
     }
 
     public clearPicking(){
@@ -648,6 +697,11 @@ export class ShaderPicking extends Shader {
         if(this._pickObjectDirty){
             this.pickObject(glContext);
             this._pickObjectDirty = false;
+        }
+
+        if(this._pickObjectAreaDirty){
+            this.pickObjectArea(glContext);
+            this._pickObjectAreaDirty = false;
         }
         
         const sky = MapStyle.getColor('sky').concat([1.0]);

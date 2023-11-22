@@ -316,7 +316,7 @@ export class ShaderPickingTriangles extends Shader {
     public pickObjectArea(glContext: WebGL2RenderingContext){
         // const data = new Uint8Array(4);
 
-        const data = new Uint8Array(Math.ceil(Math.abs(400)*Math.abs(400)*4));
+        const data = new Uint8Array(Math.ceil(Math.abs(this._pickingRadius)*Math.abs(this._pickingRadius)*4));
 
         for(let i = 0; i < data.length; i++){ // initializing data array with 255 to recognize not used positions
             data[i] = 255;
