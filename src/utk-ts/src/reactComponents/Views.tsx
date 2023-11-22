@@ -30,7 +30,8 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
   const [camera, setCamera] = useState<{position: number[], direction: {right: number[], lookAt: number[], up: number[]}}>({position: [], direction: {right: [], lookAt: [], up: []}}); // TODO: if we have multiple map instances we have multiple cameras
   const [filterKnots, setFilterKnots] = useState<number[]>([]);
   const [systemMessages, setSystemMessages] = useState<{text: string, color: string}[]>([]);
-  const [genericPlots, setGenericPlots] = useState<{id: number, hidden: boolean, svgId: string, label: string, checked: boolean, edit: boolean, floating: boolean, position: IComponentPosition | undefined, componentId: string}[]>([]);
+  // knotsByPhysical: how many knots correspond to each physical layer (physical_id -> [list_of_knots])
+  const [genericPlots, setGenericPlots] = useState<{id: number, knotsByPhysical: any, hidden: boolean, svgId: string, label: string, checked: boolean, edit: boolean, floating: boolean, position: IComponentPosition | undefined, componentId: string}[]>([]);
   const [knotVisibility, setKnotVisibility] = useState<any>({});
   const [currentPlotId, setCurrentPlotId] = useState(0);
   const [layersIds, setLayersIds] = useState<any>({});
@@ -45,7 +46,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
     setSystemMessages([{text: msg, color: color}]);
   }
 
-  const linkedContainerGenerator = (n: number, names: string[] = [], floating_values: boolean[], positions: (IComponentPosition | undefined)[], componentIds: string[]) => {
+  const linkedContainerGenerator = (n: number, names: string[] = [], floating_values: boolean[], positions: (IComponentPosition | undefined)[], componentIds: string[], knotsByPhysicalList: any[]) => {
 
     let createdIds: number[] = [];
 
@@ -53,7 +54,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
       return [];
     }
 
-    createdIds = addNewGenericPlot(n, names, floating_values, positions, componentIds);
+    createdIds = addNewGenericPlot(n, names, floating_values, positions, componentIds, knotsByPhysicalList);
 
     // promise is only resolved when the container is created
     return new Promise(async function (resolve, reject) {
@@ -94,7 +95,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
     setActiveGrammarType(grammarType);
   }
 
-  const addNewGenericPlot = (n: number = 1, names: string[] = [], floating_values: boolean[], positions: (IComponentPosition | undefined)[], componentIds: string[]) => {
+  const addNewGenericPlot = (n: number = 1, names: string[] = [], floating_values: boolean[], positions: (IComponentPosition | undefined)[], componentIds: string[], knotsByPhysicalList: any[]) => {
 
     let createdIds = [];
     let tempPlots = [];
@@ -103,9 +104,9 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
 
     for(let i = 0; i < n; i++){
       if(names.length > 0 && names[i] != '' && names[i] != undefined){
-        tempPlots.push({id: tempId, hidden: true, svgId: "genericPlotSvg"+tempId, label: names[i], checked: false, edit: false, floating: floating_values[i], position: positions[i], componentId: componentIds[i]});
+        tempPlots.push({id: tempId, knotsByPhysical: knotsByPhysicalList[i], hidden: true, svgId: "genericPlotSvg"+tempId, label: names[i], checked: false, edit: false, floating: floating_values[i], position: positions[i], componentId: componentIds[i]});
       }else{
-        tempPlots.push({id: tempId, hidden: true, svgId: "genericPlotSvg"+tempId, label: "Plot "+tempId, checked: false, edit: false, floating: floating_values[i], position: positions[i], componentId: componentIds[i]});
+        tempPlots.push({id: tempId, knotsByPhysical: knotsByPhysicalList[i], hidden: true, svgId: "genericPlotSvg"+tempId, label: "Plot "+tempId, checked: false, edit: false, floating: floating_values[i], position: positions[i], componentId: componentIds[i]});
       }
       createdIds.push(tempId);
       tempId += 1;
@@ -120,9 +121,9 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
     let modifiedPlots = [];
     for(const plot of genericPlots){
       if(plot.id == plotId){
-        modifiedPlots.push({id: plot.id, hidden: !plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position, componentId: plot.componentId});
+        modifiedPlots.push({id: plot.id, knotsByPhysical: plot.knotsByPhysical, hidden: !plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position, componentId: plot.componentId});
       }else{
-        modifiedPlots.push({id: plot.id, hidden: plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position, componentId: plot.componentId});
+        modifiedPlots.push({id: plot.id, knotsByPhysical: plot.knotsByPhysical, hidden: plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position, componentId: plot.componentId});
       }
     }
     setGenericPlots(modifiedPlots);
@@ -132,7 +133,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
     let modifiedPlots = [];
 
     for(const plot of genericPlots){
-      modifiedPlots.push({id: plot.id, hidden: !plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position, componentId: plot.componentId});
+      modifiedPlots.push({id: plot.id, knotsByPhysical: plot.knotsByPhysical, hidden: !plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position, componentId: plot.componentId});
     }
 
     setGenericPlots(modifiedPlots);
@@ -155,7 +156,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
     }else if(state == "knotVisibility"){
       setKnotVisibility(value);
     }else if(state == "containerGenerator"){
-      return linkedContainerGenerator(value.n, value.names, value.floating_values, value.positions, value.componentIds);
+      return linkedContainerGenerator(value.n, value.names, value.floating_values, value.positions, value.componentIds, value.knotsByPhysicalList);
     }
   }
 

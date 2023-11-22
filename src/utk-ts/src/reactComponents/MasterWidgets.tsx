@@ -40,6 +40,7 @@ export const MasterWidgets = ({width, height, genericPlots, togglePlots, editGra
                         svgId={item.svgId}
                         x={height/2}
                         y={width/2}
+                        knotsByPhysical={item.knotsByPhysical}
                     />
                 )
                 }else{

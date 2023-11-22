@@ -27,11 +27,12 @@ class LockFlag {
 
 export class PlotManager {
 
-    protected _plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[];
+    protected _plots: {id: string, knotsByPhysical: any, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[];
     protected _filtered: any = {}; // which plots have filters active (plotNumber -> boolean)
     protected _updateStatusCallback: any;
     protected _setGrammarUpdateCallback: any;
-    protected _plotsKnotsData: {knotId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[];
+    protected _plotsKnotsData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[];
+    protected _activeKnotPhysical: any = {}; // for each physicalId one knot is active at the time, according to users choice on the interface. (physicalId -> knotId)
     protected _setHighlightElementCallback: {function: any, arg: any};
     protected _plotsReferences: any[];
     protected _needToUnHighlight: boolean;
@@ -42,7 +43,7 @@ export class PlotManager {
      * @param viewData 
      * @param setGrammarUpdateCallback Function that sets the callback that will be called in the frontend to update the grammar
      */
-    constructor(plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[], plotsKnotsData: {knotId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
+    constructor(plots: {id: string, knotsByPhysical: any, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[], plotsKnotsData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
 
         this._setHighlightElementCallback = setHighlightElementCallback;
         this._plotsReferences = new Array(plots.length);
@@ -56,7 +57,7 @@ export class PlotManager {
         this.updateGrammarPlotsData(this._plotsKnotsData);
     }
 
-    async updateGrammarPlotsData(plotsKnotsData: {knotId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[]){
+    async updateGrammarPlotsData(plotsKnotsData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[]){
         
         this._plotsKnotsData = plotsKnotsData;
 
@@ -84,6 +85,13 @@ export class PlotManager {
                 value[knotData.knotId+"_highlight"] = element.highlighted;
                 value[knotData.knotId+"_filteredIn"] = element.filteredIn;
 
+                value[knotData.physicalId+"_index"] = element.index;
+                value[knotData.physicalId+"_abstract"] = element.abstract;
+                value[knotData.physicalId+"_highlight"] = element.highlighted;
+                value[knotData.physicalId+"_filteredIn"] = element.filteredIn;
+
+                this._activeKnotPhysical[knotData.physicalId] = knotData.knotId;
+
                 processedKnotData[knotData.knotId].values.push(value);
             }   
         }
@@ -92,12 +100,18 @@ export class PlotManager {
     }
 
     clearFiltersLocally(knotsIds: string[]){
+
+        let physicalIds: string[] = [];
+
         // update local data
         for(const plotKnotData of this._plotsKnotsData){
 
             plotKnotData.allFilteredIn = true;
 
             if(knotsIds.includes(plotKnotData.knotId)){
+
+                physicalIds.push(plotKnotData.physicalId);
+
                 for(const element of plotKnotData.elements){
                     element.filteredIn = true;
                 }
@@ -115,6 +129,12 @@ export class PlotManager {
                             value[knotId+"_filteredIn"] = true;
                         }
                     }
+
+                    for(const physicalId of physicalIds){
+                        if(value[physicalId+"_index"] != undefined){
+                            value[physicalId+"_filteredIn"] = true;
+                        }
+                    }
                 }
             }
         }
@@ -122,9 +142,15 @@ export class PlotManager {
     }
 
     clearHighlightsLocally(knotsIds: string[]){
+
+        let physicalIds: string[] = [];
+
         // update local data
         for(const plotKnotData of this._plotsKnotsData){
             if(knotsIds.includes(plotKnotData.knotId)){
+
+                physicalIds.push(plotKnotData.physicalId);
+
                 for(const element of plotKnotData.elements){
                     element.highlighted = false;
                 }
@@ -142,31 +168,14 @@ export class PlotManager {
                             value[knotId+"_highlight"] = false;
                         }
                     }
+
+                    for(const physicalId of physicalIds){
+                        if(value[physicalId+"_index"] != undefined){
+                            value[physicalId+"_highlight"] = false;
+                        }
+                    }
                 }
-    
-                // let valuesCopy = [];
-    
-                // for(const value of elem.plot.data.values){
-                //     let valueCopy: any = {};
-    
-                //     let valueKeys = Object.keys(value);
-
-                //     for(const key of valueKeys){
-                //         if(key != "Symbol(vega_id)"){
-                //             valueCopy[key] = value[key];
-                //         }
-                //     }
-    
-                //     valuesCopy.push(valueCopy);
-                // }
-    
-                // let changeset = vega.changeset().remove(() => true).insert(valuesCopy);
-                
-                // if(this._plotsReferences[i] != undefined){
-                //     this._plotsReferences[i].change('source_0', changeset).runAsync();
-                // }
             }
-
         }
     }
 
@@ -204,6 +213,12 @@ export class PlotManager {
             }
         }
 
+        let invertedDict: any = {};
+
+        for(const key of Object.keys(this._activeKnotPhysical)){
+            invertedDict[this._activeKnotPhysical[key]] = key;
+        }
+
         // update plots data
         for(let i = 0; i < this._plots.length; i++){
             let elem = this._plots[i].grammar
@@ -217,8 +232,14 @@ export class PlotManager {
                         if(value[knotId+"_index"] != undefined && value[knotId+"_index"] == elements[knotId]){
                             if(toggle){
                                 value[knotId+"_highlight"] = !value[knotId+"_highlight"];
+                                if(invertedDict[knotId] != undefined){
+                                    value[invertedDict[knotId]+"_highlight"] = value[knotId+"_highlight"];
+                                }
                             }else{
                                 value[knotId+"_highlight"] = truthValue;
+                                if(invertedDict[knotId] != undefined){
+                                    value[invertedDict[knotId]+"_highlight"] = value[knotId+"_highlight"];
+                                }
                             }
                         }
                     }
@@ -274,6 +295,12 @@ export class PlotManager {
             }
         }
 
+        let invertedDict: any = {};
+
+        for(const key of Object.keys(this._activeKnotPhysical)){
+            invertedDict[this._activeKnotPhysical[key]] = key;
+        }
+
         // update plots data
         for(let i = 0; i < this._plots.length; i++){
             let elem = this._plots[i].grammar;
@@ -288,20 +315,32 @@ export class PlotManager {
 
                     for(const knotId of elementsKeys){
                         if(allFilteredInDict[knotId]){ // if every object is filtered in no object is selected therefore filteredIn should be reset because the next interaction will filter in the object
-                            value[knotId+"_filteredIn"] = false;    
+                            value[knotId+"_filteredIn"] = false;
+                            if(invertedDict[knotId] != undefined){
+                                value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
+                            }    
                         }
 
                         if(value[knotId+"_index"] != undefined && value[knotId+"_index"] == elements[knotId]){
                             
                             if(toggle){
                                 value[knotId+"_filteredIn"] = !value[knotId+"_filteredIn"];
+                                if(invertedDict[knotId] != undefined){
+                                    value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
+                                }
                             }else{
                                 value[knotId+"_filteredIn"] = truthValue;
+                                if(invertedDict[knotId] != undefined){
+                                    value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
+                                }
                             }
                         }
 
                         if(allFilteredOutDict[knotId]){
                             value[knotId+"_filteredIn"] = true;
+                            if(invertedDict[knotId] != undefined){
+                                value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
+                            }
                         }
 
                         if(!value[knotId+"_filteredIn"]){
@@ -387,6 +426,7 @@ export class PlotManager {
         let floating_values = []; // which plots are fixed on the screen or floating on top of it
         let positions: (IComponentPosition | undefined)[] = []; // positions of each plot (undefined if it is floating)
         let componentIds: string[] = [];
+        let knotsByPhysicalList: any[] = [];
 
         for(let i = 0; i < this._plots.length; i++){
             if(this._plots[i].grammar.arrangement == PlotArrangementType.LINKED){
@@ -407,10 +447,12 @@ export class PlotManager {
                 positions.push(this._plots[i].position);
 
                 componentIds.push(this._plots[i].componentId);
+
+                knotsByPhysicalList.push(this._plots[i].knotsByPhysical);
             }
         }
 
-        let ids = await this._updateStatusCallback("containerGenerator", {n: linkedPlots.length, names: names, floating_values: floating_values, positions: positions, componentIds: componentIds}); 
+        let ids = await this._updateStatusCallback("containerGenerator", {n: linkedPlots.length, names: names, floating_values: floating_values, positions: positions, componentIds: componentIds, knotsByPhysicalList: knotsByPhysicalList}); 
 
         for(let i = 0; i < linkedPlots.length; i++){
 
