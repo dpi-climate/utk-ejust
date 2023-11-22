@@ -1,75 +1,13 @@
 from pyproj import Transformer
-import pandas as pd
-import os
+import xarray as xr
 import json
 from netCDF4 import Dataset
 import numpy as np
-from .utils import *
-
-import sys
-from wrf import getvar, interplevel, to_np
+import os
 import math
-'''
-    Converts a dataframe into an abstract layer
-'''
-def thematic_from_df(df, output_filepath, latitude_column, longitude_column, coordinates_projection, z_column = None, value_column=None):
-    
-    df = df.drop_duplicates(subset=[latitude_column, longitude_column])
 
-    latitude_list = df[latitude_column].tolist()
-    longitude_list = df[longitude_column].tolist()
-    
-    z_list = []
-    if z_column != None:
-       z_list = df[z_column].toList()
+from wrf import getvar, interplevel, to_np, ALL_TIMES
 
-    if value_column != None:
-        values_list = df[value_column].tolist()
-    else:
-        values_list = [1] * len(latitude_list)
-
-    transformer = Transformer.from_crs(coordinates_projection, 3395)
-    points = list(zip(latitude_list, longitude_list))
-
-    coordinates = []
-
-    for index, point in enumerate(transformer.itransform(points)):
-    
-        z_value = 0
-
-        if(len(z_list) > 0):
-            z_value = z_list[index]
-
-        coordinates.append(point[0])
-        coordinates.append(point[1])
-        coordinates.append(z_value)
-
-    abstract_json = {
-        "id": os.path.basename(output_filepath),
-        "coordinates": coordinates,
-        "values": [elem for elem in values_list]
-    }
-
-    json_object = json.dumps(abstract_json)
-
-    directory = os.path.dirname(output_filepath)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    
-    with open(output_filepath, "w") as outfile:
-        outfile.write(json_object)
-
-'''
-    Converts a csv file into an abstract layer
-'''
-def thematic_from_csv(filepath, layer_id, latitude_column, longitude_column, coordinates_projection, z_column = None, value_column=None):
-    
-    df = pd.read_csv(filepath)
-    thematic_from_df(df, os.path.join(os.path.dirname(filepath),layer_id+".json"), latitude_column, longitude_column, coordinates_projection, z_column, value_column)
-
-'''
-    Converts a NetCDF (e.g. wrf data) file into an abstract layer
-'''
 def thematic_from_netcdf(file_path, variables, coords, layer_id, operations=[], time_indexes=[], bbox={}):
     def cdiff(scalar, axis=0):
         '''
@@ -168,9 +106,27 @@ def thematic_from_netcdf(file_path, variables, coords, layer_id, operations=[], 
                 max_lon_idx = i
                 break
 
-    ###########################################################################################
 
-    data = []
+        # lat_idxs = [i for i in range(len(lat_arr)) if lat_arr[i] >= bbox['min_lat'] and lat_arr[i] <= bbox['max_lat']]
+        # lon_idxs = [j for j in range(len(lon_arr)) if lon_arr[j] >= bbox['min_lon'] and lon_arr[j] <= bbox['max_lon']]
+    
+        # min_lat_idx = lat_idxs[0]
+        # max_lat_idx = lat_idxs[-1]
+        
+        # min_lon_idx = lon_idxs[0]
+        # max_lon_idx = lon_idxs[-1]
+
+############################################################################################
+    
+    # data = ncData.variables[variables[0]['name']][:]
+    # new_data = np.array(data, copy=True)
+
+    # # addition = lambda a, b: a + b
+    # # multiplication = lambda a, b: a * b
+    # # division = lambda a, b: a / b
+
+    #############################################################################
+    final_data = []
 
     for operation in operations:
         if operation['type'] == 'vector':
@@ -178,7 +134,7 @@ def thematic_from_netcdf(file_path, variables, coords, layer_id, operations=[], 
                 if operation['function'] == 'sum':
                     for v in variables:
                         var_name = v['name']
-                        data = ncData.variables[v['name']][:] if len(data) == 0 else data + ncData.variables[v['name']][:]
+                        final_data = ncData.variables[v['name']][:] if len(final_data) == 0 else final_data + ncData.variables[v['name']][:]
 
                 elif operation['function'] == 'interpolation':
                     pressure   = [v for v in variables if v['key'] == 'pressure'][0]
@@ -200,11 +156,11 @@ def thematic_from_netcdf(file_path, variables, coords, layer_id, operations=[], 
 
                         if np.ma.isMaskedArray(var_matrix):
                             var_matrix = list(var_matrix)
-                        data.append(var_matrix)
+                        final_data.append(var_matrix)
 
-                    data = np.array(data)
+                    final_data = np.array(final_data)
 
-                elif operation['function'] == 'calculate_wind': # to do
+                elif operation['function'] == 'calculate_wind':
                     pressure   = [v for v in variables if v['key'] == 'pressure'][0]
                     pressure_name = pressure['name']
 
@@ -235,8 +191,7 @@ def thematic_from_netcdf(file_path, variables, coords, layer_id, operations=[], 
 
                     time_idxs = list(range(5))
                     level = [p['value'] for p in operation['parameters'] if operation['parameters']['name'] == 'level_0'][0]
-                    r = [p['value'] for p in operation['parameters'] if operation['parameters']['name'] == 'r'][0]
-                    
+
                     for t in range(len(time_idxs)):
                         u = getvar(ncData, u_name, timeidx=t, squeeze=False, meta=False)
                         v = getvar(ncData, v_name, timeidx=t, squeeze=False, meta=False)
@@ -246,8 +201,8 @@ def thematic_from_netcdf(file_path, variables, coords, layer_id, operations=[], 
                         u_interp = to_np(interplevel(u, pressure, level))
                         v_interp = to_np(interplevel(v, pressure, level))
 
-                        hdiv = hdivg(u_interp, v_interp, lat_arr, lon_arr, r)
-                        data.append(hdiv)
+                        hdiv = hdivg(u_interp, v_interp, lat_arr, lon_arr)
+                        final_data.append(hdiv)
                              
                 elif operation['function'] == 'calculate_kidx':
                     pressure   = [v for v in variables if v['key'] == 'pressure'][0]
@@ -308,26 +263,33 @@ def thematic_from_netcdf(file_path, variables, coords, layer_id, operations=[], 
 
                                 row_arr.append(k)
                             arr.append(row_arr)
-                        data.append(arr)
-                    data = np.array(data)
+                        final_data.append(arr)
+                    final_data = np.array(final_data)
             
             elif operation['dimension'] == 'time':
                 if operation['function'] == 'accumulate':
                     interval = operation['parameters'][0]
-                    data = [data[t] + data[t + interval] for t in range(0, len(data), interval)]
+                    final_data = [final_data[t] + final_data[t + interval] for t in range(0, len(final_data), interval)]
                 
                 elif operation['function'] == 'unaccumulate':
                     interval = operation['parameters'][0]
-                    data = [data[t] - data[t - interval] for t in range(len(data), 0-1, interval)]
+                    final_data = [final_data[t] - final_data[t - interval] for t in range(len(final_data), 0-1, interval)]
 
                 elif operation['function'] == 'avg':
-                    data = [data[t] - data[t - interval] for t in range(len(data), 0-1, interval)]
+                    final_data = [final_data[t] - final_data[t - interval] for t in range(len(final_data), 0-1, interval)]
 
-        elif operation['type'] == 'vector2D_to_vector1D':
-            print('to do')
+        elif operation['type'] == 'vector_to_scalar':
+            if len(final_data) == 0:
+                final_data = ncData.variables[variables[0]['name']][:]
             
+            if operation['function'] == 'avg':
+                func = lambda x: np.mean(x)
+                arr = [func(matrix) for matrix in final_data]
+
+                final_data = np.array(arr)
+        
         elif operation['type'] == 'scalar':
-            if len(data) == 0:
+            if len(final_data) == 0:
                 new_data = ncData.variables[variables[0]['name']][:]
             
             for matrix in new_data:
@@ -336,74 +298,192 @@ def thematic_from_netcdf(file_path, variables, coords, layer_id, operations=[], 
                         apply_scalar = eval(operation['function'])
                         row[i] = float(round(apply_scalar(row[i], operation['value']), 2))
 
-    ############################################################################################
 
-    points = []
-    values = []
-
-    for latidx in range(min_lat_idx, max_lat_idx + 1):
-        for lonidx in range(min_lon_idx, max_lon_idx + 1):
-            points.append((lat_arr[latidx], lon_arr[lonidx]))
-            pt_arr = []
-            
-            for tidx in range(len(data)):
-                pt_arr.append(float(data[tidx][latidx][lonidx]))
-
-            values.append(pt_arr)
-
-    coordinates = []
-    transformer = Transformer.from_crs(coords['proj'], 3395)
-
-    for point in transformer.itransform(points):
-        coordinates.append(float(point[0]))
-        coordinates.append(float(point[1]))
-        coordinates.append(0)
-
-    abstract_json = {
-        "id": layer_id,
-        "coordinates": coordinates,
-        "values": values
-    }
-
-    json_object = json.dumps(abstract_json)
-
-    directory = os.path.dirname(file_path)
-
-    with open(os.path.join(directory,layer_id+".json"), "w") as outfile:
-        outfile.write(json_object)
-
-'''
-    Thematic data from numpy array file 
-
-    coordinates shape: (n,3)
-    Considers that coordinates do not have a coordinates system but are in meters
-'''
-def thematic_from_npy(filepath_coordinates, filepath_values, layer_id, center_around=[]):
-
-    coordinates = np.load(filepath_coordinates)
-    values = np.load(filepath_values)
-
-    coordinates = coordinates.flatten()
-
-    if(len(center_around) > 0):
-        coordinates = center_coordinates_around(coordinates, center_around)
-
-    flat_values = []
-
-    if(isinstance(values[0], np.ndarray)):
-        flat_values = [item for row in values for item in row] 
-    else:
-        flat_values = values.tolist()
-
-    abstract_json = {
-        "id": layer_id,
-        "coordinates": coordinates.tolist(),
-        "values": flat_values
-    }
-
-    json_object = json.dumps(abstract_json)
+    # rainc = ncData.variables['RAINC'][:]
+    # rainnc = ncData.variables['RAINNC'][:]
     
-    directory = os.path.dirname(filepath_coordinates)
+    # print(rainc[4][0][0], rainnc[4][0][0], new_data[4][0][0])
 
-    with open(os.path.join(directory,layer_id+".json"), "w") as outfile:
-        outfile.write(json_object)
+    
+
+############################################################################################
+
+
+    # points = []
+    # values = []
+
+    # for latidx in range(min_lat_idx, max_lat_idx + 1):
+    #     for lonidx in range(min_lon_idx, max_lon_idx + 1):
+    #         points.append((lat_arr[latidx], lon_arr[lonidx]))
+    #         pt_arr = []
+            
+    #         for tidx in range(len(data)):
+    #             pt_arr.append(float(data[tidx][latidx][lonidx]))
+
+    #         values.append(pt_arr)
+
+    # coordinates = []
+    # transformer = Transformer.from_crs(coords['proj'], 3395)
+
+    # for point in transformer.itransform(points):
+    #     coordinates.append(float(point[0]))
+    #     coordinates.append(float(point[1]))
+    #     coordinates.append(0)
+
+    # abstract_json = {
+    #     "id": layer_id,
+    #     "coordinates": coordinates,
+    #     "values": values
+    # }
+
+    # json_object = json.dumps(abstract_json)
+
+    # directory = os.path.dirname(file_path)
+
+    # with open(os.path.join(directory,layer_id+".json"), "w") as outfile:
+    #     outfile.write(json_object)
+    
+
+  
+    
+    
+    # if len(variables'] == 1):
+    #     var_name = variables'][0]['name']
+    #     var_unit = variables'][0]['unit']
+    #     var_level = variable'][0]['level']
+    #     var_key   = variable'][0]['key']
+
+
+if __name__ == '__main__':   
+    # myobj = json.load(open("./netcdf_grammarv1.json") )
+
+
+    file_path = "../../examples/wrf_chicago/wrfout_d03_2023-06-09_20_00_00"
+    variables = [ #'RAINC', 'RAINNC'
+        # {
+        #     "name": "T2",
+        #     "level": "",
+        #     "unit": "C",
+        #     "key": ""
+        # }
+            {
+                "name": 'pressure',
+                "key": 'pressure',
+            },
+            {
+                "name": 'u',
+                "key": 'u',
+            },
+            {
+                "name": 'v',
+                "key": 'v',
+            }
+
+    ]
+
+    coords = {
+        "lat": "XLAT",
+        "lon": "XLONG",
+        "proj": 4326,
+    }
+
+    bbox = {
+            "min_lat": 33,
+            "min_lon": -94,
+            "max_lat": 42,
+            "max_lon": -81
+        }
+
+    # operations = {
+    #         "scalar": [ 
+    #             # {
+    #             #     "name": "addition",
+    #             #     "value": -273,
+    #             # },
+    #             # {
+    #             #     "name": "multiplication",
+    #             #     "value": 2,
+    #             # },
+    #             # {
+    #             #     "name": "division",
+    #             #     "value": 3,
+    #             # },
+    #             {
+    #                 "name": "lambda x, l: (x + l[0]) * l[1]",
+    #                 "value": [ -273, 2],
+    #             }
+
+    #         ],
+
+    #         "vector": [
+    #             # {
+    #             #     "name": "",
+    #             #     "parameters" : {
+    #             #         "name": "",
+    #             #         "value": ""
+
+    #             #     }
+    #             # }
+    #         ]
+    #     }
+
+    # operations = {
+    #     "scalar": {
+    #         "function": "lambda x, l: (x + l[0]) * l[1]",
+    #         "parameters": [-273, 2]
+    #     },
+
+    #     "vector" : {
+    #         "type": "between_variables",
+    #         "function": "lambda x, y: x + y",
+    #         "parameters": [],
+    #     }
+        
+        
+    # }
+
+    operations = [
+        {
+            "type": "vector",
+            "dimension": "space",
+            "function": "calculate_wind",
+            "parameters": [
+                {
+                    "name": "level",
+                    "value": 850
+                }
+
+            ],
+        },
+        # {
+        #     "type": "vector",
+        #     "dimension": "space",
+        #     "function": "sum",
+        #     "parameters": [],
+        # },
+        # {
+        #     "type": "scalar",
+        #     "function": "lambda x, l: (x + l[0]) * l[1]",
+        #     "parameters": [-273, 2]
+        # },
+    ]
+
+    time_indexes = []
+    layer_id = "wrfout_d03_2023-06-09_20_00_00_T2"
+
+    # thematic_from_netcdf(file_path, variables, coords, operations, time_indexes, bbox)
+    thematic_from_netcdf(file_path, variables, coords, layer_id, operations)
+
+    # def test():
+        
+
+    # test = lambda : print('hey')
+    # a = eval('test')
+
+    # a()
+    
+    # addMatrix = np.arange(3.0)
+    # print(addMatrix)
+
+# add_matrix = np.full((2, 3, 5), 7)
+# print(add_matrix)

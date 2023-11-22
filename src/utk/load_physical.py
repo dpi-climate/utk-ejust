@@ -78,7 +78,16 @@ def physical_from_csv(filepath, geometry_column='geometry', crs='4326', renderSt
     # file name without extension
     file_name_wo_extension = os.path.splitext(file_name)[0]
 
-    break_into_binary(directory, file_name_wo_extension, mesh, ["coordinates", "indices"], ["d", "I"], 'TRIANGLES_3D_LAYER', renderStyle, styleKey)
+    types = ["coordinates", "indices"]
+    dataTypes = ["d", "I"]
+    type = 'TRIANGLES_3D_LAYER'
+
+    if 'indices' not in mesh[0]['geometry'].keys():
+        types = [types[0]]
+        dataTypes = [dataTypes[0]]
+        type = 'POINTS_LAYER'
+
+    break_into_binary(directory, file_name_wo_extension, mesh, types, dataTypes, type, renderStyle, styleKey)
 
 def physical_from_geojson(filepath, bbox = None, renderStyle=['FLAT_COLOR'], styleKey='surface'):
 
@@ -106,35 +115,39 @@ def mesh_from_gdf(gdf):
     mesh = []
 
     for geometry in gdf_transformed.geometry:
+        if geometry.geom_type == 'Point':
+            nodes_3d = [geometry.x, geometry.y, 0]
+            mesh.append({'geometry': {'coordinates': [round(item,4) for item in nodes_3d]}})
 
-        sub_geometries = []
-        if geometry.geom_type == 'MultiPolygon':
-            sub_geometries = list(geometry)
-        elif geometry.geom_type == 'Polygon':
-            sub_geometries = [geometry]
+        else:
+            sub_geometries = []
+            if geometry.geom_type == 'MultiPolygon':
+                sub_geometries = list(geometry)
+            elif geometry.geom_type == 'Polygon':
+                sub_geometries = [geometry]
 
-        for element in sub_geometries:
+            for element in sub_geometries:
 
-            x, y = element.exterior.coords.xy
+                x, y = element.exterior.coords.xy
 
-            nodes = list(zip(x,y))
-            rings = [len(nodes)]
+                nodes = list(zip(x,y))
+                rings = [len(nodes)]
 
-            indices = earcut.triangulate_float64(nodes, rings)
+                indices = earcut.triangulate_float64(nodes, rings)
 
-            nodes = np.array(nodes)
+                nodes = np.array(nodes)
 
-            nodes = nodes.flatten().tolist()
-            indices = indices.tolist()
+                nodes = nodes.flatten().tolist()
+                indices = indices.tolist()
 
-            nodes_3d = []
+                nodes_3d = []
 
-            for i in range(int(len(nodes)/2)):
-                nodes_3d.append(nodes[i*2])
-                nodes_3d.append(nodes[i*2+1])
-                nodes_3d.append(0)
+                for i in range(int(len(nodes)/2)):
+                    nodes_3d.append(nodes[i*2])
+                    nodes_3d.append(nodes[i*2+1])
+                    nodes_3d.append(0)
 
-            mesh.append({'geometry': {'coordinates': [round(item,4) for item in nodes_3d], 'indices': indices}})
+                mesh.append({'geometry': {'coordinates': [round(item,4) for item in nodes_3d], 'indices': indices}})
 
     return mesh
 

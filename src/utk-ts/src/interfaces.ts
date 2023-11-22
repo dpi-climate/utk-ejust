@@ -129,6 +129,7 @@ export interface ICameraData {
     parks: ColorHEX;    // parks layer color definition
     water: ColorHEX;    // water layer color definition
     sky: ColorHEX;      // sky layer color definition
+    surface: ColorHEX;
     building: ColorHEX; // buildings layer color definition
 }
 

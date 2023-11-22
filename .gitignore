@@ -20,6 +20,7 @@ wheels/
 .ipynb_checkpoints
 
 examples/wrf_chicago
+examples/tests
 examples/wrf_multi_resolution
 examples/wrf_one_resolution
 examples/wrf_temp_building
