@@ -1,17 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
-import {Col, Row, Button} from 'react-bootstrap'
-import { VisWidget } from "./VisWidget";
-
+import React from "react";
 import './MapRenderer.css';
-import { SideBarWidgets } from "./SideBarWigets";
-import { ComponentIdentifier, WidgetType } from "../constants";
-import { IComponentPosition, IGenericWidget, IView } from "../interfaces";
+import { SideBarMapWidgets } from "./SideBarMapWigets";
+import { WidgetType } from "../constants";
+import { IGenericWidget } from "../interfaces";
 
 // declaring the types of the props
 type MapRendererProps = {
   obj: any,
   viewId: string,
-  viewObjs: {type: ComponentIdentifier | WidgetType, obj: any, position: IComponentPosition, title: string | undefined, subtitle: string | undefined, grammarDefinition: IView | IGenericWidget | undefined}[] // each viewObj has a an object representing its logic
+  mapWidgets: {type: WidgetType, obj: any, grammarDefinition: IGenericWidget | undefined}[] // each viewObj has a an object representing its logic
   x: number,
   y: number,
   width: number,
@@ -20,10 +17,12 @@ type MapRendererProps = {
   knotVisibility: any,
   genericPlots: any,
   togglePlots: any,
-  inputBarId: string
+  inputBarId: string,
+  componentId: string,
+  editGrammar: any
 }
 
-export const MapRendererContainer = ({obj, viewId, viewObjs, x, y, width, height, layersIds, knotVisibility, genericPlots, togglePlots, inputBarId}:MapRendererProps) =>{
+export const MapRendererContainer = ({obj, viewId, mapWidgets, x, y, width, height, layersIds, knotVisibility, genericPlots, togglePlots, inputBarId, componentId, editGrammar}:MapRendererProps) =>{
 
     return(
       <React.Fragment>
@@ -36,8 +35,8 @@ export const MapRendererContainer = ({obj, viewId, viewObjs, x, y, width, height
           </div>
         </div>
 
-        <SideBarWidgets 
-          viewObjs={viewObjs}
+        <SideBarMapWidgets 
+          mapWidgets={mapWidgets}
           x={x}
           y={y}
           mapWidth={width}
@@ -47,6 +46,8 @@ export const MapRendererContainer = ({obj, viewId, viewObjs, x, y, width, height
           inputBarId={inputBarId}
           genericPlots={genericPlots}
           togglePlots={togglePlots}
+          componentId={componentId}
+          editGrammar={editGrammar}
         />
 
         {/* <div style={{position: "absolute", height: "160px", bottom: 0, width: (divWidth/12)*window.innerWidth, backgroundColor: "rgba(200,200,200,0.3)", padding: 0}}>

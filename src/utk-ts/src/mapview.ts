@@ -11,14 +11,14 @@ import { MouseEventsFactory } from './mouse-events';
 import { DataApi } from './data-api';
 import { LayerManager } from './layer-manager';
 
-import { ICameraData, ILayerData, IGrammar } from './interfaces';
+import { ICameraData, ILayerData, IMasterGrammar } from './interfaces';
 
-import { LevelType } from './constants';
+import { LevelType, PlotArrangementType } from './constants';
 
 import { ShaderPicking } from "./shader-picking";
 import { ShaderPickingTriangles } from "./shader-picking-triangles";
 
-import { GrammarManager } from "./grammar-manager";
+import { PlotManager } from "./plot-manager";
 import { KnotManager } from './knot-manager';
 import { Knot } from './knot';
 
@@ -30,12 +30,11 @@ class MapView {
     // WebGL context of the canvas
     public _glContext: WebGL2RenderingContext;
 
-    // Layer manager object
     protected _layerManager: LayerManager;
     protected _knotManager: KnotManager;
 
     // Manages the view configuration loaded (including plots and its interactions)
-    protected _grammarManager: GrammarManager;
+    protected _plotManager: PlotManager; // plot manager for local embedded plots
 
     protected _grammarInterpreter: any;
 
@@ -57,10 +56,19 @@ class MapView {
 
     public _viewId: number; // the view to which this map belongs
 
-    resetMap(mapDiv: HTMLElement, grammarInterpreter: any): void {
-
+    resetMap(grammarInterpreter: any, layerManager: LayerManager, knotManager: KnotManager, viewId:number): void {
         this._grammarInterpreter = grammarInterpreter;
+        this._layerManager = layerManager;
+        this._knotManager = knotManager;
+        this._viewId = viewId;
+    }
 
+    get layerManager(): LayerManager {
+        return this._layerManager;
+    }
+
+    get knotManager(): KnotManager{
+        return this._knotManager;
     }
 
     get mouse(): any{
@@ -95,19 +103,8 @@ class MapView {
         return this._camera;
     }
 
-    /**
-     * gets the layers
-     */
-    get layerManager(): LayerManager {
-        return this._layerManager;
-    }
-
-    get knotManager(): KnotManager{
-        return this._knotManager;
-    }
-
-    get grammarManager(): GrammarManager{
-        return this._grammarManager;
+    get plotManager(): PlotManager{
+        return this._plotManager;
     }
 
     /**
@@ -130,12 +127,7 @@ class MapView {
         this._glContext = <WebGL2RenderingContext>this._canvas.getContext('webgl2', {preserveDrawingBuffer: true, stencil: true}); // preserve drawing buffer is used to generate valid blobs for the cave
         this._mapDiv.appendChild(this._canvas);
 
-        this._viewId = 0; // TODO: should change depending on in what view the map is
-
         this._updateStatusCallback = updateStatusCallback;
-
-        this._layerManager = new LayerManager(this._updateStatusCallback, this);
-        this._knotManager = new KnotManager(this._updateStatusCallback);
 
         if(this._knotVisibilityMonitor){
             clearInterval(this._knotVisibilityMonitor);
@@ -155,140 +147,63 @@ class MapView {
         // resizes the canvas
         this.resize();
 
-        await this.initLayers();
+        // await this.initLayers();
+        
+        // this.initKnots();
 
-        this.initKnots();
+        // let knotsGroups: any = {};
 
-        let knotsGroups: any = {};
+        // for(const knot of this._knotManager.knots){
+            
+        //     let knotSpecification = knot.knotSpecification;
+            
+        //     if(knotSpecification.group != undefined){
+        //         if(!(knotSpecification.group.group_name in knotsGroups)){
+        //             knotsGroups[knotSpecification.group.group_name] = [{
+        //                 id: knot.id,
+        //                 position: knotSpecification.group.position
+        //             }];
+        //         }else{
+        //             knotsGroups[knotSpecification.group.group_name].push({
+        //                 id: knot.id,
+        //                 position: knotSpecification.group.position
+        //             });
+        //         }
+        //     }else{
+        //         knotsGroups[knot.id] = [knot.id]; // group of single knot
+        //     }
+            
+        // }
 
-        for(const knot of this._knotManager.knots){
+        // for(const group of Object.keys(knotsGroups)){
+        //     if(knotsGroups[group].length > 1){
+        //         knotsGroups[group].sort((a: any,b: any) => {a.position - b.position});
+        //         let ids = [];
+        //         for(const element of knotsGroups[group]){
+        //             ids.push(element.id);
+        //         }
+        //         knotsGroups[group] = ids;
+        //     }
+        // }
+        
+        // this._updateStatusCallback("layersIds", knotsGroups);
 
-            let knotSpecification = knot.knotSpecification;
-
-            if(knotSpecification.group != undefined){
-                if(!(knotSpecification.group.group_name in knotsGroups)){
-                    knotsGroups[knotSpecification.group.group_name] = [{
-                        id: knot.id,
-                        position: knotSpecification.group.position
-                    }];
-                }else{
-                    knotsGroups[knotSpecification.group.group_name].push({
-                        id: knot.id,
-                        position: knotSpecification.group.position
-                    });
-                }
-            }else{
-                knotsGroups[knot.id] = [knot.id]; // group of single knot
-            }
-
-        }
-
-        for(const group of Object.keys(knotsGroups)){
-            if(knotsGroups[group].length > 1){
-                knotsGroups[group].sort((a: any,b: any) => {a.position - b.position});
-                let ids = [];
-                for(const element of knotsGroups[group]){
-                    ids.push(element.id);
-                }
-                knotsGroups[group] = ids;
-            }
-        }
-
-        this._updateStatusCallback("layersIds", knotsGroups);
-
-        this.initGrammarManager(this._grammarInterpreter.getProcessedGrammar());
+        this.initPlotManager();
 
         if(this._grammarInterpreter.getFilterKnots(this._viewId) != undefined){
             this._layerManager.filterBbox = this._grammarInterpreter.getFilterKnots(this._viewId);
         }else{
             this._layerManager.filterBbox = [];
         }
-    
+
         this.render();
-    }
-
-    parsePlotsKnotData(){
-
-        let plotsKnots: string[] = [];
-
-        for(const plotAttributes of this._grammarInterpreter.getPlots(this._viewId)){
-            for(const knotId of plotAttributes.knots){
-                if(!plotsKnots.includes(knotId)){
-                    plotsKnots.push(knotId);
-                }
-            }
-        }
-
-        let plotsKnotData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[] = [];
-
-        for(const knotId of plotsKnots){
-            for(const knot of this._grammarInterpreter.getKnots(this._viewId)){
-                if(knotId == knot.id){
-
-                    let lastLink = this._grammarInterpreter.getKnotLastLink(knot, this._viewId);
-
-                    let left_layer = this._layerManager.searchByLayerId(this._grammarInterpreter.getKnotOutputLayer(knot, this._viewId));
-
-                    // let left_layer = this._layerManager.searchByLayerId(lastLink.out.name);
-
-                    if(left_layer == null){
-                        throw Error("Layer not found while processing knot");
-                    }
-
-                    let elements = [];
-
-                    if(lastLink.out.level == undefined){ // this is a pure knot
-                        continue;
-                    }
-
-                    let coordinates = left_layer.getCoordsByLevel(lastLink.out.level);
-
-                    let functionValues = left_layer.getFunctionByLevel(lastLink.out.level, knotId);
-
-                    let knotStructure = this._knotManager.getKnotById(knotId);
-
-                    let highlighted = left_layer.getHighlightsByLevel(lastLink.out.level, (<Knot>knotStructure).shaders);
-
-                    let readCoords = 0;
-
-                    let filtered = left_layer.mesh.filtered;
-
-                    for(let i = 0; i < coordinates.length; i++){
-
-                        // if(elements.length >= 1000){ // preventing plot from having too many elements TODO: let the user know that plot is cropped
-                        //     break;
-                        // }
-
-                        if(filtered.length == 0 || filtered[readCoords] == 1){
-                            elements.push({
-                                coordinates: coordinates[i],
-                                abstract: functionValues[i][0],
-                                highlighted: highlighted[i],
-                                index: i
-                            });
-                        }
-
-                        readCoords += coordinates[i].length/left_layer.mesh.dimension;
-                    }
-
-                    let knotData = {
-                        knotId: knotId,
-                        elements: elements
-                    }
-
-                    plotsKnotData.push(knotData);
-                }
-            }
-        }   
-
-        return plotsKnotData;
     }
 
     updateGrammarPlotsData(){
 
-        let plotsKnotData = this.parsePlotsKnotData();
+        let plotsKnotData = this._grammarInterpreter.parsePlotsKnotData(this._viewId); // only parse plots knot data that belongs to this mapview
 
-        this._grammarManager.updateGrammarPlotsData(plotsKnotData);
+        this._plotManager.updateGrammarPlotsData(plotsKnotData);
 
     }
 
@@ -298,59 +213,60 @@ class MapView {
         if(!clear){
             let elements: any = {};
         
-            for(const knot of this._grammarInterpreter.getKnots(this._viewId)){
-                let lastLink = this._grammarInterpreter.getKnotLastLink(knot, this._viewId);
+            for(const knot of this._grammarInterpreter.getKnots()){
+                let lastLink = this._grammarInterpreter.getKnotLastLink(knot);
     
                 if(lastLink.out.name == layerId && lastLink.out.level == level){
                     elements[knot.id] = elementIndex;
                 }
             }
             
-            this.grammarManager.setHighlightElementsLocally(elements, true, true);
+            this.plotManager.setHighlightElementsLocally(elements, true, true);
         }else{
             let knotsToClear: string[] = [];
 
-            for(const knot of this._grammarInterpreter.getKnots(this._viewId)){
-                let lastLink = this._grammarInterpreter.getKnotLastLink(knot, this._viewId);
+            for(const knot of this._grammarInterpreter.getKnots()){
+                let lastLink = this._grammarInterpreter.getKnotLastLink(knot);
     
                 if(lastLink.out.name == layerId){
                     knotsToClear.push(knot.id);
                 }
             }
 
-            this.grammarManager.clearHighlightsLocally(knotsToClear);
+            this.plotManager.clearHighlightsLocally(knotsToClear);
         }
 
     }
 
-    initGrammarManager(grammar: IGrammar){
-        this._grammarManager = new GrammarManager(grammar, this._updateStatusCallback, this.parsePlotsKnotData(), {"function": this.setHighlightElement, "arg": this});
+    initPlotManager(){
+        this._plotManager = new PlotManager(this._grammarInterpreter.getPlots(this._viewId), this._grammarInterpreter.parsePlotsKnotData(this._viewId), {"function": this.setHighlightElement, "arg": this});
+        this._plotManager.init(this._updateStatusCallback);
     }
 
     //TODO: not sure if mapview should contain this logic
     setHighlightElement(knotId: string, elementIndex: number, value: boolean, _this: any){
 
-        let knot = _this._grammarInterpreter.getKnotById(knotId, this._viewId);
+        let knot = _this._grammarInterpreter.getKnotById(knotId);
 
         if(knot == undefined){
             throw Error("Cannot highlight element knot not found");
         }
 
-        let layerId = _this._grammarInterpreter.getKnotOutputLayer(knot, _this._viewId);
+        let layerId = _this._grammarInterpreter.getKnotOutputLayer(knot);
 
-        let lastLink = _this._grammarInterpreter.getKnotLastLink(knot, _this._viewId);
+        let lastLink = _this._grammarInterpreter.getKnotLastLink(knot);
 
         if(lastLink.out.level == undefined)
             return;
 
         let knotObject = _this.knotManager.getKnotById(knotId);
 
-        let shaders = knotObject.shaders;
+        let shaders = knotObject.shaders[this._viewId];
 
         // not sure if layer should be accessed directly or knot.ts be used
         for(const layer of _this._layerManager.layers){
             if(layer.id == layerId){
-                layer.setHighlightElements([elementIndex], <LevelType>lastLink.out.level, value, shaders);
+                layer.setHighlightElements([elementIndex], <LevelType>lastLink.out.level, value, shaders, this._camera.getWorldOrigin(), this._viewId);
                 break;
             }
         }
@@ -377,86 +293,88 @@ class MapView {
         this._camera.resetCamera(params.position, params.direction.up, params.direction.lookAt, params.direction.right, this._updateStatusCallback);
     }
 
-    async initLayers(): Promise<void> {
+    // async initLayers(): Promise<void> {
 
-        let layers: string[] = [];
-        let joinedList: boolean[] = [];
-        let centroid = this.camera.getWorldOrigin();
+    //     let layers: string[] = [];
+    //     let joinedList: boolean[] = [];
+    //     let centroid = this.camera.getWorldOrigin();
 
-        for(const knot of this._grammarInterpreter.getKnots(this._viewId)){
-            if(!knot.knot_op){
-                // load layers from knots if they dont already exist
-                for(let i = 0; i < knot.integration_scheme.length; i++){
+    //     for(const knot of this._grammarInterpreter.getKnots()){
+    //         if(!knot.knot_op){
+    //             // load layers from knots if they dont already exist
+    //             for(let i = 0; i < knot.integration_scheme.length; i++){
 
-                    let joined = false // if the layers was joined with another layer
+    //                 let joined = false // if the layers was joined with another layer
 
-                    if(knot.integration_scheme[i].in != undefined && knot.integration_scheme[i].in.name != knot.integration_scheme[i].out){
-                        joined = true;
-                    }
+    //                 if(knot.integration_scheme[i].in != undefined && knot.integration_scheme[i].in.name != knot.integration_scheme[i].out){
+    //                     joined = true;
+    //                 }
 
-                    if(!layers.includes(knot.integration_scheme[i].out.name)){
-                        layers.push(knot.integration_scheme[i].out.name);
-                        joinedList.push(joined);
-                    }else if(joined){
-                        joinedList[layers.indexOf(knot.integration_scheme[i].out.name)] = joined;
-                    }
-                }
-            }
-        }
+    //                 if(!layers.includes(knot.integration_scheme[i].out.name)){
+    //                     layers.push(knot.integration_scheme[i].out.name);
+    //                     joinedList.push(joined);
+    //                 }else if(joined){
+    //                     joinedList[layers.indexOf(knot.integration_scheme[i].out.name)] = joined;
+    //                 }
+    //             }
+    //         }
+    //     }
 
-        for (let i = 0; i < layers.length; i++) {
+    //     for (let i = 0; i < layers.length; i++) {
 
-            let element = layers[i];
+    //         let element = layers[i];
 
-            // loads from file if not provided
-            const layer = await DataApi.getLayer(element);
+    //         // loads from file if not provided
+    //         const layer = await DataApi.getLayer(element);
 
-            // adds the new layer
-            await this.addLayer(layer, centroid, joinedList[i]);
-        }
+    //         // adds the new layer
+    //         await this.addLayer(layer, centroid, joinedList[i]);
+    //     }
 
-    }
+    // }
 
-    /**
-     * Add layer geometry and function
-     */
-    async addLayer(layerData: ILayerData, centroid: number[] | Float32Array, joined: boolean): Promise<void> {
+    // /**
+    //  * Add layer geometry and function
+    //  */
+    // async addLayer(layerData: ILayerData, centroid: number[] | Float32Array, joined: boolean): Promise<void> {
 
-        // gets the layer data if available
-        const features = 'data' in layerData ? layerData.data : undefined;
+    //     // gets the layer data if available
+    //     const features = 'data' in layerData ? layerData.data : undefined;
 
-        if (!features) { return; }
+    //     if (!features) { return; }
 
-        // loads the layers data
-        const layer = this._layerManager.createLayer(layerData, centroid, features);
+    //     // loads the layers data
+    //     const layer = this._layerManager.createLayer(layerData, centroid, features);
 
-        // not able to create the layer
-        if (!layer) { return; }
+    //     // not able to create the layer
+    //     if (!layer) { return; }
 
-        if(joined){
-            let joinedJson = await DataApi.getJoinedJson(layer.id);
-            if(joinedJson)
-                layer.setJoinedJson(joinedJson);
-        }
+    //     if(joined){
+    //         let joinedJson = await DataApi.getJoinedJson(layer.id);
+    //         if(joinedJson)
+    //             layer.setJoinedJson(joinedJson);
+    //     }
 
-        // render
-        this.render();
-    }
+    //     // render
+    //     this.render();
+    // }
 
-    initKnots(){
+    // initKnots(){
 
-        let knotsMap = this._grammarInterpreter.getMap(this._viewId).knots;
+    //     let knotsMap = this._grammarInterpreter.getMap(this._viewId).knots;
 
-        for(const knotGrammar of this._grammarInterpreter.getKnots(this._viewId)){
-            let layerId = this._grammarInterpreter.getKnotOutputLayer(knotGrammar, this._viewId);
+    //     for(const knotGrammar of this._grammarInterpreter.getKnots()){
+    //         let layerId = this._grammarInterpreter.getKnotOutputLayer(knotGrammar);
             
-            let layer = this._layerManager.searchByLayerId(layerId);
+    //         let layer = this._layerManager.searchByLayerId(layerId);
 
-            let knot = this._knotManager.createKnot(knotGrammar.id, <Layer>layer, knotGrammar, this._grammarInterpreter, this._viewId, knotsMap.includes(knotGrammar.id), this);
-            knot.processThematicData(this._layerManager); // send thematic data to the mesh of the physical layer TODO: put this inside the constructor of Knot
-            knot.loadShaders(this._glContext); // instantiate the shaders inside the knot TODO: put this inside the constructor of Knot
-        }
-    }
+    //         let knot = this._knotManager.createKnot(knotGrammar.id, <Layer>layer, knotGrammar, this._grammarInterpreter, knotsMap.includes(knotGrammar.id), this);
+            
+    //         knot.processThematicData(this._layerManager); // send thematic data to the mesh of the physical layer TODO: put this inside the constructor of Knot
+            
+    //         knot.loadShaders(this._glContext); // instantiate the shaders inside the knot TODO: put this inside the constructor of Knot
+    //     }
+    // }
 
     /**
      * Inits the mouse events
@@ -532,14 +450,19 @@ class MapView {
         // }
 
         for(const knot of this._knotManager.knots){
+
             if(this._grammarInterpreter.evaluateKnotVisibility(knot, this._viewId)){
-                if(!knot.visible)
-                    this._knotManager.toggleKnot(knot.id, true);
-                knot.render(this._glContext, this.camera);
-            }else{
-                if(knot.visible)
-                    this._knotManager.toggleKnot(knot.id, false);
+                knot.render(this._glContext, this.camera, this._viewId);
             }
+
+            // if(this._grammarInterpreter.evaluateKnotVisibility(knot, this._viewId)){
+            //     if(!knot.visible)
+            //         this._knotManager.toggleKnot(knot.id, true);
+            //     knot.render(this._glContext, this.camera, this._viewId);
+            // }else{
+            //     if(knot.visible)
+            //         this._knotManager.toggleKnot(knot.id, false);
+            // }
         }
 
     }
@@ -586,7 +509,7 @@ class MapView {
         for (const knot of this._knotManager.knots){
             if (!knot.visible) { continue; }
 
-            for(const shader of knot.shaders){
+            for(const shader of knot.shaders[this._viewId]){
                 if(shader instanceof ShaderPicking){
                     shader.resizeDirty = true;
                 }
@@ -605,11 +528,12 @@ export var MapViewFactory = (function(){
     var instance: MapView;
   
     return {
-      getInstance: function(mapDiv: HTMLElement, grammarInterpreter: any){
+      getInstance: function(grammarInterpreter: any, layerManager: any, knotManager: any, viewId: number){
           if (instance == null) {
               instance = new MapView();
           }
-          instance.resetMap(mapDiv, grammarInterpreter);
+
+          instance.resetMap(grammarInterpreter, layerManager, knotManager, viewId);
           return instance;
       }
     };

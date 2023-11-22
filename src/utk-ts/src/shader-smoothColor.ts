@@ -53,10 +53,10 @@ export class ShaderSmoothColor extends Shader {
         this.createVertexArrayObject(glContext);
     }
 
-    public updateShaderGeometry(mesh: Mesh) {
+    public updateShaderGeometry(mesh: Mesh, centroid:number[] | Float32Array = [0,0,0], viewId: number) {
         this._coordsDirty = true;
         this._filteredDirty = true;
-        this._coords = mesh.getCoordinatesVBO();
+        this._coords = mesh.getCoordinatesVBO(centroid, viewId);
         this._normals = mesh.getNormalsVBO();
         this._indices = mesh.getIndicesVBO();
         this._coordsPerComp = mesh.getCoordsPerComp();

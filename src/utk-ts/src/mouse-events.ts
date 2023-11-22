@@ -217,31 +217,34 @@ class MouseEvents {
 
           for (const knot of this._map.knotManager.knots) {
             if(knot.physicalLayer instanceof BuildingsLayer || knot.physicalLayer instanceof TrianglesLayer){
-              let bbox = knot.physicalLayer.getSelectedFiltering(knot.shaders);
-  
-              if(bbox != null){
-                if(largerBbox[0] == null){
-                  largerBbox[0] = bbox[0];
-                }else if(bbox[0] < largerBbox[0]){
-                  largerBbox[0] = bbox[0];
-                }
+              for(const key of Object.keys(knot.shaders)){
+                let shaders = knot.shaders[key];
+                let bbox = knot.physicalLayer.getSelectedFiltering(shaders);
     
-                if(largerBbox[1] == null){
-                  largerBbox[1] = bbox[1];
-                }else if(bbox[1] < largerBbox[1]){
-                  largerBbox[1] = bbox[1];
-                }
-  
-                if(largerBbox[2] == null){
-                  largerBbox[2] = bbox[2];
-                }else if(bbox[2] > largerBbox[2]){
-                  largerBbox[2] = bbox[2];
-                }
-  
-                if(largerBbox[3] == null){
-                  largerBbox[3] = bbox[3];
-                }else if(bbox[3] > largerBbox[3]){
-                  largerBbox[3] = bbox[3];
+                if(bbox != null){
+                  if(largerBbox[0] == null){
+                    largerBbox[0] = bbox[0];
+                  }else if(bbox[0] < largerBbox[0]){
+                    largerBbox[0] = bbox[0];
+                  }
+      
+                  if(largerBbox[1] == null){
+                    largerBbox[1] = bbox[1];
+                  }else if(bbox[1] < largerBbox[1]){
+                    largerBbox[1] = bbox[1];
+                  }
+    
+                  if(largerBbox[2] == null){
+                    largerBbox[2] = bbox[2];
+                  }else if(bbox[2] > largerBbox[2]){
+                    largerBbox[2] = bbox[2];
+                  }
+    
+                  if(largerBbox[3] == null){
+                    largerBbox[3] = bbox[3];
+                  }else if(bbox[3] > largerBbox[3]){
+                    largerBbox[3] = bbox[3];
+                  }
                 }
               }
             }
@@ -264,31 +267,34 @@ class MouseEvents {
 
         for (const knot of this._map.knotManager.knots) {
           if(knot.physicalLayer instanceof BuildingsLayer || knot.physicalLayer instanceof TrianglesLayer){
-            let bbox = knot.physicalLayer.getSelectedFiltering(knot.shaders);
+            for(const key of Object.keys(knot.shaders)){
+              let shaders = knot.shaders[key];
+              let bbox = knot.physicalLayer.getSelectedFiltering(shaders);
 
-            if(bbox != null){
-              if(largerBbox[0] == null){
-                largerBbox[0] = bbox[0];
-              }else if(bbox[0] < largerBbox[0]){
-                largerBbox[0] = bbox[0];
-              }
-  
-              if(largerBbox[1] == null){
-                largerBbox[1] = bbox[1];
-              }else if(bbox[1] < largerBbox[1]){
-                largerBbox[1] = bbox[1];
-              }
+              if(bbox != null){
+                if(largerBbox[0] == null){
+                  largerBbox[0] = bbox[0];
+                }else if(bbox[0] < largerBbox[0]){
+                  largerBbox[0] = bbox[0];
+                }
+    
+                if(largerBbox[1] == null){
+                  largerBbox[1] = bbox[1];
+                }else if(bbox[1] < largerBbox[1]){
+                  largerBbox[1] = bbox[1];
+                }
 
-              if(largerBbox[2] == null){
-                largerBbox[2] = bbox[2];
-              }else if(bbox[2] > largerBbox[2]){
-                largerBbox[2] = bbox[2];
-              }
+                if(largerBbox[2] == null){
+                  largerBbox[2] = bbox[2];
+                }else if(bbox[2] > largerBbox[2]){
+                  largerBbox[2] = bbox[2];
+                }
 
-              if(largerBbox[3] == null){
-                largerBbox[3] = bbox[3];
-              }else if(bbox[3] > largerBbox[3]){
-                largerBbox[3] = bbox[3];
+                if(largerBbox[3] == null){
+                  largerBbox[3] = bbox[3];
+                }else if(bbox[3] > largerBbox[3]){
+                  largerBbox[3] = bbox[3];
+                }
               }
             }
           }

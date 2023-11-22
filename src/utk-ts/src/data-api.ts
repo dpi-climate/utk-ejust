@@ -1,18 +1,18 @@
 import { Environment } from './environment';
 import { DataLoader } from './data-loader';
 
-import { ICameraData, ILayerFeature, ILayerData, IMapStyle, IGrammar, IJoinedJson } from './interfaces';
+import { ICameraData, ILayerFeature, ILayerData, IMapStyle, IMasterGrammar, IMapGrammar, IPlotGrammar, IJoinedJson } from './interfaces';
 
 export abstract class DataApi {
   /**
    * Load all layers
    * @param {string} index The layers index file
    */
-  static async getMapData(index: string): Promise<IGrammar> {
+  static async getMapData(index: string): Promise<IMasterGrammar | IMapGrammar | IPlotGrammar> {
     const url = `${Environment.backend}/files/${index}`;
 
     const datasets = await DataLoader.getJsonData(url);
-    return <IGrammar> datasets;
+    return <IMasterGrammar | IMapGrammar | IPlotGrammar> datasets;
   }
 
   /**

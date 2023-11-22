@@ -15,11 +15,14 @@ export class LayerManager {
     protected _layers: Layer[] = [];
     protected _filterBbox: number[] = []; // minx, miny, maxx, maxy
     protected _updateStatusCallback: any;
-    protected _map: any;
+    protected _grammarInterpreter: any;
 
-    constructor(updateStatusCallback: any | null = null, map: any) {
+    constructor(grammarInterpreter: any) {
+        this._grammarInterpreter = grammarInterpreter;
+    }
+
+    public init(updateStatusCallback: any | null = null){
         this._updateStatusCallback = updateStatusCallback;
-        this._map = map;
     }
 
     /**
@@ -36,12 +39,15 @@ export class LayerManager {
 
         this._filterBbox = bbox;
 
-        for(const knot of this._map.knotManager.knots){
+        for(const knot of this._grammarInterpreter.knotManager.knots){
             knot.physicalLayer.mesh.setFiltered(bbox);
-            for(const shader of knot.shaders){
-                shader.setFiltered(knot.physicalLayer.mesh.filtered);
-                if(shader.currentKnot != undefined){ // if layer is being rendered
-                    shader.updateShaderData(knot.physicalLayer.mesh, shader.currentKnot); // recalculating normalization
+            for(const key of Object.keys(knot.shaders)){
+                let shaders = knot.shaders[key];
+                for(const shader of shaders){
+                    shader.setFiltered(knot.physicalLayer.mesh.filtered);
+                    if(shader.currentKnot != undefined){ // if layer is being rendered
+                        shader.updateShaderData(knot.physicalLayer.mesh, shader.currentKnot); // recalculating normalization
+                    }
                 }
             }
         }
@@ -54,7 +60,7 @@ export class LayerManager {
     * @param {string} layerId layer identifier
     * @returns {Layer | null} The load layer promise
     */
-    createLayer(layerInfo: ILayerData, centroid: number[] | Float32Array, features: ILayerFeature[]): Layer | null {
+    createLayer(layerInfo: ILayerData, features: ILayerFeature[]): Layer | null {
         // loaded layer
         let layer = null;
         // z order
@@ -63,25 +69,25 @@ export class LayerManager {
         // loads based on type
         switch (layerInfo.type) {
             case LayerType.TRIANGLES_2D_LAYER:
-                layer = new TrianglesLayer(layerInfo, 2, zOrder, centroid, features);
+                layer = new TrianglesLayer(layerInfo, 2, zOrder, features);
             break;
             case LayerType.TRIANGLES_3D_LAYER:
-                layer = new TrianglesLayer(layerInfo, 3, zOrder, centroid, features);
+                layer = new TrianglesLayer(layerInfo, 3, zOrder, features);
             break;
             case LayerType.LINES_2D_LAYER:
-                layer = new LinesLayer(layerInfo, 2, zOrder, centroid, features);
+                layer = new LinesLayer(layerInfo, 2, zOrder, features);
             break;
             case LayerType.LINES_3D_LAYER:
-                layer = new LinesLayer(layerInfo, 3, zOrder, centroid, features);
+                layer = new LinesLayer(layerInfo, 3, zOrder, features);
             break;
             case LayerType.BUILDINGS_LAYER:
-                layer = new BuildingsLayer(layerInfo, zOrder, centroid, features);
+                layer = new BuildingsLayer(layerInfo, zOrder, features);
             break;
             case LayerType.HEATMAP_LAYER:
-                layer = new HeatmapLayer(layerInfo, zOrder, centroid, features);
+                layer = new HeatmapLayer(layerInfo, zOrder, features);
             break;
             case LayerType.POINTS_LAYER:
-                layer = new PointsLayer(layerInfo, zOrder, centroid, features);
+                layer = new PointsLayer(layerInfo, zOrder, features);
             break;
             default:
                 console.error(`File ${layerInfo.id}.json has an unknown layer type: ${layerInfo.type}.`);

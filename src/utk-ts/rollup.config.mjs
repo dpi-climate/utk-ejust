@@ -32,7 +32,7 @@ const config = [
       typescript({
         tsconfig: "tsconfig.json",
         useTsconfigDeclarationDir: true,
-        sourceMap: false,
+        sourceMap: true,
         inlineSources: true
       }),
       copy({

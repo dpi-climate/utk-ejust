@@ -2,20 +2,18 @@ import React, { useState, useEffect, useRef } from "react";
 import { Form } from "react-bootstrap";
 import Slider from '@mui/material/Slider';
 import {Row, Col} from 'react-bootstrap';
-import { IView, ICategory } from "../interfaces";
+import { ICategory } from "../interfaces";
 
 // declaring the types of the props
 type ToggleKnotsWidgetProps = {
     obj: any // map 
-    title: string | undefined
-    subtitle: string | undefined
     listLayers: any
     knotVisibility: any
     viewId: string
     grammarDefinition: any
 }
 
-export const ToggleKnotsWidget = ({obj, title, subtitle, listLayers, knotVisibility, viewId, grammarDefinition}:ToggleKnotsWidgetProps) =>{
+export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, grammarDefinition}:ToggleKnotsWidgetProps) =>{
    
     // Animation ====================================================
 
@@ -300,8 +298,6 @@ export const ToggleKnotsWidget = ({obj, title, subtitle, listLayers, knotVisibil
 
     return(
       <React.Fragment>
-        {title != undefined ? <div style={{margin: "4px", height: "11%", display: "flex", alignItems: "center"}}><p style={{fontWeight: "bold", fontSize: "20px"}}>{title}</p></div> : <></>}
-        {subtitle != undefined ? <div style={{marginBottom: "4px", height: "5%"}}><p style={{color: "#bfbec2", fontSize: "16px", fontWeight: "bold"}}>{subtitle}</p></div> : <></>}
         {/* <div className="d-flex align-items-center justify-content-center"> */}
         <div style={{overflowY: "auto", overflowX: "clip", height: "73%", padding: "10px"}} id={"toggle_widget_"+viewId}>
             <ul style={{listStyleType: "none", padding: 0, margin: 0}}>

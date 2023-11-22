@@ -281,13 +281,13 @@ def writeImpactViewData():
 
     return ''
 
-
 @app.route('/updateGrammar', methods=['POST'])
 def serve_updateGrammar():
 
     grammar = request.json['grammar']
-    with open(grammarpath, "w", encoding="utf-8") as f:
-        f.write(json.dumps(grammar))
+    filename = request.json['filename']
+    with open(os.path.join(workdir, filename+".json"), "w", encoding="utf-8") as f:
+        f.write(json.dumps(grammar, indent=4))
 
     return ''
 

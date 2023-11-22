@@ -2,7 +2,15 @@
 
 The Urban Toolkit is built around the idea of a grammar for urban visual analytics. The grammar allows for a flexible and reproducible approach. This document presents the description of each functionality supported by the grammar.   
 
-The grammar is defined through a `.json` file that has two fundamental fields `components` and `grid`. The `components` define the elements that will compose the dashboard. The `grid` defines how the dashboard will be divided so the `components` can be positioned.
+The grammar is not a unique artifact in our system but a set of `.json` files where each one of them defines one components. In summary:
+
+- The master JSON defines the positioning of the components and the knots. It should be named as `grammar.json`.
+- The JSON for the plots has the name of the plot, the Vega-Lite specification, the knots used, types of interactions with the plots, and arguments. Any name for the JSON file is accepted in this case.
+- The JSON for the maps has camera, the embedded plots, reference to the knots, interactions, filtering options, knot visibility options and widgets.
+
+## Master Grammar
+
+The master grammar must be defined inside a file called `grammar_map.json`.  
 
 ### Grid System
 
@@ -21,7 +29,7 @@ In this example the screen is divided in 12 sections horizontally and 4 sections
 
 ### Grammar editor
 
-By using the grid system it is possible to define where the grammar editor will be rendered.
+By using the grid system it is possible to define where the grammar editor will be rendered. The grammar editor is used to edit the master and components' grammars.
 
 ```js
 grammar_position:{
@@ -32,38 +40,7 @@ grammar_position:{
 
 In the previous example the editor is occupying columns 1 through 5 and line 4.
 
-### Components
-
-There are two types of components: map and widgets. 
-
-### Map
-
-`map_view := (map, plots+, knot+, widget+, position)`  
-
-The map components needs four basic elements `map`, `plots`, `knots` and `widgets`. The `map` contains basic configurations of the map itself, the `plots` contains Vega-Lite specifications of the plots to be used, `knots` defines how data will be loaded and linked and `widgets` define what widgets will appear as a side bar inside the map. A more detailed description of each of the fields can be found in the following sections.  
-
-The map is positioned following what is specified in the `position` field. In the example below, the map will occupy columns 6 to 12 horizontally and rows 1 to 4 vertically.
-
-```js
-{
-    map: {...},
-    plots: [...],
-    knots: [...],
-    widgets: [...],
-    position: {
-        width: [
-            6,
-            12
-        ],
-        height: [
-            1,
-            4
-        ]
-    }
-}
-```
-
-### Knots (Map)
+### Knots 
 
 `knot := (id, group?, knotOp?, colorMap?, integration_scheme+)`
 
@@ -159,9 +136,204 @@ The `name` points to the name of the `.json` that defines the layer.
 }
 ```
 
-### Map configuration
+### Groupping knots
 
-`map := (camera, knots, interactions)`
+`group := (group_name, position)`
+
+Knots can be grouped by assigning a group name and a position of the knot inside the group. This type of grouping is intended to be used for data with different timesteps.  
+
+When grouped knots are used together with the `TOGGLE_KNOTS` widget a animation bar can be used to switch between frames.  
+
+```js
+knots: [
+    {
+        id: "wrfToSurface_d02_2016-07-01_t0",
+        group: {
+            group_name: "wrf",
+            position: 0 
+        },
+        integration_scheme: [
+            {
+                spatial_relation: "NEAREST",
+                out: {
+                    name: "surface_wrf_d02_2016-07-01_t0",
+                    level: "COORDINATES"
+                },
+                in: {
+                    name: "wrf_d02_2016-07-01_t0",
+                    level: "COORDINATES"
+                },
+                operation: "NONE",
+                abstract: true
+            }
+        ]
+    },
+    {
+        id: "wrfToSurface_d02_2016-07-01_t1",
+        group: {
+            group_name: "wrf",
+            position: 0 
+        },
+        integration_scheme: [
+            {
+                spatial_relation: "NEAREST",
+                out: {
+                    name: "surface_wrf_d02_2016-07-01_t1",
+                    level: "COORDINATES"
+                },
+                in: {
+                    name: "wrf_d02_2016-07-01_t1",
+                    level: "COORDINATES"
+                },
+                operation: "NONE",
+                abstract: true
+            }
+        ]
+    }
+]
+```
+
+### Operations between knots
+
+It is possible to do operations between knots. To do so the `knotOp` field in the knot must be true. In that case `name` in `in` and `out` will not point to layers but to the id of other knots. In addition, a `op` field must be specified where an arithmetic operation is defined. In each link of the `integration_scheme` it is possible to use `op` to make a reference to the id of the knots of that link or use the keyword `prevResult` to get the result of `op` of the previous link.  
+
+```js
+    {
+        id: "shadowToSurface",
+        integration_scheme: [
+            {
+                spatial_relation: "NEAREST",
+                out: {
+                    name: "surface",
+                    level: "COORDINATES3D"
+                },
+                in: {
+                    name: "shadow0_surface",
+                    level: "COORDINATES3D"
+                },
+                abstract: true,
+                operation: "NONE"
+            }
+        ]
+    },
+    {
+        id: "shadowToSurfaceM",
+        integration_scheme: [
+            {
+                spatial_relation: "NEAREST",
+                out: {
+                    name: "surface",
+                    level: "COORDINATES3D"
+                },
+                in: {
+                    name: "shadow0_surface_m",
+                    level: "COORDINATES3D"
+                },
+                abstract: true,
+                operation: "NONE"
+            }
+        ]
+    },
+    {
+        id: "whatIfSurface",
+        knotOp: true,
+        colorMap: "interpolateBlues",
+        integration_scheme: [
+            {
+                out: {
+                    name: "shadowToSurfaceM",
+                    level: "COORDINATES3D"
+                },
+                in: {
+                    name: "shadowToSurface",
+                    level: "COORDINATES3D"
+                },
+                op: "shadowToSurface - shadowToSurfaceM",
+                operation: "NONE"
+            }
+        ]
+    },
+```
+
+### Components
+
+The master grammar is responsible for orchestrating all components. For each component we have an `id` the JSON file name and the position of the component on the screen. For example:
+
+```js
+{
+    components: [
+        {
+            id: "grammar_map",
+            position: {
+                width: [
+                    6,
+                    12
+                ],
+                height: [
+                    1,
+                    4
+                ]
+            }
+        }
+    ],
+    grid: {
+        width: 12,
+        height: 4
+    },
+    grammar_position: {
+        width: [
+            1,
+            5
+        ],
+        height: [
+            2,
+            4
+        ]
+    }
+}
+```
+
+## Map Grammar
+
+<!-- `map_view := (map, plots+, knot+, widget+, position)`  
+
+The map components needs four basic elements `map`, `plots`, `knots` and `widgets`. The `map` contains basic configurations of the map itself, the `plots` contains Vega-Lite specifications of the plots to be used, `knots` defines how data will be loaded and linked and `widgets` define what widgets will appear as a side bar inside the map. A more detailed description of each of the fields can be found in the following sections.  
+
+The map is positioned following what is specified in the `position` field. In the example below, the map will occupy columns 6 to 12 horizontally and rows 1 to 4 vertically.
+
+```js
+{
+    map: {...},
+    plots: [...],
+    knots: [...],
+    widgets: [...],
+    position: {
+        width: [
+            6,
+            12
+        ],
+        height: [
+            1,
+            4
+        ]
+    }
+}
+``` -->
+
+### Grammar type
+
+When creating a JSON for a map component it is required to include the `grammar_type` field with value `MAP`.
+
+```js
+{
+    ...
+    grammar_type: "MAP"
+    ...
+}
+
+```
+
+### Map configuration
 
 `camera := (position, direction)`
 
@@ -173,106 +345,46 @@ In order to configure the map component it is necessary to define `camera`, `kno
 
 The `camera` is composed by `position` (origin of the camera), `right`, `lookAt` and `up` that define the camera `direction`.  
 
-The `knots` reference the ids of knots earlier defined and for each knot an `interactions` is added.
+The `knots` reference the ids of knots defined in the Master Grammar and for each knot an `interactions` is added.
 
 ```js
-    map: {
-        camera: {
-            position: [
-                -8239611,
-                4941390.5,
-                0.49792965698242186
+    camera: {
+        position: [
+            -8239611,
+            4941390.5,
+            0.49792965698242186
+        ],
+        direction: {
+            right: [
+                946.6354370117188,
+                -423.0624084472656,
+                497.9296569824219
             ],
-            direction: {
-                right: [
-                    946.6354370117188,
-                    -423.0624084472656,
-                    497.9296569824219
-                ],
-                lookAt: [
-                    962.3882446289062,
-                    351.6265563964844,
-                    -134.21630859375
-                ],
-                up: [
-                    0.012851359322667122,
-                    0.6320154070854187,
-                    0.7748492360115051
-                ]
-            }
-        },
-        knots: [
-            "pureparks",
-            "purewater",
-            "pureroads",
-            "shadowToBuildings"
-        ],
-        interactions: [
-            "NONE",
-            "NONE",
-            "NONE",
-            "NONE"
-        ]
-    }
-```
-
-### Plots (Map)
-<!--- Plots will probably be detached from the map -->
-
-`plots := (name?, plot, knot+, arrangement, interaction?, args?)`
-
-`args := (bins?)`
-
-`arrangement := (INTERSECTS | CONTAINS | WITHIN | TOUCHES | CROSSES | OVERLAPS | NEAREST | DIRECT | INNERAGG)`
-
-`interaction := (CLICK | HOVER | BRUSH)`
-
-Plots are specified through the usage of another grammar-based visualization tool called Vega-Lite. To the vega-lite specification is injected the data defined through the knots.   
-
-The `plot` field contains the vega-lite specification, with the only difference being that the user should not specify a `data` field and should make reference to knot information by using the keywords `_abstract`, `_index` and `_highlight` after the id of the knot. `_abstract` is a reference to the thematic data of the knot, `_index` is a reference to the index of the data element and `_highlight` is a boolean that indicates if the element was interacted with.    
-
-The `knots` field should contain a list of knots ids that feed the plot.  
-
-The `arrangement` defines how the plot should be displayed. Possible values are:
-- `FOOT_EMBEDDED`: the plot is embedded inside building following the footprint. Should be used together with the `PICKING` interaction on the map.  
-- `SUR_EMBEDDED`: the plot is embedded on the surface of the building.  
-- `LINKED`: the plot appears on the surface of the screen.  
-
-The `args` are special arguments used with some types of plots. Currently only binning is supported for `FOOT_EMBEDDED` arrangement through the `bins` argument.  
-
-```js
-plots: [
-    {
-        plot: {
-            $schema: "https://vega.github.io/schema/vega-lite/v5.json",
-            mark: "arc",
-            background: "white",
-            encoding: {
-                theta: {
-                    field: "bin",
-                    type: "nominal",
-                    legend: null
-                },
-                color: {
-                    field: "shadowToBuildings_abstract",
-                    type: "quantitative",
-                    aggregate: "mean",
-                    legend: null,
-                    scale: {
-                        scheme: "reds"
-                    }
-                }
-            }
-        },
-        knots: [
-            "shadowToBuildings"
-        ],
-        arrangement: "FOOT_EMBEDDED",
-        args: {
-            bins: 32
+            lookAt: [
+                962.3882446289062,
+                351.6265563964844,
+                -134.21630859375
+            ],
+            up: [
+                0.012851359322667122,
+                0.6320154070854187,
+                0.7748492360115051
+            ]
         }
-    }
-]
+    },
+    knots: [
+        "pureparks",
+        "purewater",
+        "pureroads",
+        "shadowToBuildings"
+    ],
+    interactions: [
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE"
+    ],
+    grammar_type: "MAP"
 ```
 
 ### Widgets
@@ -334,63 +446,6 @@ The `type` can be:
             ]
         }
     }
-```
-
-### Groupping knots
-
-`group := (group_name, position)`
-
-Knots can be grouped by assigning a group name and a position of the knot inside the group. This type of grouping is intended to be used for data with different timesteps.  
-
-When grouped knots are used together with the `TOGGLE_KNOTS` widget a animation bar can be used to switch between frames.  
-
-```js
-knots: [
-    {
-        id: "wrfToSurface_d02_2016-07-01_t0",
-        group: {
-            group_name: "wrf",
-            position: 0 
-        },
-        integration_scheme: [
-            {
-                spatial_relation: "NEAREST",
-                out: {
-                    name: "surface_wrf_d02_2016-07-01_t0",
-                    level: "COORDINATES"
-                },
-                in: {
-                    name: "wrf_d02_2016-07-01_t0",
-                    level: "COORDINATES"
-                },
-                operation: "NONE",
-                abstract: true
-            }
-        ]
-    },
-    {
-        id: "wrfToSurface_d02_2016-07-01_t1",
-        group: {
-            group_name: "wrf",
-            position: 0 
-        },
-        integration_scheme: [
-            {
-                spatial_relation: "NEAREST",
-                out: {
-                    name: "surface_wrf_d02_2016-07-01_t1",
-                    level: "COORDINATES"
-                },
-                in: {
-                    name: "wrf_d02_2016-07-01_t1",
-                    level: "COORDINATES"
-                },
-                operation: "NONE",
-                abstract: true
-            }
-        ]
-    }
-]
 ```
 
 ### Multiple resolutions
@@ -476,123 +531,147 @@ map: [
 ```
 The example above is an animation that loop through all frames every 5 seconds.
 
-### Operations between knots
+### Plots
 
-It is possible to do operations between knots. To do so the `knotOp` field in the knot must be true. In that case `name` in `in` and `out` will not point to layers but to the id of other knots. In addition, a `op` field must be specified where an arithmetic operation is defined. In each link of the `integration_scheme` it is possible to use `op` to make a reference to the id of the knots of that link or use the keyword `prevResult` to get the result of `op` of the previous link.  
+It is possible to include a embedded plot on the map. For example:
 
 ```js
-    {
-        id: "shadowToSurface",
-        integration_scheme: [
-            {
-                spatial_relation: "NEAREST",
-                out: {
-                    name: "surface",
-                    level: "COORDINATES3D"
-                },
-                in: {
-                    name: "shadow0_surface",
-                    level: "COORDINATES3D"
-                },
-                abstract: true,
-                operation: "NONE"
-            }
-        ]
-    },
-    {
-        id: "shadowToSurfaceM",
-        integration_scheme: [
-            {
-                spatial_relation: "NEAREST",
-                out: {
-                    name: "surface",
-                    level: "COORDINATES3D"
-                },
-                in: {
-                    name: "shadow0_surface_m",
-                    level: "COORDINATES3D"
-                },
-                abstract: true,
-                operation: "NONE"
-            }
-        ]
-    },
-    {
-        id: "whatIfSurface",
-        knotOp: true,
-        colorMap: "interpolateBlues",
-        integration_scheme: [
-            {
-                out: {
-                    name: "shadowToSurfaceM",
-                    level: "COORDINATES3D"
-                },
-                in: {
-                    name: "shadowToSurface",
-                    level: "COORDINATES3D"
-                },
-                op: "shadowToSurface - shadowToSurfaceM",
-                operation: "NONE"
-            }
-        ]
-    },
+{
+    ...
+    plot: {
+        id: "plot1",
+        arrangement: "SURFACES"
+    }
+    ...
+}
 ```
 
-### Variables
+The `arrangement` defines how the plot should be displayed. Possible values are:
+- `FOOTPRINT`: the plot is embedded inside building following the footprint. Should be used together with the `PICKING` interaction on the map.  
+- `SURFACE`: the plot is embedded on the surface of the building.  
+
+## Plot Grammar
+
+### Grammar type
+
+When creating a JSON for a map component it is required to include the `grammar_type` field with value `PLOT`.
+
+```js
+{
+    ...
+    grammar_type: "PLOT"
+    ...
+}
+
+```
+
+### Plot, knots, and arrangement
+
+`args := (bins?)`
+
+`arrangement := (SURFACE | FOOTPRINT)`
+
+`interaction := (CLICK | HOVER | BRUSH)`
+
+Plots are specified through the usage of another grammar-based visualization tool called Vega-Lite. To the vega-lite specification is injected the data defined through the knots.   
+
+The `plot` field contains the vega-lite specification, with the only difference being that the user should not specify a `data` field and should make reference to knot information by using the keywords `_abstract`, `_index` and `_highlight` after the id of the knot. `_abstract` is a reference to the thematic data of the knot, `_index` is a reference to the index of the data element and `_highlight` is a boolean that indicates if the element was interacted with.    
+
+The `knots` field should contain a list of knots ids (defined in the master grammar) that feed the plot.  
+
+The `args` are special arguments used with some types of plots. Currently only binning is supported for `FOOTPRINT` arrangement through the `bins` argument.  
+
+```js
+{
+    plot: {
+        $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+        mark: "arc",
+        background: "white",
+        encoding: {
+            theta: {
+                field: "bin",
+                type: "nominal",
+                legend: null
+            },
+            color: {
+                field: "shadowToBuildings_abstract",
+                type: "quantitative",
+                aggregate: "mean",
+                legend: null,
+                scale: {
+                    scheme: "reds"
+                }
+            }
+        }
+    },
+    knots: [
+        "shadowToBuildings"
+    ],
+    arrangement: "FOOTPRINT",
+    args: {
+        bins: 32
+    },
+    grammar_type: "PLOT"
+}
+```
+
+## Global and local variables
 
 It is possible to define variables in the grammar in order to update it dynamically. For example:
 
 ```js
     {
-        "variables": [
+        variables: [
             {
-                "name": "timestep",
-                "value": "1"
+                name: "timestep",
+                value: "1"
             }
         ],
-        "components": [
+        components: [
             {
-                "map": {
-                    "camera": {...},
-                    "knots": [
+                map: {
+                    camera: {...},
+                    knots: [
                         "wrfToSurface_d02_2016-07-01_t$timestep$",
                     ],
-                    "interactions": [
+                    interactions: [
                         "NONE"
                     ],
-                    "knotVisibility": []
+                    knotVisibility: []
                 },
-                "plots": [],
-                "knots": [
+                plots: [],
+                knots: [
                     {
-                        "id": "wrfToSurface_d02_2016-07-01_t$timestep$",
-                        "integration_scheme": [
+                        id: "wrfToSurface_d02_2016-07-01_t$timestep$",
+                        integration_scheme: [
                             {
-                                "spatial_relation": "CONTAINS",
-                                "out": {
-                                    "name": "zip",
-                                    "level": "OBJECTS"
+                                spatial_relation: "CONTAINS",
+                                out: {
+                                    name: "zip",
+                                    level: "OBJECTS"
                                 },
-                                "in": {
-                                    "name": "wrf_d02_2016-07-01_t$timestep$",
-                                    "level": "COORDINATES"
+                                in: {
+                                    name: "wrf_d02_2016-07-01_t$timestep$",
+                                    level: "COORDINATES"
                                 },
-                                "operation": "AVG",
-                                "abstract": true
+                                operation: "AVG",
+                                abstract: true
                             }
                         ]
                     }
                 ],
-                "position": {...},
-                "widgets": [...]
+                position: {...},
+                widgets: [...]
             }
         ],
-        "grid": {...},
-        "grammar_position": {...}
+        grid: {...},
+        grammar_position: {...}
     }
 ```
 
-All variables must have a name and a value. The variable can be referenced inside any string in the grammar by enclosing its name between `$` like `$timestep$`.
+Variables can be global: defined in the master grammar and available inside all other grammars. Or local: defined and used in the scope of a map or plot grammar.  
+
+All variables must have a name and a value. The variable can be referenced inside any string in the grammar by enclosing its name between `$` like `$timestep$`.  
 
 These variables can be automatically updated by using the `InteractionChannel` class that can be imported from the UTK's javascript bundle. The class exposes a method called `sendData` that receives a variable definition and updates it in the grammar: `static sendData(variable: {name: string, value: any}): void`.  
 
