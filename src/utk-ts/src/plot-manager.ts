@@ -65,6 +65,7 @@ export class PlotManager {
             }
     
             _this.updatePlotsActivePhysical();
+            _this._updateStatusCallback("updateActiveKnotPhysical", _this._activeKnotPhysical);
         }
     }
 
@@ -112,7 +113,6 @@ export class PlotManager {
                 processedKnotData[knotData.knotId].values.push(value);
             }
             
-            // let ids = await this._updateStatusCallback("containerGenerator", {n: linkedPlots.length, names: names, floating_values: floating_values, positions: positions, componentIds: componentIds, knotsByPhysicalList: knotsByPhysicalList}); 
             this._updateStatusCallback("updateActiveKnotPhysical", this._activeKnotPhysical);
         }
 
