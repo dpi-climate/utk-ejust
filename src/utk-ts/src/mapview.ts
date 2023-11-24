@@ -250,7 +250,7 @@ class MapView {
     }
 
     initPlotManager(){
-        this._plotManager = new PlotManager(this._grammarInterpreter.getPlots(this._viewId), this._grammarInterpreter.parsePlotsKnotData(this._viewId), {"function": this.setHighlightElement, "arg": this});
+        this._plotManager = new PlotManager("PlotManagerMap"+this._viewId, this._grammarInterpreter.getPlots(this._viewId), this._grammarInterpreter.parsePlotsKnotData(this._viewId), {"function": this.setHighlightElement, "arg": this});
         this._plotManager.init(this._updateStatusCallback);
     }
 

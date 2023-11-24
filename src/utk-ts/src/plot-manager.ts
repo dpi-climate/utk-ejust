@@ -37,14 +37,15 @@ export class PlotManager {
     protected _plotsReferences: any[];
     protected _needToUnHighlight: boolean;
     protected _highlightedVegaElements: any[] = [];
+    protected _id: string;
 
     /**
      * 
      * @param viewData 
      * @param setGrammarUpdateCallback Function that sets the callback that will be called in the frontend to update the grammar
      */
-    constructor(plots: {id: string, knotsByPhysical: any, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[], plotsKnotsData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
-
+    constructor(id: string, plots: {id: string, knotsByPhysical: any, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[], plotsKnotsData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
+        this._id = id;
         this._setHighlightElementCallback = setHighlightElementCallback;
         this._plotsReferences = new Array(plots.length);
         this._needToUnHighlight = false;
@@ -52,8 +53,24 @@ export class PlotManager {
         this._plotsKnotsData = plotsKnotsData;
     }
 
+    public physicalKnotActiveChannel(message: {physicalId: string, knotId: string}, _this: any){
+
+        let physicals = Object.keys(_this._activeKnotPhysical)
+
+        if(physicals.length > 0){
+            for(const key of physicals){
+                if(key == message.physicalId){
+                    _this._activeKnotPhysical[key] = message.knotId;
+                }
+            }
+    
+            _this.updatePlotsActivePhysical();
+        }
+    }
+
     public init(updateStatusCallback: any){
         this._updateStatusCallback = updateStatusCallback;
+        this._updateStatusCallback("subscribe", {id: this._id, callback: this.physicalKnotActiveChannel, channel: "physicalKnotActiveChannel", ref: this})
         this.updateGrammarPlotsData(this._plotsKnotsData);
     }
 
@@ -93,7 +110,10 @@ export class PlotManager {
                 this._activeKnotPhysical[knotData.physicalId] = knotData.knotId;
 
                 processedKnotData[knotData.knotId].values.push(value);
-            }   
+            }
+            
+            // let ids = await this._updateStatusCallback("containerGenerator", {n: linkedPlots.length, names: names, floating_values: floating_values, positions: positions, componentIds: componentIds, knotsByPhysicalList: knotsByPhysicalList}); 
+            this._updateStatusCallback("updateActiveKnotPhysical", this._activeKnotPhysical);
         }
 
         return processedKnotData;
@@ -351,6 +371,28 @@ export class PlotManager {
             }
         }
 
+    }
+
+    updatePlotsActivePhysical(){
+        for(let i = 0; i < this._plots.length; i++){
+            let elem = this._plots[i].grammar;
+
+            if(elem.plot.data != undefined){
+                for(const value of elem.plot.data.values){
+                    for(const physicalId of Object.keys(this._activeKnotPhysical)){
+
+                        let knotId = this._activeKnotPhysical[physicalId];
+
+                        value[physicalId+"_index"] = value[knotId+"_index"];
+                        value[physicalId+"_abstract"] = value[knotId+"_abstract"];
+                        value[physicalId+"_highlight"] = value[knotId+"_abstract"];
+                        value[physicalId+"_filteredIn"] = value[knotId+"_abstract"];
+                    }
+                }
+            }
+        }
+
+        this.updatePlotsNewData();
     }
 
     updatePlotsNewData(){

@@ -37,6 +37,14 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
   const [layersIds, setLayersIds] = useState<any>({});
   const [activeGrammar, setActiveGrammar] = useState("grammar"); // store active component id
   const [activeGrammarType, setActiveGrammarType] = useState(GrammarType.MASTER); // type of active grammar
+  const [activeKnotPhysical, setActiveKnotPhysical] = useState<any>({}); // object that, for each physical, stores the knotId of the activated knot
+  
+  const [subscribers, _setSubscribers] = useState<any>({}); // each key represent a channel that stores objects of type {id: string, callback: any, ref: any}
+  const subscribersRef = useRef(subscribers);
+  const setSubscribers = (data: string) => {
+    subscribersRef.current = data;
+    _setSubscribers(data);
+  };
 
   let inputBarId = "searchBar";
 
@@ -139,6 +147,56 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
     setGenericPlots(modifiedPlots);
   }
 
+  const updateSubscribers = (id:string, callback: any, channel: string, ref: any) => {
+    let foundChannel = false;
+    let newSubscribers: any = {};
+
+    for(const currentChannel of Object.keys(subscribersRef.current)){
+      newSubscribers[currentChannel] = [];
+
+      if(currentChannel == channel){
+        foundChannel = true;
+        let exists = false;
+
+        for(const participant of subscribersRef.current[currentChannel]){
+          if(participant.id == id){
+            newSubscribers[currentChannel].push({id: participant.id, callback: callback, ref: ref});
+          }else{
+            newSubscribers[currentChannel].push({id: participant.id, callback: participant.callback, ref: participant.ref});
+          }
+        }
+
+        if(!exists){
+          newSubscribers[currentChannel].push({id: id, callback: callback, ref: ref});
+        }
+      }else{
+        for(const participant of subscribersRef.current[currentChannel]){
+            newSubscribers[currentChannel].push({id: participant.id, callback: participant.callback, ref: participant.ref});
+        }
+      }
+    }
+
+    if(!foundChannel){
+      newSubscribers[channel] = [{id: id, callback: callback, ref: ref}];
+    }
+
+    setSubscribers(newSubscribers);
+
+  }
+
+  // id: participant that sent the message
+  const broadcastMessage = (id:string, channel: string, message: any) => {
+    for(const currentChannel of Object.keys(subscribersRef.current)){
+      if(currentChannel == channel){
+        for(const participant of subscribersRef.current[currentChannel]){
+          if(participant.id != id){
+            participant.callback(message, participant.ref);
+          }
+        }
+      }
+    }
+  }
+
   /**
    * Summarize callbacks
    */
@@ -157,6 +215,12 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
       setKnotVisibility(value);
     }else if(state == "containerGenerator"){
       return linkedContainerGenerator(value.n, value.names, value.floating_values, value.positions, value.componentIds, value.knotsByPhysicalList);
+    }else if(state == "updateActiveKnotPhysical"){
+      setActiveKnotPhysical(value);
+    }else if(state == "subscribe"){
+      updateSubscribers(value.id, value.callback, value.channel, value.ref); // callback will be called when channel has new message from any of its participants
+    }else if(state == "broadcastChannel"){ // broadcast a message to the whole channel
+      broadcastMessage(value.id, value.channel, value.message);
     }
   }
 
@@ -216,6 +280,8 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
             genericPlots={genericPlots}
             togglePlots={toggleAllPlots}
             editGrammar={setActiveGrammarAndType}
+            activeKnotPhysical={activeKnotPhysical}
+            updateStatus={updateStatus}
           />
         }
         {
@@ -279,6 +345,9 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
                   <GenericFixedPlotContainer 
                     id={item.id}
                     svgId={item.svgId}
+                    knotsByPhysical={item.knotsByPhysical}
+                    activeKnotPhysical={activeKnotPhysical}
+                    updateStatus={updateStatus}
                   />
                 </div>
               )

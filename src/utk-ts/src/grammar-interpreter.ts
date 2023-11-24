@@ -465,7 +465,7 @@ class GrammarInterpreter {
 
         }
 
-        this._plotManager = new PlotManager(this.getPlots(), plotsKnotData, {"function": setHighlightElementForAll, "arg": this}); 
+        this._plotManager = new PlotManager("PlotManagerGrammarInterpreter", this.getPlots(), plotsKnotData, {"function": setHighlightElementForAll, "arg": this}); 
 
         this._layerManager.init(updateStatus);
         this._knotManager.init(updateStatus);

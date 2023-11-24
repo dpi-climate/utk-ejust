@@ -10,11 +10,13 @@ type MasterWidgetsProps = {
     height: number,
     genericPlots: any,
     togglePlots: any,
-    editGrammar: any
+    editGrammar: any,
+    activeKnotPhysical: any,
+    updateStatus: any
 }
 
 export var GrammarPanelVisibility = true;
-export const MasterWidgets = ({width, height, genericPlots, togglePlots, editGrammar}:MasterWidgetsProps) =>{
+export const MasterWidgets = ({width, height, genericPlots, togglePlots, editGrammar, activeKnotPhysical, updateStatus}:MasterWidgetsProps) =>{
 
     const handleTogglePlots = (e: any) => {
       togglePlots();
@@ -41,6 +43,8 @@ export const MasterWidgets = ({width, height, genericPlots, togglePlots, editGra
                         x={height/2}
                         y={width/2}
                         knotsByPhysical={item.knotsByPhysical}
+                        activeKnotPhysical={activeKnotPhysical}
+                        updateStatus={updateStatus}
                     />
                 )
                 }else{
