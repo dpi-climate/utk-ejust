@@ -25,6 +25,7 @@ examples/wrf_one_resolution
 examples/wrf_temp_building
 examples/downtown_manhattan
 examples/downtown_nyc
+examples/multiple_dowtown_nyc
 
 urbantk_cache/
 examples/downtown_nyc
