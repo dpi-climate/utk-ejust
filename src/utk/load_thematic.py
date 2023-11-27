@@ -11,8 +11,9 @@ from wrf import getvar, interplevel, to_np
 import math
 '''
     Converts a dataframe into an abstract layer
+    value_columns: [string] - the columns included will be interpreted as multiple timesteps
 '''
-def thematic_from_df(df, output_filepath, latitude_column, longitude_column, coordinates_projection, z_column = None, value_column=None):
+def thematic_from_df(df, output_filepath, latitude_column, longitude_column, coordinates_projection, z_column = None, value_columns=[]):
     
     df = df.drop_duplicates(subset=[latitude_column, longitude_column])
 
@@ -23,10 +24,24 @@ def thematic_from_df(df, output_filepath, latitude_column, longitude_column, coo
     if z_column != None:
        z_list = df[z_column].toList()
 
-    if value_column != None:
-        values_list = df[value_column].tolist()
+    values_lists = []
+    zipped_list = [] # normal list if there is only one value column
+
+    for value_column in value_columns:
+        values_lists.append(df[value_column].tolist())
+
+    if len(values_lists) == 1:
+        zipped_list = values_lists[0]
     else:
-        values_list = [1] * len(latitude_list)
+        for index, value_list in enumerate(values_lists):
+            for index2, element in enumerate(value_list):
+                if(index == 0):
+                    zipped_list.append([element])
+                else:
+                    zipped_list[index2].append(element)
+
+    if len(value_columns) == 0:
+        zipped_list = [1] * len(latitude_list)
 
     transformer = Transformer.from_crs(coordinates_projection, 3395)
     points = list(zip(latitude_list, longitude_list))
@@ -47,7 +62,7 @@ def thematic_from_df(df, output_filepath, latitude_column, longitude_column, coo
     abstract_json = {
         "id": os.path.basename(output_filepath),
         "coordinates": coordinates,
-        "values": [elem for elem in values_list]
+        "values": [elem for elem in zipped_list]
     }
 
     json_object = json.dumps(abstract_json)
@@ -61,11 +76,12 @@ def thematic_from_df(df, output_filepath, latitude_column, longitude_column, coo
 
 '''
     Converts a csv file into an abstract layer
+    value_columns: [string] - the columns included will be interpreted as multiple timesteps
 '''
-def thematic_from_csv(filepath, layer_id, latitude_column, longitude_column, coordinates_projection, z_column = None, value_column=None):
+def thematic_from_csv(filepath, layer_id, latitude_column, longitude_column, coordinates_projection, z_column = None, value_columns=[]):
     
     df = pd.read_csv(filepath)
-    thematic_from_df(df, os.path.join(os.path.dirname(filepath),layer_id+".json"), latitude_column, longitude_column, coordinates_projection, z_column, value_column)
+    thematic_from_df(df, os.path.join(os.path.dirname(filepath),layer_id+".json"), latitude_column, longitude_column, coordinates_projection, z_column, value_columns)
 
 '''
     Converts a NetCDF (e.g. wrf data) file into an abstract layer
