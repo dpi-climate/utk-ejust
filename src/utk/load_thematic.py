@@ -60,7 +60,7 @@ def thematic_from_df(df, output_filepath, latitude_column, longitude_column, coo
         coordinates.append(z_value)
 
     abstract_json = {
-        "id": os.path.basename(output_filepath),
+        "id": os.path.basename(output_filepath).replace(".json",""),
         "coordinates": coordinates,
         "values": [elem for elem in zipped_list]
     }
