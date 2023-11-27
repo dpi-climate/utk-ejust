@@ -30,12 +30,21 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
   const [camera, setCamera] = useState<{position: number[], direction: {right: number[], lookAt: number[], up: number[]}}>({position: [], direction: {right: [], lookAt: [], up: []}}); // TODO: if we have multiple map instances we have multiple cameras
   const [filterKnots, setFilterKnots] = useState<number[]>([]);
   const [systemMessages, setSystemMessages] = useState<{text: string, color: string}[]>([]);
-  const [genericPlots, setGenericPlots] = useState<{id: number, hidden: boolean, svgId: string, label: string, checked: boolean, edit: boolean, floating: boolean, position: IComponentPosition | undefined, componentId: string}[]>([]);
+  // knotsByPhysical: how many knots correspond to each physical layer (physical_id -> [list_of_knots])
+  const [genericPlots, setGenericPlots] = useState<{id: number, knotsByPhysical: any, hidden: boolean, svgId: string, label: string, checked: boolean, edit: boolean, floating: boolean, position: IComponentPosition | undefined, componentId: string}[]>([]);
   const [knotVisibility, setKnotVisibility] = useState<any>({});
   const [currentPlotId, setCurrentPlotId] = useState(0);
   const [layersIds, setLayersIds] = useState<any>({});
   const [activeGrammar, setActiveGrammar] = useState("grammar"); // store active component id
   const [activeGrammarType, setActiveGrammarType] = useState(GrammarType.MASTER); // type of active grammar
+  const [activeKnotPhysical, setActiveKnotPhysical] = useState<any>({}); // object that, for each physical, stores the knotId of the activated knot
+  
+  const [subscribers, _setSubscribers] = useState<any>({}); // each key represent a channel that stores objects of type {id: string, callback: any, ref: any}
+  const subscribersRef = useRef(subscribers);
+  const setSubscribers = (data: string) => {
+    subscribersRef.current = data;
+    _setSubscribers(data);
+  };
 
   let inputBarId = "searchBar";
 
@@ -45,7 +54,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
     setSystemMessages([{text: msg, color: color}]);
   }
 
-  const linkedContainerGenerator = (n: number, names: string[] = [], floating_values: boolean[], positions: (IComponentPosition | undefined)[], componentIds: string[]) => {
+  const linkedContainerGenerator = (n: number, names: string[] = [], floating_values: boolean[], positions: (IComponentPosition | undefined)[], componentIds: string[], knotsByPhysicalList: any[]) => {
 
     let createdIds: number[] = [];
 
@@ -53,7 +62,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
       return [];
     }
 
-    createdIds = addNewGenericPlot(n, names, floating_values, positions, componentIds);
+    createdIds = addNewGenericPlot(n, names, floating_values, positions, componentIds, knotsByPhysicalList);
 
     // promise is only resolved when the container is created
     return new Promise(async function (resolve, reject) {
@@ -94,7 +103,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
     setActiveGrammarType(grammarType);
   }
 
-  const addNewGenericPlot = (n: number = 1, names: string[] = [], floating_values: boolean[], positions: (IComponentPosition | undefined)[], componentIds: string[]) => {
+  const addNewGenericPlot = (n: number = 1, names: string[] = [], floating_values: boolean[], positions: (IComponentPosition | undefined)[], componentIds: string[], knotsByPhysicalList: any[]) => {
 
     let createdIds = [];
     let tempPlots = [];
@@ -103,9 +112,9 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
 
     for(let i = 0; i < n; i++){
       if(names.length > 0 && names[i] != '' && names[i] != undefined){
-        tempPlots.push({id: tempId, hidden: true, svgId: "genericPlotSvg"+tempId, label: names[i], checked: false, edit: false, floating: floating_values[i], position: positions[i], componentId: componentIds[i]});
+        tempPlots.push({id: tempId, knotsByPhysical: knotsByPhysicalList[i], hidden: true, svgId: "genericPlotSvg"+tempId, label: names[i], checked: false, edit: false, floating: floating_values[i], position: positions[i], componentId: componentIds[i]});
       }else{
-        tempPlots.push({id: tempId, hidden: true, svgId: "genericPlotSvg"+tempId, label: "Plot "+tempId, checked: false, edit: false, floating: floating_values[i], position: positions[i], componentId: componentIds[i]});
+        tempPlots.push({id: tempId, knotsByPhysical: knotsByPhysicalList[i], hidden: true, svgId: "genericPlotSvg"+tempId, label: "Plot "+tempId, checked: false, edit: false, floating: floating_values[i], position: positions[i], componentId: componentIds[i]});
       }
       createdIds.push(tempId);
       tempId += 1;
@@ -120,9 +129,9 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
     let modifiedPlots = [];
     for(const plot of genericPlots){
       if(plot.id == plotId){
-        modifiedPlots.push({id: plot.id, hidden: !plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position, componentId: plot.componentId});
+        modifiedPlots.push({id: plot.id, knotsByPhysical: plot.knotsByPhysical, hidden: !plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position, componentId: plot.componentId});
       }else{
-        modifiedPlots.push({id: plot.id, hidden: plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position, componentId: plot.componentId});
+        modifiedPlots.push({id: plot.id, knotsByPhysical: plot.knotsByPhysical, hidden: plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position, componentId: plot.componentId});
       }
     }
     setGenericPlots(modifiedPlots);
@@ -132,10 +141,60 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
     let modifiedPlots = [];
 
     for(const plot of genericPlots){
-      modifiedPlots.push({id: plot.id, hidden: !plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position, componentId: plot.componentId});
+      modifiedPlots.push({id: plot.id, knotsByPhysical: plot.knotsByPhysical, hidden: !plot.hidden, svgId: plot.svgId, label: plot.label, checked: plot.checked, edit: plot.edit, floating: plot.floating, position: plot.position, componentId: plot.componentId});
     }
 
     setGenericPlots(modifiedPlots);
+  }
+
+  const updateSubscribers = (id:string, callback: any, channel: string, ref: any) => {
+    let foundChannel = false;
+    let newSubscribers: any = {};
+
+    for(const currentChannel of Object.keys(subscribersRef.current)){
+      newSubscribers[currentChannel] = [];
+
+      if(currentChannel == channel){
+        foundChannel = true;
+        let exists = false;
+
+        for(const participant of subscribersRef.current[currentChannel]){
+          if(participant.id == id){
+            newSubscribers[currentChannel].push({id: participant.id, callback: callback, ref: ref});
+          }else{
+            newSubscribers[currentChannel].push({id: participant.id, callback: participant.callback, ref: participant.ref});
+          }
+        }
+
+        if(!exists){
+          newSubscribers[currentChannel].push({id: id, callback: callback, ref: ref});
+        }
+      }else{
+        for(const participant of subscribersRef.current[currentChannel]){
+            newSubscribers[currentChannel].push({id: participant.id, callback: participant.callback, ref: participant.ref});
+        }
+      }
+    }
+
+    if(!foundChannel){
+      newSubscribers[channel] = [{id: id, callback: callback, ref: ref}];
+    }
+
+    setSubscribers(newSubscribers);
+
+  }
+
+  // id: participant that sent the message
+  const broadcastMessage = (id:string, channel: string, message: any) => {
+    for(const currentChannel of Object.keys(subscribersRef.current)){
+      if(currentChannel == channel){
+        for(const participant of subscribersRef.current[currentChannel]){
+          if(participant.id != id){
+            participant.callback(message, participant.ref);
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -155,7 +214,13 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
     }else if(state == "knotVisibility"){
       setKnotVisibility(value);
     }else if(state == "containerGenerator"){
-      return linkedContainerGenerator(value.n, value.names, value.floating_values, value.positions, value.componentIds);
+      return linkedContainerGenerator(value.n, value.names, value.floating_values, value.positions, value.componentIds, value.knotsByPhysicalList);
+    }else if(state == "updateActiveKnotPhysical"){
+      setActiveKnotPhysical(value);
+    }else if(state == "subscribe"){
+      updateSubscribers(value.id, value.callback, value.channel, value.ref); // callback will be called when channel has new message from any of its participants
+    }else if(state == "broadcastChannel"){ // broadcast a message to the whole channel
+      broadcastMessage(value.id, value.channel, value.message);
     }
   }
 
@@ -215,6 +280,8 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
             genericPlots={genericPlots}
             togglePlots={toggleAllPlots}
             editGrammar={setActiveGrammarAndType}
+            activeKnotPhysical={activeKnotPhysical}
+            updateStatus={updateStatus}
           />
         }
         {
@@ -278,6 +345,9 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
                   <GenericFixedPlotContainer 
                     id={item.id}
                     svgId={item.svgId}
+                    knotsByPhysical={item.knotsByPhysical}
+                    activeKnotPhysical={activeKnotPhysical}
+                    updateStatus={updateStatus}
                   />
                 </div>
               )

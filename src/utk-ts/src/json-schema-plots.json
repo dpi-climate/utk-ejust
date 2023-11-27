@@ -37,6 +37,9 @@
         "interaction": {
             "type": "string"
         },
+        "interaction_effect": {
+            "type": "string"
+        },
         "args": {
             "type": "object",
             "properties": {

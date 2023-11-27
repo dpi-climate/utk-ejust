@@ -92,7 +92,7 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
     protected _currentBuildingCoords: number[];
     protected _coordinatesById: number[][];
     protected _currentFootprintBuildingId: number;
-    protected _currentPickedBuildingId: number;
+    protected _currentPickedBuildingId: number[];
     protected _footprintCodesPerBuilding: {buildingId: number, code: number, plotHeight: number, plotType: number}[] = []; // stores the unique identifier of the footprint plot of the building
 
     protected _auxCoords: number[] = [];
@@ -127,7 +127,7 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
         return this._currentFootprintBuildingId;
     }
 
-    get currentPickedBuildingId(): number{
+    get currentPickedBuildingId(): number[]{
         return this._currentPickedBuildingId;
     }
 
@@ -995,42 +995,59 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
 
     }
 
-    public setPickedObject(cellId: number){
+    public setPickedObject(cellIds: number[]){
 
-        let buildingCoords: number[] = [];
-        let keepSearching = true;
+        this._currentPickedBuildingId = [];
 
-        for(let i = 0; i < this._cellIdsByCoordinates.length; i++){
-            let compElement = this._cellIdsByCoordinates[i];
-            for(let j = 0; j < compElement.length; j++){
-                if(cellId == compElement[j]){
-                   
-                    this._currentPickedBuildingId = i;
-                    buildingCoords = this.getBuildingCoords(i);
-                    keepSearching = false;
+        for(let k = 0; k < cellIds.length; k++){
 
+            let cellId = cellIds[k];
+
+            let buildingCoords: number[] = [];
+            let keepSearching = true;
+    
+            for(let i = 0; i < this._cellIdsByCoordinates.length; i++){
+                let compElement = this._cellIdsByCoordinates[i];
+                for(let j = 0; j < compElement.length; j++){
+                    if(cellId == compElement[j]){
+                       
+                        this._currentPickedBuildingId.push(i);
+                        buildingCoords = this.getBuildingCoords(i);
+                        keepSearching = false;
+    
+                        break;
+                    }
+                }
+                if(!keepSearching){ // already found the building 
                     break;
                 }
             }
-            if(!keepSearching){ // already found the building 
-                break;
-            }
-        }
-
-        if(buildingCoords.length > 0){ // a building was found
-            // toggle the highlight in the coordinates of the building
-            for(const coordId of buildingCoords){
-
-                if(this._colorOrPicked[coordId] == 1){
-                    this._colorOrPicked[coordId] = 0;
-                }else if(this._colorOrPicked[coordId] == 0){
-                    this._colorOrPicked[coordId] = 1;
+    
+            if(buildingCoords.length > 0){ // a building was found
+                // toggle the highlight in the coordinates of the building
+                for(const coordId of buildingCoords){
+    
+                    if(this._colorOrPicked[coordId] == 1){
+                        this._colorOrPicked[coordId] = 0;
+                    }else if(this._colorOrPicked[coordId] == 0){
+                        this._colorOrPicked[coordId] = 1;
+                    }
+    
                 }
-
+                this._colorOrPickedDirty = true;
             }
-            this._colorOrPickedDirty = true;
+
         }
 
+    }
+
+    public clearPicking(){
+
+        for(let i = 0; i < this._colorOrPicked.length; i++){
+            this._colorOrPicked[i] = 0;
+        }
+
+        this._colorOrPickedDirty = true;
     }
 
     public setHighlightElements(coordinates: number[], value: boolean): void {

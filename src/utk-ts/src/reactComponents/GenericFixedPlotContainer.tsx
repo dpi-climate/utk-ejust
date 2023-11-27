@@ -1,21 +1,66 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import './View.css';
+import {Row} from 'react-bootstrap';
 
 // declaring the types of the props
 type GenericFixedPlotProps = {
     id: any,
-    svgId: string
+    svgId: string,
+    knotsByPhysical: any,
+    activeKnotPhysical: any,
+    updateStatus: any
 }
 
 export const GenericFixedPlotContainer = ({
     id,
-    svgId
+    svgId,
+    knotsByPhysical,
+    activeKnotPhysical,
+    updateStatus
 }: GenericFixedPlotProps
 ) =>{
     
+    const [selectActiveKnotPhysical, setSelectActiveKnotPhysical] = useState<any>({}); // object that, for each physical, stores the knotId of the activated knot
+
+    useEffect(() => {
+        setSelectActiveKnotPhysical(activeKnotPhysical);
+    }, [activeKnotPhysical]);
+
+    const updateActiveKnotPhysical = (physicalId: string, knotId: string) => {
+        let returnObj: any = {};
+        
+        for(const key of Object.keys(selectActiveKnotPhysical)){
+
+            if(key != physicalId){
+                returnObj[key] = selectActiveKnotPhysical[key];
+            }else{
+                returnObj[key] = knotId;
+            }
+        }
+
+        setSelectActiveKnotPhysical(returnObj);
+        updateStatus("broadcastChannel", {id: "GenericFixedPlotcontainer", channel: "physicalKnotActiveChannel", message: {physicalId: physicalId, knotId: knotId}});
+    }   
+
     return(
         <React.Fragment key={id}>
             <div style={{padding: 0, width: "100%", height: "100%"}}>
+                <Row className="justify-content-center">
+                    {
+                        (Object.keys(knotsByPhysical)).map((key: any) => {
+                            return <div>
+                                <label>{key}</label>
+                                <select style={{width: "200px"}} key={"selectKnotsByPhysical"+key} value={selectActiveKnotPhysical[key]} onChange={e => updateActiveKnotPhysical(key, e.target.value)}>
+                                    {
+                                        knotsByPhysical[key].map((knotId: string) => (
+                                            <option value={knotId} key={"optionKnotsByPhysical"+knotId}>{knotId}</option>
+                                        ))
+                                    }
+                                </select>
+                            </div>
+                        })
+                    }
+                </Row>
                 <div id={svgId}>
                 </div>
             </div>
