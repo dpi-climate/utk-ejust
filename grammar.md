@@ -583,7 +583,7 @@ When creating a JSON for a map component it is required to include the `grammar_
 
 Plots are specified through the usage of another grammar-based visualization tool called Vega-Lite. To the vega-lite specification is injected the data defined through the knots.   
 
-The `plot` field contains the vega-lite specification, with the only difference being that the user should not specify a `data` field and should make reference to knot information by using the keywords `_abstract`, `_index` and `_highlight` after the id of the knot. `_abstract` is a reference to the thematic data of the knot, `_index` is a reference to the index of the data element and `_highlight` is a boolean that indicates if the element was interacted with.    
+The `plot` field contains the vega-lite specification, with the only difference being that the user should not specify a `data` field and should make reference to knot information by using the keywords `_abstract`, `_index` and `_highlight` after the id of the knot. `_abstract` is a reference to the thematic data of the knot, `_index` is a reference to the index of the data element and `_highlight` is a boolean that indicates if the element was interacted with. It is also possible to make a reference directly to the physical layer of the knot. If more than one knot has the same physical layer a selection box will appear on the interface and it is possible to change the knot used.
 
 It is also possible to make reference to the knots in the plot by using its physical layer name. In that case the name will serve as a placeholder for all knots that share the same physical layer. It is possible to select what knot to visualize through the interface.
 
