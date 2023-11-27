@@ -654,4 +654,19 @@ export class BuildingsLayer extends Layer {
         }
     }
 
+    highlightBuildingsInArea(glContext: WebGL2RenderingContext, x: number, y: number, shaders: (Shader|AuxiliaryShader)[], radius: number){
+        if(!glContext.canvas || !(glContext.canvas instanceof HTMLCanvasElement)){
+            return;
+        }
+
+        let pixelX = x * glContext.canvas.width / glContext.canvas.clientWidth;
+        let pixelY = glContext.canvas.height - y * glContext.canvas.height / glContext.canvas.clientHeight - 1;
+
+        for(const shader of shaders){
+            if(shader instanceof ShaderPicking){
+                shader.updatePickObjectArea(pixelX, pixelY, radius);
+            }
+        }
+    }
+
 }

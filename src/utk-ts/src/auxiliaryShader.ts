@@ -20,14 +20,16 @@
 
     /**
      * Set the id of the cell picked for the building highlighting
-     * @param cellId Id of the cell picked
+     * @param cellIds Ids of the cell picked
      */
-     public abstract setPickedObject(cellId: number): void;
+     public abstract setPickedObject(cellIds: number[]): void;
 
     /**
      * Receives the cell id by coordinate
      * @param {number[]} cellIdsByCoordinates 
      */
      public abstract setIdsCoordinates(cellIdsByCoordinates: number[][]): void;
+
+    public abstract clearPicking(): void;
 
  }

@@ -75,6 +75,10 @@ class MapView {
         return this._mouse;
     }
 
+    get viewId(): number{
+        return this._viewId;
+    }
+
     /**
      * gets the map div
      */
@@ -206,22 +210,27 @@ class MapView {
         this._plotManager.updateGrammarPlotsData(plotsKnotData);
 
     }
+ 
+    // if clear == true, elements and level are ignored and all selections are deactivated
+    updateGrammarPlotsHighlight(layerId: string, level: LevelType | null, elements: number[] | null, clear: boolean = false){
 
-    // if clear == true, elementIndex and level are ignored and all selections are deactivated
-    updateGrammarPlotsHighlight(layerId: string, level: LevelType | null, elementIndex: number | null, clear: boolean = false){
-
-        if(!clear){
-            let elements: any = {};
-        
-            for(const knot of this._grammarInterpreter.getKnots()){
-                let lastLink = this._grammarInterpreter.getKnotLastLink(knot);
-    
-                if(lastLink.out.name == layerId && lastLink.out.level == level){
-                    elements[knot.id] = elementIndex;
-                }
-            }
+        if(!clear && elements != null){
+            for(const elementIndex of elements){
+                let elements: any = {};
             
-            this.plotManager.setHighlightElementsLocally(elements, true, true);
+                for(const knot of this._grammarInterpreter.getKnots()){
+                    let lastLink = this._grammarInterpreter.getKnotLastLink(knot);
+        
+                    if(lastLink.out.name == layerId && lastLink.out.level == level){
+                        elements[knot.id] = elementIndex;
+                    }
+                }
+                
+                this.plotManager.applyInteractionEffectsLocally(elements, true, true, true); // apply to the local plot manager
+                this._grammarInterpreter.plotManager.applyInteractionEffectsLocally(elements, true, true, true); // apply to the global plot manager
+                // this.plotManager.setHighlightElementsLocally(elements, true, true);
+                // this.plotManager.setFilterElementsLocally(elements)
+            }
         }else{
             let knotsToClear: string[] = [];
 
@@ -233,13 +242,15 @@ class MapView {
                 }
             }
 
-            this.plotManager.clearHighlightsLocally(knotsToClear);
+            // this.plotManager.clearHighlightsLocally(knotsToClear);
+            this.plotManager.clearInteractionEffectsLocally(knotsToClear); // apply to the local plot manager
+            this._grammarInterpreter.plotManager.clearInteractionEffectsLocally(knotsToClear);  // apply to the global plot manager
         }
 
     }
 
     initPlotManager(){
-        this._plotManager = new PlotManager(this._grammarInterpreter.getPlots(this._viewId), this._grammarInterpreter.parsePlotsKnotData(this._viewId), {"function": this.setHighlightElement, "arg": this});
+        this._plotManager = new PlotManager("PlotManagerMap"+this._viewId, this._grammarInterpreter.getPlots(this._viewId), this._grammarInterpreter.parsePlotsKnotData(this._viewId), {"function": this.setHighlightElement, "arg": this});
         this._plotManager.init(this._updateStatusCallback);
     }
 
@@ -261,12 +272,12 @@ class MapView {
 
         let knotObject = _this.knotManager.getKnotById(knotId);
 
-        let shaders = knotObject.shaders[this._viewId];
+        let shaders = knotObject.shaders[_this.viewId];
 
         // not sure if layer should be accessed directly or knot.ts be used
         for(const layer of _this._layerManager.layers){
             if(layer.id == layerId){
-                layer.setHighlightElements([elementIndex], <LevelType>lastLink.out.level, value, shaders, this._camera.getWorldOrigin(), this._viewId);
+                layer.setHighlightElements([elementIndex], <LevelType>lastLink.out.level, value, shaders, _this._camera.getWorldOrigin(), _this.viewId);
                 break;
             }
         }

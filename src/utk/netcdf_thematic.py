@@ -1,75 +1,13 @@
 from pyproj import Transformer
-import pandas as pd
-import os
+import xarray as xr
 import json
 from netCDF4 import Dataset
 import numpy as np
-from .utils import *
-
-import sys
-from wrf import getvar, interplevel, to_np
+import os
 import math
-'''
-    Converts a dataframe into an abstract layer
-'''
-def thematic_from_df(df, output_filepath, latitude_column, longitude_column, coordinates_projection, z_column = None, value_column=None):
-    
-    df = df.drop_duplicates(subset=[latitude_column, longitude_column])
 
-    latitude_list = df[latitude_column].tolist()
-    longitude_list = df[longitude_column].tolist()
-    
-    z_list = []
-    if z_column != None:
-       z_list = df[z_column].toList()
+from wrf import getvar, interplevel, to_np, ALL_TIMES
 
-    if value_column != None:
-        values_list = df[value_column].tolist()
-    else:
-        values_list = [1] * len(latitude_list)
-
-    transformer = Transformer.from_crs(coordinates_projection, 3395)
-    points = list(zip(latitude_list, longitude_list))
-
-    coordinates = []
-
-    for index, point in enumerate(transformer.itransform(points)):
-    
-        z_value = 0
-
-        if(len(z_list) > 0):
-            z_value = z_list[index]
-
-        coordinates.append(point[0])
-        coordinates.append(point[1])
-        coordinates.append(z_value)
-
-    abstract_json = {
-        "id": os.path.basename(output_filepath),
-        "coordinates": coordinates,
-        "values": [elem for elem in values_list]
-    }
-
-    json_object = json.dumps(abstract_json)
-
-    directory = os.path.dirname(output_filepath)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    
-    with open(output_filepath, "w") as outfile:
-        outfile.write(json_object)
-
-'''
-    Converts a csv file into an abstract layer
-'''
-def thematic_from_csv(filepath, layer_id, latitude_column, longitude_column, coordinates_projection, z_column = None, value_column=None):
-    
-    df = pd.read_csv(filepath)
-    thematic_from_df(df, os.path.join(os.path.dirname(filepath),layer_id+".json"), latitude_column, longitude_column, coordinates_projection, z_column, value_column)
-
-'''
-    Converts a NetCDF (e.g. wrf data) file into an abstract layer
-'''
 def thematic_from_netcdf(file_path, variables, coords, layer_id, operations=[], time_indexes=[], bbox={}):
     def cdiff(scalar, axis=0):
         '''
@@ -168,7 +106,7 @@ def thematic_from_netcdf(file_path, variables, coords, layer_id, operations=[], 
                 max_lon_idx = i
                 break
 
-    ###########################################################################################
+############################################################################################
 
     data = []
 
@@ -336,7 +274,7 @@ def thematic_from_netcdf(file_path, variables, coords, layer_id, operations=[], 
                         apply_scalar = eval(operation['function'])
                         row[i] = float(round(apply_scalar(row[i], operation['value']), 2))
 
-    ############################################################################################
+############################################################################################
 
     points = []
     values = []
@@ -372,38 +310,62 @@ def thematic_from_netcdf(file_path, variables, coords, layer_id, operations=[], 
     with open(os.path.join(directory,layer_id+".json"), "w") as outfile:
         outfile.write(json_object)
 
-'''
-    Thematic data from numpy array file 
 
-    coordinates shape: (n,3)
-    Considers that coordinates do not have a coordinates system but are in meters
-'''
-def thematic_from_npy(filepath_coordinates, filepath_values, layer_id, center_around=[]):
+if __name__ == '__main__':   
+    # myobj = json.load(open("./netcdf_grammarv1.json") )
 
-    coordinates = np.load(filepath_coordinates)
-    values = np.load(filepath_values)
 
-    coordinates = coordinates.flatten()
+    file_path = "../../examples/wrf_chicago/wrfout_d03_2023-06-09_20_00_00"
+    variables = [ 
+            {
+                "name": 'pressure',
+                "key": 'pressure',
+            },
+            {
+                "name": 'u',
+                "key": 'u',
+            },
+            {
+                "name": 'v',
+                "key": 'v',
+            }
 
-    if(len(center_around) > 0):
-        coordinates = center_coordinates_around(coordinates, center_around)
+    ]
 
-    flat_values = []
-
-    if(isinstance(values[0], np.ndarray)):
-        flat_values = [item for row in values for item in row] 
-    else:
-        flat_values = values.tolist()
-
-    abstract_json = {
-        "id": layer_id,
-        "coordinates": coordinates.tolist(),
-        "values": flat_values
+    coords = {
+        "lat": "XLAT",
+        "lon": "XLONG",
+        "proj": 4326,
     }
 
-    json_object = json.dumps(abstract_json)
-    
-    directory = os.path.dirname(filepath_coordinates)
+    bbox = {
+            "min_lat": 33,
+            "min_lon": -94,
+            "max_lat": 42,
+            "max_lon": -81
+        }
 
-    with open(os.path.join(directory,layer_id+".json"), "w") as outfile:
-        outfile.write(json_object)
+    operations = [
+        {
+            "type": "vector",
+            "dimension": "space",
+            "function": "calculate_wind",
+            "parameters": [
+                {
+                    "name": "level",
+                    "value": 850
+                }
+
+            ],
+        },
+        {
+            "type": "scalar",
+            "function": "lambda x, l: (x + l[0]) * l[1]",
+            "parameters": [-273, 2]
+        },
+    ]
+
+    time_indexes = []
+    layer_id = "wrfout_d03_2023-06-09_20_00_00_T2"
+
+    thematic_from_netcdf(file_path, variables, coords, layer_id, operations)

@@ -73,7 +73,7 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
 
     //Picking
     protected _colorOrPicked: number[] = [];
-    protected _currentPickedElement: number; // stores the index of the currently picked element
+    protected _currentPickedElement: number[]; // stores the indices of the currently picked elements
     protected _filtered: number[] = [];
 
     constructor(glContext: WebGL2RenderingContext, colorMap: string = "interpolateReds", range: number[] = [0, 1], domain: number[] = [], scale: string = "scaleLinear") {
@@ -91,7 +91,7 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         this.createTextures(glContext);
     }
 
-    get currentPickedElement(): number{
+    get currentPickedElement(): number[]{
         return this._currentPickedElement;
     }
 
@@ -358,24 +358,26 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         this._colorOrPickedDirty = true;
     }
 
-    public setPickedObject(objectId: number): void {
+    public setPickedObject(ids: number[]): void {
         
-        this._currentPickedElement = objectId;
-
-        let readCoords = 0;
-        for(let i = 0; i < this._coordsPerComp.length; i++){
-            if(objectId == i){
-                break;
+        this._currentPickedElement = ids;
+        
+        for(const objectId of ids){
+            let readCoords = 0;
+            for(let i = 0; i < this._coordsPerComp.length; i++){
+                if(objectId == i){
+                    break;
+                }
+    
+                readCoords += this._coordsPerComp[i];
             }
-
-            readCoords += this._coordsPerComp[i];
-        }
-
-        for(let i = 0; i < this._coordsPerComp[objectId]; i++){
-            if(this._colorOrPicked[readCoords+i] == 1){
-                this._colorOrPicked[readCoords+i] = 0;
-            }else if(this._colorOrPicked[readCoords+i] == 0){
-                this._colorOrPicked[readCoords+i] = 1;
+    
+            for(let i = 0; i < this._coordsPerComp[objectId]; i++){
+                if(this._colorOrPicked[readCoords+i] == 1){
+                    this._colorOrPicked[readCoords+i] = 0;
+                }else if(this._colorOrPicked[readCoords+i] == 0){
+                    this._colorOrPicked[readCoords+i] = 1;
+                }
             }
         }
 

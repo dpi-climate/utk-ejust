@@ -75,9 +75,11 @@ export enum LevelType{
     COORDINATES3D = "COORDINATES3D"
 }
 
+// interactions with the knots on the map
 export enum InteractionType{
     BRUSHING = "BRUSHING",
     PICKING = "PICKING",
+    AREA_PICKING = "AREA_PICKING",
     NONE = "NONE"
 }
 
@@ -85,6 +87,11 @@ export enum PlotInteractionType{
     CLICK = "CLICK",
     HOVER = "HOVER",
     BRUSH = "BRUSH"
+}
+
+export enum InteractionEffectType{
+    FILTER = "FILTER",
+    HIGHLIGHT = "HIGHLIGHT"
 }
 
 // export enum ComponentIdentifier{

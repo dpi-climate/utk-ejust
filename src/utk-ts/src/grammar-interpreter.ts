@@ -63,6 +63,10 @@ class GrammarInterpreter {
         return this._preProcessedGrammar;
     }
 
+    get plotManager(): PlotManager{
+        return this._plotManager;
+    }
+
     resetGrammarInterpreter(grammar: IMasterGrammar, mainDiv: HTMLElement) {
 
         this._components_grammar = [];
@@ -442,7 +446,26 @@ class GrammarInterpreter {
 
         let plotsKnotData = this.parsePlotsKnotData(); // parse all plots knots
 
-        this._plotManager = new PlotManager(this.getPlots(), plotsKnotData, {"function": (param1: any, param2: any, param3: any, param4: any) => {}, "arg": this}); // change function to program highlight callback
+        const setHighlightElementForAll = (knotId: string, elementIndex: number, value: boolean, _this: any) => {
+
+            let components_id = 0;
+
+            for(const component of _this._components_grammar){
+
+                if(component.grammar?.grammar_type == GrammarType.MAP){
+                    let map = MapViewFactory.getInstance(_this, _this._layerManager, _this._knotManager, components_id);
+                    
+                    if(component.grammar?.knots.includes(knotId)){
+                        map.setHighlightElement(knotId, elementIndex, value, map);
+                    }
+                }
+
+                components_id += 1;
+            }
+
+        }
+
+        this._plotManager = new PlotManager("PlotManagerGrammarInterpreter", this.getPlots(), plotsKnotData, {"function": setHighlightElementForAll, "arg": this}); 
 
         this._layerManager.init(updateStatus);
         this._knotManager.init(updateStatus);
@@ -558,15 +581,33 @@ class GrammarInterpreter {
     }
 
     // If mapId is specified get all the plots that are embedded in that map
-    public getPlots(mapId: number | null = null) : {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[] {
-        let plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[] = [];
+    public getPlots(mapId: number | null = null) : {id: string, knotsByPhysical: any, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[] {
+        let plots: {id: string, knotsByPhysical: any, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[] = [];
         let map_component: any = null;
         let currentMapId = 0;
 
         for(const component of this._components_grammar){
             if(component.grammar != undefined && component.grammar.grammar_type == GrammarType.PLOT){
+
+                let allKnotsByPhysical: any = {};
+
+                for(const knotId of component.grammar.knots){
+                    let knotObjs = this.getKnots(<string>knotId)
+
+                    if(knotObjs.length == 1){
+                        let physicalId = this.getKnotLastLink(knotObjs[0]).out.name;
+                    
+                        if(allKnotsByPhysical[physicalId] == undefined){
+                            allKnotsByPhysical[physicalId] = [knotId];
+                        }else{
+                            allKnotsByPhysical[physicalId].push(knotId);
+                        }
+                    }
+                }
+
                 plots.push({
                     componentId: component.id,
+                    knotsByPhysical: allKnotsByPhysical,
                     ...<{id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined}>component
                 });
             }
@@ -591,7 +632,15 @@ class GrammarInterpreter {
         return plots;
     }
 
-    public getKnots(){
+    public getKnots(knotId: string | null = null){
+        
+        if(knotId != null){
+            for(const knot of this._grammar.knots){
+                if(knot.id == knotId)
+                    return [knot];
+            }
+        }
+
         return this._grammar.knots;
     }
 
@@ -793,7 +842,7 @@ class GrammarInterpreter {
             }
         }
 
-        let plotsKnotData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[] = [];
+        let plotsKnotData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[] = [];
 
         for(const knotId of plotsKnots){
             for(const knot of this.getKnots()){
@@ -831,7 +880,7 @@ class GrammarInterpreter {
                     for(let i = 0; i < this._components_grammar.length; i++){ // if one map higlighted something that will appear hilighted in every view that depends on that knot
                         if(this._components_grammar[i].grammar != undefined && this._components_grammar[i].grammar?.grammar_type == GrammarType.MAP){
                             let highlighted_map = left_layer.getHighlightsByLevel(lastLink.out.level, (<Knot>knotStructure).shaders[i]); // getting higlights for the layer for each map
-                        
+
                             if(highlighted.length == 0){
                                 highlighted = highlighted_map;
                             }else{
@@ -859,6 +908,7 @@ class GrammarInterpreter {
                                     coordinates: coordinates[i],
                                     abstract: functionValues[i][0],
                                     highlighted: highlighted[i],
+                                    filteredIn: true,
                                     index: i
                                 });
                             }else{
@@ -866,6 +916,7 @@ class GrammarInterpreter {
                                     coordinates: [],
                                     abstract: functionValues[i][0],
                                     highlighted: highlighted[i],
+                                    filteredIn: true,
                                     index: i
                                 });
                             }
@@ -878,6 +929,8 @@ class GrammarInterpreter {
 
                     let knotData = {
                         knotId: knotId,
+                        physicalId: lastLink.out.name,
+                        allFilteredIn: true,
                         elements: elements
                     }
 

@@ -117,6 +117,10 @@ export class ShaderFlatColorPoints extends Shader {
             );
         }
 
+        // binds the VAO
+        glContext.vertexAttribPointer(this._coordsId, mesh.dimension, glContext.FLOAT, false, 0, 0);
+        glContext.enableVertexAttribArray(this._coordsId);
+
         this._coordsDirty = false;
     }
 

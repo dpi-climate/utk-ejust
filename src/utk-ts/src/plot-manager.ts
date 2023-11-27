@@ -1,5 +1,5 @@
 import { IComponentPosition, IMasterGrammar, IPlotArgs, IPlotGrammar } from './interfaces';
-import { PlotInteractionType, PlotArrangementType } from './constants';
+import { PlotInteractionType, PlotArrangementType, InteractionEffectType } from './constants';
 import {radians} from './utils';
 
 const vega = require('vega')
@@ -27,22 +27,25 @@ class LockFlag {
 
 export class PlotManager {
 
-    protected _plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[];
+    protected _plots: {id: string, knotsByPhysical: any, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[];
+    protected _filtered: any = {}; // which plots have filters active (plotNumber -> boolean)
     protected _updateStatusCallback: any;
     protected _setGrammarUpdateCallback: any;
-    protected _plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[];
+    protected _plotsKnotsData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[];
+    protected _activeKnotPhysical: any = {}; // for each physicalId one knot is active at the time, according to users choice on the interface. (physicalId -> knotId)
     protected _setHighlightElementCallback: {function: any, arg: any};
     protected _plotsReferences: any[];
     protected _needToUnHighlight: boolean;
     protected _highlightedVegaElements: any[] = [];
+    protected _id: string;
 
     /**
      * 
      * @param viewData 
      * @param setGrammarUpdateCallback Function that sets the callback that will be called in the frontend to update the grammar
      */
-    constructor(plots: {id: string, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[], plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
-
+    constructor(id: string, plots: {id: string, knotsByPhysical: any, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[], plotsKnotsData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
+        this._id = id;
         this._setHighlightElementCallback = setHighlightElementCallback;
         this._plotsReferences = new Array(plots.length);
         this._needToUnHighlight = false;
@@ -50,12 +53,29 @@ export class PlotManager {
         this._plotsKnotsData = plotsKnotsData;
     }
 
+    public physicalKnotActiveChannel(message: {physicalId: string, knotId: string}, _this: any){
+
+        let physicals = Object.keys(_this._activeKnotPhysical)
+
+        if(physicals.length > 0){
+            for(const key of physicals){
+                if(key == message.physicalId){
+                    _this._activeKnotPhysical[key] = message.knotId;
+                }
+            }
+    
+            _this.updatePlotsActivePhysical();
+            _this._updateStatusCallback("updateActiveKnotPhysical", _this._activeKnotPhysical);
+        }
+    }
+
     public init(updateStatusCallback: any){
         this._updateStatusCallback = updateStatusCallback;
+        this._updateStatusCallback("subscribe", {id: this._id, callback: this.physicalKnotActiveChannel, channel: "physicalKnotActiveChannel", ref: this})
         this.updateGrammarPlotsData(this._plotsKnotsData);
     }
 
-    async updateGrammarPlotsData(plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[]){
+    async updateGrammarPlotsData(plotsKnotsData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[]){
         
         this._plotsKnotsData = plotsKnotsData;
 
@@ -81,18 +101,76 @@ export class PlotManager {
                 value[knotData.knotId+"_index"] = element.index;
                 value[knotData.knotId+"_abstract"] = element.abstract;
                 value[knotData.knotId+"_highlight"] = element.highlighted;
+                value[knotData.knotId+"_filteredIn"] = element.filteredIn;
+
+                value[knotData.physicalId+"_index"] = element.index;
+                value[knotData.physicalId+"_abstract"] = element.abstract;
+                value[knotData.physicalId+"_highlight"] = element.highlighted;
+                value[knotData.physicalId+"_filteredIn"] = element.filteredIn;
+
+                this._activeKnotPhysical[knotData.physicalId] = knotData.knotId;
 
                 processedKnotData[knotData.knotId].values.push(value);
-            }   
+            }
+            
+            this._updateStatusCallback("updateActiveKnotPhysical", this._activeKnotPhysical);
         }
 
         return processedKnotData;
     }
 
+    clearFiltersLocally(knotsIds: string[]){
+
+        let physicalIds: string[] = [];
+
+        // update local data
+        for(const plotKnotData of this._plotsKnotsData){
+
+            plotKnotData.allFilteredIn = true;
+
+            if(knotsIds.includes(plotKnotData.knotId)){
+
+                physicalIds.push(plotKnotData.physicalId);
+
+                for(const element of plotKnotData.elements){
+                    element.filteredIn = true;
+                }
+            }
+        }
+
+        // update plots data
+        for(let i = 0; i < this._plots.length; i++){
+            let elem = this._plots[i].grammar;
+
+            if(elem.plot.data != undefined){
+                for(const value of elem.plot.data.values){  
+                    for(const knotId of knotsIds){
+                        if(value[knotId+"_index"] != undefined){
+                            value[knotId+"_filteredIn"] = true;
+                        }
+                    }
+
+                    for(const physicalId of physicalIds){
+                        if(value[physicalId+"_index"] != undefined){
+                            value[physicalId+"_filteredIn"] = true;
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
     clearHighlightsLocally(knotsIds: string[]){
+
+        let physicalIds: string[] = [];
+
         // update local data
         for(const plotKnotData of this._plotsKnotsData){
             if(knotsIds.includes(plotKnotData.knotId)){
+
+                physicalIds.push(plotKnotData.physicalId);
+
                 for(const element of plotKnotData.elements){
                     element.highlighted = false;
                 }
@@ -110,35 +188,33 @@ export class PlotManager {
                             value[knotId+"_highlight"] = false;
                         }
                     }
-                }
-    
-                let valuesCopy = [];
-    
-                for(const value of elem.plot.data.values){
-                    let valueCopy: any = {};
-    
-                    let valueKeys = Object.keys(value);
 
-                    for(const key of valueKeys){
-                        if(key != "Symbol(vega_id)"){
-                            valueCopy[key] = value[key];
+                    for(const physicalId of physicalIds){
+                        if(value[physicalId+"_index"] != undefined){
+                            value[physicalId+"_highlight"] = false;
                         }
                     }
-    
-                    valuesCopy.push(valueCopy);
-                }
-    
-                let changeset = vega.changeset().remove(() => true).insert(valuesCopy);
-                
-                if(this._plotsReferences[i] != undefined){
-                    this._plotsReferences[i].change('source_0', changeset).runAsync();
                 }
             }
-
         }
     }
 
-    // if toggle if activate ignore the truth value and just toggle the highlight
+    applyInteractionEffectsLocally(elements: any, truthValue: boolean, toggle: boolean = false, fromMap: boolean = false){
+        this.setHighlightElementsLocally(elements, truthValue, toggle);
+        if(fromMap){ // only filter elements if the interaction comes from map
+            this.setFilterElementsLocally(elements, truthValue, toggle);
+        }
+        this.updatePlotsNewData();
+    }
+
+    // always called by a map
+    clearInteractionEffectsLocally(knotsIds: string[]){
+        this.clearHighlightsLocally(knotsIds);
+        this.clearFiltersLocally(knotsIds);
+        this.updatePlotsNewData();
+    }
+
+    // if toggle is activated ignore the truth value and just toggle the highlight
     setHighlightElementsLocally(elements: any, truthValue: boolean, toggle: boolean = false){
 
         // update local data
@@ -157,6 +233,12 @@ export class PlotManager {
             }
         }
 
+        let invertedDict: any = {};
+
+        for(const key of Object.keys(this._activeKnotPhysical)){
+            invertedDict[this._activeKnotPhysical[key]] = key;
+        }
+
         // update plots data
         for(let i = 0; i < this._plots.length; i++){
             let elem = this._plots[i].grammar
@@ -170,13 +252,155 @@ export class PlotManager {
                         if(value[knotId+"_index"] != undefined && value[knotId+"_index"] == elements[knotId]){
                             if(toggle){
                                 value[knotId+"_highlight"] = !value[knotId+"_highlight"];
+                                if(invertedDict[knotId] != undefined){
+                                    value[invertedDict[knotId]+"_highlight"] = value[knotId+"_highlight"];
+                                }
                             }else{
                                 value[knotId+"_highlight"] = truthValue;
+                                if(invertedDict[knotId] != undefined){
+                                    value[invertedDict[knotId]+"_highlight"] = value[knotId+"_highlight"];
+                                }
                             }
                         }
                     }
                 }
-    
+            }
+        }
+
+    }
+
+    setFilterElementsLocally(elements: any, truthValue: boolean, toggle: boolean = false){
+
+        let allFilteredInDict: any = {}; // knotId -> filteredIn
+        let allFilteredOutDict: any = {};
+
+        // update local data
+        for(const plotKnotData of this._plotsKnotsData){
+            if(elements[plotKnotData.knotId] != undefined){
+
+                allFilteredInDict[plotKnotData.knotId] = plotKnotData.allFilteredIn;
+
+                if(plotKnotData.allFilteredIn){ // no object is selected (all are filtered in)
+                    for(const element of plotKnotData.elements){
+                        element.filteredIn = false;
+                    }
+
+                    plotKnotData.allFilteredIn = false;
+                }
+
+                let allFilteredOut = true;
+
+                for(const element of plotKnotData.elements){
+                    if(element.index == elements[plotKnotData.knotId]){
+                        if(toggle){
+                            element.filteredIn = !element.filteredIn;
+                        }else{
+                            element.filteredIn = truthValue;
+                        }
+                    }
+                    if(element.filteredIn)
+                        allFilteredOut = false;
+                }
+
+                allFilteredOutDict[plotKnotData.knotId] = allFilteredOut;
+
+                if(allFilteredOut){ // if no object is selected then include all (all are filtered in)
+                    for(const element of plotKnotData.elements){
+                        if(element.index == elements[plotKnotData.knotId]){
+                            element.filteredIn = true;
+                        }
+                    }
+                    plotKnotData.allFilteredIn = true;
+                } 
+            }
+        }
+
+        let invertedDict: any = {};
+
+        for(const key of Object.keys(this._activeKnotPhysical)){
+            invertedDict[this._activeKnotPhysical[key]] = key;
+        }
+
+        // update plots data
+        for(let i = 0; i < this._plots.length; i++){
+            let elem = this._plots[i].grammar;
+
+            if(elem.plot.data != undefined){
+
+                this._filtered[i] = false;
+
+                for(const value of elem.plot.data.values){
+                    
+                    let elementsKeys = Object.keys(elements);
+
+                    for(const knotId of elementsKeys){
+                        if(allFilteredInDict[knotId]){ // if every object is filtered in no object is selected therefore filteredIn should be reset because the next interaction will filter in the object
+                            value[knotId+"_filteredIn"] = false;
+                            if(invertedDict[knotId] != undefined){
+                                value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
+                            }    
+                        }
+
+                        if(value[knotId+"_index"] != undefined && value[knotId+"_index"] == elements[knotId]){
+                            
+                            if(toggle){
+                                value[knotId+"_filteredIn"] = !value[knotId+"_filteredIn"];
+                                if(invertedDict[knotId] != undefined){
+                                    value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
+                                }
+                            }else{
+                                value[knotId+"_filteredIn"] = truthValue;
+                                if(invertedDict[knotId] != undefined){
+                                    value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
+                                }
+                            }
+                        }
+
+                        if(allFilteredOutDict[knotId]){
+                            value[knotId+"_filteredIn"] = true;
+                            if(invertedDict[knotId] != undefined){
+                                value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
+                            }
+                        }
+
+                        if(!value[knotId+"_filteredIn"]){
+                            this._filtered[i] = true;
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+    updatePlotsActivePhysical(){
+        for(let i = 0; i < this._plots.length; i++){
+            let elem = this._plots[i].grammar;
+
+            if(elem.plot.data != undefined){
+                for(const value of elem.plot.data.values){
+                    for(const physicalId of Object.keys(this._activeKnotPhysical)){
+
+                        let knotId = this._activeKnotPhysical[physicalId];
+
+                        value[physicalId+"_index"] = value[knotId+"_index"];
+                        value[physicalId+"_abstract"] = value[knotId+"_abstract"];
+                        value[physicalId+"_highlight"] = value[knotId+"_abstract"];
+                        value[physicalId+"_filteredIn"] = value[knotId+"_abstract"];
+                    }
+                }
+            }
+        }
+
+        this.updatePlotsNewData();
+    }
+
+    updatePlotsNewData(){
+        // update plots data
+        for(let i = 0; i < this._plots.length; i++){
+            let elem = this._plots[i].grammar
+
+            if(elem.plot.data != undefined){
                 let valuesCopy = [];
     
                 for(const value of elem.plot.data.values){
@@ -184,24 +408,30 @@ export class PlotManager {
     
                     let valueKeys = Object.keys(value);
 
+                    let include = true;
+
                     for(const key of valueKeys){
                         if(key != "Symbol(vega_id)"){
                             valueCopy[key] = value[key];
                         }
+
+                        if(key.includes("_filteredIn") && !value[key] && elem.interaction_effect == InteractionEffectType.FILTER){
+                            include = false;
+                        }
                     }
     
-                    valuesCopy.push(valueCopy);
+                    // if filter is activated do not include filtered out elements
+                    if(include)
+                        valuesCopy.push(valueCopy);
                 }
-    
+                
                 let changeset = vega.changeset().remove(() => true).insert(valuesCopy);
                 
                 if(this._plotsReferences[i] != undefined){
                     this._plotsReferences[i].change('source_0', changeset).runAsync();
                 }
             }
-
         }
-
     }
 
     async attachPlots(processedKnotData: any){
@@ -238,6 +468,7 @@ export class PlotManager {
         let floating_values = []; // which plots are fixed on the screen or floating on top of it
         let positions: (IComponentPosition | undefined)[] = []; // positions of each plot (undefined if it is floating)
         let componentIds: string[] = [];
+        let knotsByPhysicalList: any[] = [];
 
         for(let i = 0; i < this._plots.length; i++){
             if(this._plots[i].grammar.arrangement == PlotArrangementType.LINKED){
@@ -258,10 +489,12 @@ export class PlotManager {
                 positions.push(this._plots[i].position);
 
                 componentIds.push(this._plots[i].componentId);
+
+                knotsByPhysicalList.push(this._plots[i].knotsByPhysical);
             }
         }
 
-        let ids = await this._updateStatusCallback("containerGenerator", {n: linkedPlots.length, names: names, floating_values: floating_values, positions: positions, componentIds: componentIds}); 
+        let ids = await this._updateStatusCallback("containerGenerator", {n: linkedPlots.length, names: names, floating_values: floating_values, positions: positions, componentIds: componentIds, knotsByPhysicalList: knotsByPhysicalList}); 
 
         for(let i = 0; i < linkedPlots.length; i++){
 
@@ -276,7 +509,11 @@ export class PlotManager {
             let mergedKnots = processedKnotData[<string>elem.knots[0]];
 
             for(let j = 1; j < elem.knots.length; j++){
-                mergedKnots = mergeKnotData(mergedKnots.values, processedKnotData[<string>elem.knots[j]].values);
+
+                let currentProcessedKnotData = processedKnotData[<string>elem.knots[j]];
+
+                mergedKnots = mergeKnotData(mergedKnots.values, currentProcessedKnotData.values);
+                
             }
 
             elem.plot.data = mergedKnots;
@@ -298,54 +535,61 @@ export class PlotManager {
 
                     view.addEventListener('mouseover', function(event: any, item: any) {
 
-                        if(item != undefined && item.datum != undefined){
+                        if(item != undefined && item.datum != undefined){ // the plot needs to be unfiltered
 
-                            let elementsToHighlight: any = {};
+                            if(elem.interaction_effect != InteractionEffectType.FILTER || !_this._filtered[i]){
+                                let elementsToHighlight: any = {};
+        
+                                for(const key of elem.knots){
+                                    if(item.datum[key+'_highlight'] == false){
+                                        _this._setHighlightElementCallback.function(key, item.datum[key+'_index'], true, _this._setHighlightElementCallback.arg);
+                                        elementsToHighlight[<string>key] = item.datum[key+"_index"];
+                                    }
+                                }
     
-                            for(const key of elem.knots){
-                                if(item.datum[key+'_highlight'] == false){
-                                    _this._setHighlightElementCallback.function(key, item.datum[key+'_index'], true, _this._setHighlightElementCallback.arg);
-                                    elementsToHighlight[<string>key] = item.datum[key+"_index"];
+                                if(Object.keys(elementsToHighlight).length > 0){
+                                    _this.setHighlightElementsLocally(elementsToHighlight, true);
+                                    _this._needToUnHighlight = true;
+                                    _this._highlightedVegaElements.push(item);
+                                    _this.updatePlotsNewData();
+    
                                 }
                             }
-
-                            if(Object.keys(elementsToHighlight).length > 0){
-                                _this.setHighlightElementsLocally(elementsToHighlight, true);
-                                _this._needToUnHighlight = true;
-                                _this._highlightedVegaElements.push(item);
-
-
-                            }
-
                         }
 
                     });
         
                     view.addEventListener('mouseout', function(event: any, item: any) {
 
-                        if(item != undefined && item.datum != undefined){
-                            let elementsToUnHighlight: any = {};
-        
-                            for(const key of elem.knots){
-                                _this._setHighlightElementCallback.function(key, item.datum[key+'_index'], false, _this._setHighlightElementCallback.arg);
-                                elementsToUnHighlight[<string>key] = item.datum[key+"_index"];
+                        if(elem.interaction_effect != InteractionEffectType.FILTER || !_this._filtered[i]){
+                            
+                            if(item != undefined && item.datum != undefined){
+                                let elementsToUnHighlight: any = {};
+            
+                                for(const key of elem.knots){
+                                    _this._setHighlightElementCallback.function(key, item.datum[key+'_index'], false, _this._setHighlightElementCallback.arg);
+                                    elementsToUnHighlight[<string>key] = item.datum[key+"_index"];
+                                }
+    
+                                _this.setHighlightElementsLocally(elementsToUnHighlight, false);
+                                _this.updatePlotsNewData();
                             }
-
-                            _this.setHighlightElementsLocally(elementsToUnHighlight, false);
-                        }
-
-                        for(const highlightedItem of _this._highlightedVegaElements){
-                            let elementsToUnHighlight: any = {};
-        
-                            for(const key of elem.knots){
-                                _this._setHighlightElementCallback.function(key, highlightedItem.datum[key+'_index'], false, _this._setHighlightElementCallback.arg);
-                                elementsToUnHighlight[<string>key] = highlightedItem.datum[key+"_index"];
+    
+                            for(const highlightedItem of _this._highlightedVegaElements){
+                                let elementsToUnHighlight: any = {};
+            
+                                for(const key of elem.knots){
+                                    _this._setHighlightElementCallback.function(key, highlightedItem.datum[key+'_index'], false, _this._setHighlightElementCallback.arg);
+                                    elementsToUnHighlight[<string>key] = highlightedItem.datum[key+"_index"];
+                                }
+    
+                                _this.setHighlightElementsLocally(elementsToUnHighlight, false);
+                                _this.updatePlotsNewData();
                             }
-
-                            _this.setHighlightElementsLocally(elementsToUnHighlight, false);
+    
+                            _this._highlightedVegaElements = [];
+                        
                         }
-
-                        _this._highlightedVegaElements = [];
 
                     });
                 }
@@ -359,56 +603,64 @@ export class PlotManager {
 
                     view.addEventListener('click', function(event: any, item: any) {
 
-                        if(item == undefined || item.datum == undefined){
-
-                            let elementsToUnHighlight: any = {};
-        
-                            for(const key of elem.knots){
-                                // unhighlight all elements of this plot
-                                for(const value of elem.plot.data.values){
-                                    if(value[key+'_index'] != undefined){
-                                        _this._setHighlightElementCallback.function(key, value[key+'_index'], false, _this._setHighlightElementCallback.arg);
-                                        elementsToUnHighlight[<string>key] = value[key+'_index'];
+                        if(elem.interaction_effect != InteractionEffectType.FILTER || !_this._filtered[i]){
+                        
+                            if(item == undefined || item.datum == undefined){
+    
+                                let elementsToUnHighlight: any = {};
+            
+                                for(const key of elem.knots){
+                                    // unhighlight all elements of this plot
+                                    for(const value of elem.plot.data.values){
+                                        if(value[key+'_index'] != undefined){
+                                            _this._setHighlightElementCallback.function(key, value[key+'_index'], false, _this._setHighlightElementCallback.arg);
+                                            elementsToUnHighlight[<string>key] = value[key+'_index'];
+                                        }
                                     }
                                 }
-                            }
-    
-                            _this.setHighlightElementsLocally(elementsToUnHighlight, false);
-
-                        }else{
-
-                            let unhighlight = false;
-
-                            for(const key of elem.knots){
-                                if(item.datum[key+"_highlight"] == true){
-                                    unhighlight = true;
-                                    break;
-                                }
-                            }
-
-                            if(unhighlight){
-                                let elementsToUnHighlight: any = {};
-
-                                // highlight the clicked element
-                                for(const key of elem.knots){
-                                    _this._setHighlightElementCallback.function(key, item.datum[key+'_index'], false, _this._setHighlightElementCallback.arg);
-                                    elementsToUnHighlight[<string>key] = item.datum[key+"_index"];
-                                }
-
+        
                                 _this.setHighlightElementsLocally(elementsToUnHighlight, false);
+                                _this.updatePlotsNewData();
+    
                             }else{
-                                let elementsToHighlight: any = {};
-
-                                // highlight the clicked element
+    
+                                let unhighlight = false;
+    
                                 for(const key of elem.knots){
-                                    _this._setHighlightElementCallback.function(key, item.datum[key+'_index'], true, _this._setHighlightElementCallback.arg);
-                                    elementsToHighlight[<string>key] = item.datum[key+"_index"];
+                                    if(item.datum[key+"_highlight"] == true){
+                                        unhighlight = true;
+                                        break;
+                                    }
                                 }
-
-                                _this.setHighlightElementsLocally(elementsToHighlight, true);
+    
+                                if(unhighlight){
+                                    let elementsToUnHighlight: any = {};
+    
+                                    // highlight the clicked element
+                                    for(const key of elem.knots){
+                                        _this._setHighlightElementCallback.function(key, item.datum[key+'_index'], false, _this._setHighlightElementCallback.arg);
+                                        elementsToUnHighlight[<string>key] = item.datum[key+"_index"];
+                                    }
+    
+                                    _this.setHighlightElementsLocally(elementsToUnHighlight, false);
+                                    _this.updatePlotsNewData();
+                                }else{
+                                    let elementsToHighlight: any = {};
+    
+                                    // highlight the clicked element
+                                    for(const key of elem.knots){
+                                        _this._setHighlightElementCallback.function(key, item.datum[key+'_index'], true, _this._setHighlightElementCallback.arg);
+                                        elementsToHighlight[<string>key] = item.datum[key+"_index"];
+                                    }
+    
+                                    _this.setHighlightElementsLocally(elementsToHighlight, true);
+                                    _this.updatePlotsNewData();
+                                }
+    
                             }
-
+                        
                         }
+
 
                     });
                 }
