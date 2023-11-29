@@ -18,7 +18,6 @@ export class ShaderFlatColorPointsMap extends Shader {
     // Data to be rendered
     protected _coords:  number[] = [];
     protected _function: number[][] = [];
-    protected _indices: number[] = [];
 
     // TODO decide which function to use
     protected _functionToUse: number = 0;
@@ -29,13 +28,13 @@ export class ShaderFlatColorPointsMap extends Shader {
     private _domain: number[];
     private _scale: string;
 
-    // Data loaction on GPU
+    // Data location on GPU
     protected _glCoords:  WebGLBuffer | null = null;
     protected _glFunction: WebGLBuffer | null = null;
     protected _glIndices: WebGLBuffer | null = null;
     protected _glFiltered: WebGLBuffer | null = null;
 
-    // Data has chaged
+    // Data has changed
     protected _coordsDirty: boolean = false;
     protected _functionDirty: boolean = false;
     protected _colorMapDirty: boolean = false;
@@ -60,13 +59,13 @@ export class ShaderFlatColorPointsMap extends Shader {
     constructor(glContext: WebGL2RenderingContext, colorMap: string = "interpolateReds", range: number[] = [0, 1], domain: number[] = [], scale: string = "scaleLinear") {
         super(vsFlatColorMap, fsFlatColorMap, glContext);
 
-        // saves the layer color
+        // Saves the layer color
         this._colorMap = colorMap;
         this._range = range;
         this._domain = domain;
         this._scale = scale;
 
-        // creathe dhe shader variables    
+        // Create the shader variables    
         this.createUniforms(glContext);
         this.createVertexArrayObject(glContext);
         this.createTextures(glContext);
@@ -76,7 +75,6 @@ export class ShaderFlatColorPointsMap extends Shader {
         this._coordsDirty = true;
         this._filteredDirty = true;
         this._coords = mesh.getCoordinatesVBO(centroid, viewId);
-        this._indices = mesh.getIndicesVBO();
 
         let totalNumberOfCoords = mesh.getTotalNumberOfCoords()
 
@@ -113,13 +111,7 @@ export class ShaderFlatColorPointsMap extends Shader {
             }
 
         }
-
-        // // min max normalization
-        // if(maxFuncValue != null && minFuncValue != null && maxFuncValue - minFuncValue != 0 && maxFuncValue >= 0 && minFuncValue >= 0){
-        //     for(let i = 0; i < this._function[this._functionToUse].length; i++){
-        //         this._function[this._functionToUse][i] = (this._function[this._functionToUse][i] - minFuncValue)/(maxFuncValue - minFuncValue);
-        //     }
-        // }
+        
         if (this._domain.length === 0) {
             this._domain = d3.extent(this._function[this._functionToUse])
         }
@@ -214,8 +206,6 @@ export class ShaderFlatColorPointsMap extends Shader {
         // Creates the function id
         this._glFunction = glContext.createBuffer();
 
-        // Creates the elements buffer
-        this._glIndices = glContext.createBuffer();
     }
 
     public bindVertexArrayObject(glContext: WebGL2RenderingContext, mesh: Mesh): void {
@@ -258,14 +248,6 @@ export class ShaderFlatColorPointsMap extends Shader {
         glContext.vertexAttribPointer(this._functionId, 1, glContext.FLOAT, false, 0, 0);
         glContext.enableVertexAttribArray(this._functionId);     
 
-        // // binds the indices buffer
-        // glContext.bindBuffer(glContext.ELEMENT_ARRAY_BUFFER, this._glIndices);
-        // // send data to g4pu
-        // if (this._coordsDirty) {
-        //     glContext.bufferData(
-        //     glContext.ELEMENT_ARRAY_BUFFER, new Uint32Array(this._indices), glContext.STATIC_DRAW);
-        // }
-
         this._coordsDirty = false;
         this._functionDirty = false;
         this._filteredDirty = false;
@@ -300,8 +282,7 @@ export class ShaderFlatColorPointsMap extends Shader {
         this.bindVertexArrayObject(glContext, mesh);
         this.bindTextures(glContext);
 
-        // draw the geometry
-        // glContext.drawElements(glPrimitive, this._indices.length, glContext.UNSIGNED_INT, 0);
+        // draw arrays
         glContext.drawArrays(glPrimitive, 0, this._coords.length/3);
     }
 }
