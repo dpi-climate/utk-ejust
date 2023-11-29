@@ -6,6 +6,7 @@ import { OperationType, InteractionType, LevelType, PlotArrangementType, RenderS
 
 import { ShaderFlatColor } from "./shader-flatColor";
 import { ShaderFlatColorMap } from "./shader-flatColorMap";
+import { ShaderFlatColorPointsMap } from "./shader-flatColorPointsMap";
 import { ShaderSmoothColor } from "./shader-smoothColor";
 import { ShaderSmoothColorMap } from "./shader-smoothColorMap";
 import { ShaderSmoothColorMapTex } from "./shader-smoothColorMapTex";
@@ -112,6 +113,9 @@ export class Knot {
                 break;
                 case RenderStyle.FLAT_COLOR_MAP:
                     shader = new ShaderFlatColorMap(glContext, cmap, range, domain, scale);
+                break;
+                case RenderStyle.FLAT_COLOR_POINTS_MAP:
+                    shader = new ShaderFlatColorPointsMap(glContext, cmap, range, domain, scale);
                 break;
                 case RenderStyle.SMOOTH_COLOR:
                     shader = new ShaderSmoothColor(glContext, color);
