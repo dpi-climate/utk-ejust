@@ -53,7 +53,7 @@ export class BuildingsLayer extends Layer {
     }
 
     // bypass the data extraction from link and injects it directly
-    directAddMeshFunction(functionValues: number[], knotId: string){
+    directAddMeshFunction(functionValues: number[][], knotId: string){
         let distributedValues = this.distributeFunctionValues(functionValues);
 
         this._mesh.loadFunctionData(distributedValues, knotId);
@@ -266,7 +266,7 @@ export class BuildingsLayer extends Layer {
         }
     }
 
-    perFaceAvg(functionValues: number[], indices: number[], ids: number[]): number[]{
+    perFaceAvg(functionValues: number[][], indices: number[], ids: number[]): number[][]{
 
         let maxId = -1;
 
@@ -276,66 +276,77 @@ export class BuildingsLayer extends Layer {
             }
         }
 
-        let avg_accumulation_triangle = new Array(Math.trunc(indices.length/3)).fill(0);
-        let avg_accumulation_cell = new Array(maxId+1).fill(0);
+        let avg_accumulation_triangle_all_times: number[][] = [];
 
-        let indicesByThree = Math.trunc(indices.length/3);
+        for(let k = 0; k < functionValues.length; k++){ // iterating over timesteps
+    
+            avg_accumulation_triangle_all_times[k] = new Array(Math.trunc(indices.length/3)).fill(0);
+            let avg_accumulation_cell = new Array(maxId+1).fill(0);
+    
+            let indicesByThree = Math.trunc(indices.length/3);
+    
+            // calculate acc by triangle
+            for(let i = 0; i < indicesByThree; i++){ 
+                let value = 0;
+    
+                value += functionValues[k][indices[i*3]];
+                value += functionValues[k][indices[i*3+1]];
+                value += functionValues[k][indices[i*3+2]];
+    
+                avg_accumulation_triangle_all_times[k][i] = value/3; // TODO: /3 or not? (distribute and accumulate?)
+            }
+    
+            // calculate acc by cell based on the triangles that compose it
+            let count_acc_cell = new Array(maxId+1).fill(0);
+    
+            indicesByThree = Math.trunc(indices.length/3);
+    
+            for(let i = 0; i < indicesByThree; i++){ 
+                let cell = ids[i];
+                
+                avg_accumulation_cell[cell] += avg_accumulation_triangle_all_times[k][i];
+    
+                count_acc_cell[cell] += 1;
+            }
+    
+            indicesByThree = Math.trunc(indices.length/3);
+    
+            for(let i = 0; i < indicesByThree; i++){ 
+                let cell = ids[i];      
+    
+                avg_accumulation_triangle_all_times[k][i] = avg_accumulation_cell[cell]/count_acc_cell[cell]
+            }
 
-        // calculate acc by triangle
-        for(let i = 0; i < indicesByThree; i++){ 
-            let value = 0;
-
-            value += functionValues[indices[i*3]];
-            value += functionValues[indices[i*3+1]];
-            value += functionValues[indices[i*3+2]];
-
-            avg_accumulation_triangle[i] = value/3; // TODO: /3 or not? (distribute and accumulate?)
         }
 
-        // calculate acc by cell based on the triangles that compose it
-        let count_acc_cell = new Array(maxId+1).fill(0);
-
-        indicesByThree = Math.trunc(indices.length/3);
-
-        for(let i = 0; i < indicesByThree; i++){ 
-            let cell = ids[i];
-            
-            avg_accumulation_cell[cell] += avg_accumulation_triangle[i];
-
-            count_acc_cell[cell] += 1;
-        }
-
-        indicesByThree = Math.trunc(indices.length/3);
-
-        for(let i = 0; i < indicesByThree; i++){ 
-            let cell = ids[i];      
-
-            avg_accumulation_triangle[i] = avg_accumulation_cell[cell]/count_acc_cell[cell]
-        }
-
-        return avg_accumulation_triangle
+        return avg_accumulation_triangle_all_times
     }
 
     /**
      * Distributes triangle avg to the coordinates that composes the triangle. 
      * The coordinates need to be duplicated, meaning that there are unique indices. 
      */
-    perCoordinatesAvg(avg_accumulation_triangle: number[], coordsLength: number, indices: number[]): number[]{
+    perCoordinatesAvg(avg_accumulation_triangle: number[][], coordsLength: number, indices: number[]): number[][]{
 
-        let avg_accumulation_per_coordinates = new Array(coordsLength).fill(0);
+        let avg_accumulation_per_coordinates: number[][] = [];
 
-        for(let i = 0; i < avg_accumulation_triangle.length; i++){
-            let elem = avg_accumulation_triangle[i];
-
-            avg_accumulation_per_coordinates[indices[i*3]] = elem
-            avg_accumulation_per_coordinates[indices[i*3+1]] = elem
-            avg_accumulation_per_coordinates[indices[i*3+2]] = elem            
+        for(let k = 0; k < avg_accumulation_triangle.length; k++){ // iterating over timesteps
+            avg_accumulation_per_coordinates.push(new Array(coordsLength).fill(0));
+    
+            for(let i = 0; i < avg_accumulation_triangle[k].length; i++){
+                let elem = avg_accumulation_triangle[k][i];
+    
+                avg_accumulation_per_coordinates[k][indices[i*3]] = elem
+                avg_accumulation_per_coordinates[k][indices[i*3+1]] = elem
+                avg_accumulation_per_coordinates[k][indices[i*3+2]] = elem            
+            }
         }
+
 
         return avg_accumulation_per_coordinates
     }
 
-    distributeFunctionValues(functionValues: number[] | null): number[] | null {
+    distributeFunctionValues(functionValues: number[][] | null): number[][] | null {
 
         if(functionValues == null){
             return null;
@@ -509,9 +520,9 @@ export class BuildingsLayer extends Layer {
         return coordByLevel;
     }
 
-    getFunctionByLevel(level: LevelType, knotId: string): number[][] {
+    getFunctionByLevel(level: LevelType, knotId: string): number[][][] {
 
-        let functionByLevel: number[][] = [];
+        let functionByLevel: number[][][] = []; // each position represent all functions of a certain object in that level. Each coordinate has a list of timesteps
 
         if(level == LevelType.COORDINATES){
             throw Error("It is not possible to get abstract data from COORDINATES level in the building layer");
@@ -519,30 +530,63 @@ export class BuildingsLayer extends Layer {
 
         if(level == LevelType.COORDINATES3D){
 
-            let functionValues = this._mesh.getFunctionVBO(knotId)[0].map(x => [x]) // TODO: give support to more then one timestamps
+            let functions = this._mesh.getFunctionVBO(knotId)
 
-            functionByLevel = functionValues; 
+            for(let i = 0; i < functions[0].length; i++){ // for each object 
+                functionByLevel.push([[]]);
+
+                for(let k = 0; k < functions.length; k++){ // for each timestep
+                    functionByLevel[functionByLevel.length-1][0].push(functions[k][i]) // there is only one coordinate in each object
+                }
+            }
+
+            // let functionValues = this._mesh.getFunctionVBO(knotId)[0].map(x => [x]) // TODO: give support to more then one timestamps
+
+            // functionByLevel = functionValues; 
         }
 
         if(level == LevelType.OBJECTS){
 
-            let functionValues = this._mesh.getFunctionVBO(knotId)[0];
+            // let functions = this._mesh.getFunctionVBO(knotId)[0];
+
+            // let readFunctions = 0;
+            
+            // let coordsPerComp = this._mesh.getCoordsPerComp();            
+
+            // for(const numCoords of coordsPerComp){
+            //     let groupedFunctions = [];
+
+            //     for(let i = 0; i < numCoords; i++){
+            //         groupedFunctions.push(functions[i+readFunctions]);
+            //     }
+
+            //     readFunctions += numCoords;
+            //     functionByLevel.push(groupedFunctions);
+            // }
+
+            let functions = this._mesh.getFunctionVBO(knotId);
 
             let readFunctions = 0;
             
             let coordsPerComp = this._mesh.getCoordsPerComp();            
 
-            for(const numCoords of coordsPerComp){
-                let groupedFunctions = [];
+            for(const numCoords of coordsPerComp){ // for each object
+
+                let groupedFunctions: number[][] = []; // store coordinates of object
 
                 for(let i = 0; i < numCoords; i++){
-                    groupedFunctions.push(functionValues[i+readFunctions]);
+
+                    groupedFunctions.push([]);
+
+                    for(let k = 0; k < functions.length; k++){
+                        groupedFunctions[groupedFunctions.length-1].push(functions[k][i+readFunctions]);
+                    }
                 }
 
                 readFunctions += numCoords;
+
                 functionByLevel.push(groupedFunctions);
             }
-
         }
 
         return functionByLevel;  

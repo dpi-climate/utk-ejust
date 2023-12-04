@@ -152,7 +152,7 @@ export interface IJoinedJson {
 
 export interface IJoinedObjects {
     joinedLayerIndex: number; // index pointing to a IJoinedLayer in ILayerData.joinedLayers
-    inValues?: number[]; // used if the linked layer is an abstract layer
+    inValues?: number[] | number[][]; // used if the linked layer is an abstract layer
     inIds?: number[][]; // used if the other layer is a physical layer
 }
 

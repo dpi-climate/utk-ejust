@@ -57,7 +57,7 @@ export class LinesLayer extends Layer {
         }
     }
 
-    directAddMeshFunction(functionValues: number[], knotId: string): void{
+    directAddMeshFunction(functionValues: number[][], knotId: string): void{
         let distributedValues = this.distributeFunctionValues(functionValues);
 
         this._mesh.loadFunctionData(distributedValues, knotId);
@@ -70,7 +70,7 @@ export class LinesLayer extends Layer {
         }
     }
 
-    distributeFunctionValues(functionValues: number[] | null): number[] | null{
+    distributeFunctionValues(functionValues: number[][] | null): number[][] | null{
         return functionValues;
     }
 
@@ -164,8 +164,8 @@ export class LinesLayer extends Layer {
         return coordByLevel;
     }
 
-    getFunctionByLevel(level: LevelType, knotId: string): number[][] {
-        let functionByLevel: number[][] = [];
+    getFunctionByLevel(level: LevelType, knotId: string): number[][][] {
+        let functionByLevel: number[][][] = [];
 
         if(level == LevelType.COORDINATES3D){
             throw Error("It is not possible to get abstract data from COORDINATES3D level in the line layer");;            
@@ -173,31 +173,43 @@ export class LinesLayer extends Layer {
 
         if(level == LevelType.COORDINATES){
 
-            let functionValues = this._mesh.getFunctionVBO(knotId)[0].map(x => [x])  // TODO: give support to more then one timestamps
+            let functions = this._mesh.getFunctionVBO(knotId)
 
-            functionByLevel = functionValues; 
+            for(let i = 0; i < functions[0].length; i++){ // for each object 
+                functionByLevel.push([[]]);
+
+                for(let k = 0; k < functions.length; k++){ // for each timestep
+                    functionByLevel[functionByLevel.length-1][0].push(functions[k][i]) // there is only one coordinate in each object
+                }
+            }
 
         }
 
         if(level == LevelType.OBJECTS){
 
-            let functionValues = this._mesh.getFunctionVBO(knotId)[0];
+            let functions = this._mesh.getFunctionVBO(knotId);
 
             let readFunctions = 0;
             
-            let coordsPerComp = this._mesh.getCoordsPerComp();
+            let coordsPerComp = this._mesh.getCoordsPerComp();            
 
-            for(const numCoords of coordsPerComp){
-                let groupedFunctions = [];
+            for(const numCoords of coordsPerComp){ // for each object
+
+                let groupedFunctions: number[][] = []; // store coordinates of object
 
                 for(let i = 0; i < numCoords; i++){
-                    groupedFunctions.push(functionValues[i+readFunctions]);
+
+                    groupedFunctions.push([]);
+
+                    for(let k = 0; k < functions.length; k++){
+                        groupedFunctions[groupedFunctions.length-1].push(functions[k][i+readFunctions]);
+                    }
                 }
 
                 readFunctions += numCoords;
+
                 functionByLevel.push(groupedFunctions);
             }
-
         }
 
         return functionByLevel;  

@@ -31,7 +31,7 @@ export class PlotManager {
     protected _filtered: any = {}; // which plots have filters active (plotNumber -> boolean)
     protected _updateStatusCallback: any;
     protected _setGrammarUpdateCallback: any;
-    protected _plotsKnotsData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[];
+    protected _plotsKnotsData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number[], highlighted: boolean, filteredIn: boolean, index: number}[]}[];
     protected _activeKnotPhysical: any = {}; // for each physicalId one knot is active at the time, according to users choice on the interface. (physicalId -> knotId)
     protected _setHighlightElementCallback: {function: any, arg: any};
     protected _plotsReferences: any[];
@@ -40,11 +40,10 @@ export class PlotManager {
     protected _id: string;
 
     /**
-     * 
      * @param viewData 
      * @param setGrammarUpdateCallback Function that sets the callback that will be called in the frontend to update the grammar
      */
-    constructor(id: string, plots: {id: string, knotsByPhysical: any, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[], plotsKnotsData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
+    constructor(id: string, plots: {id: string, knotsByPhysical: any, originalGrammar: IPlotGrammar, grammar: IPlotGrammar, position: IComponentPosition | undefined, componentId: string}[], plotsKnotsData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number[], highlighted: boolean, filteredIn: boolean, index: number}[]}[], setHighlightElementCallback: {function: any, arg: any}) {
         this._id = id;
         this._setHighlightElementCallback = setHighlightElementCallback;
         this._plotsReferences = new Array(plots.length);
@@ -75,7 +74,7 @@ export class PlotManager {
         this.updateGrammarPlotsData(this._plotsKnotsData);
     }
 
-    async updateGrammarPlotsData(plotsKnotsData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[]){
+    async updateGrammarPlotsData(plotsKnotsData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number[], highlighted: boolean, filteredIn: boolean, index: number}[]}[]){
         
         this._plotsKnotsData = plotsKnotsData;
 
