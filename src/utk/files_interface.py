@@ -359,6 +359,7 @@ class FilesInterface:
                 else:
                     join_left_gdf.loc[index, 'id_right'] = right_layer_gdf.loc[index, 'id']
         else:
+
             if(left_level != 'coordinates3d'): # if it is not tridimensional geopandas can be used
                 if(spatial_relation == 'nearest'):
                     if(max_distance == -1):
@@ -437,6 +438,15 @@ class FilesInterface:
         if('value_right' not in join_left_gdf.columns):
             join_left_gdf = join_left_gdf.rename(columns={'value': 'value_right'})
 
+        size_of_list = 0
+
+        if 'value_right' in join_left_gdf.columns:
+
+            for elem in join_left_gdf.iloc:
+                if(isinstance(elem['value_right'], list) and size_of_list == 0):
+                    size_of_list = len(elem['value_right'])
+                    break
+            
         for elem in join_left_gdf.iloc:
 
             if(not abstract):
@@ -456,7 +466,11 @@ class FilesInterface:
             for i in range(len(left_layer_joined_json['joinedObjects'][replace]['inValues'])):
 
                 if(left_layer_joined_json['joinedObjects'][replace]['inValues'][i] == None):
-                    left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = [0] # TODO: let the user define default value
+
+                    if(size_of_list == 0):
+                        left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = [0]
+                    else:
+                        left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = [[default_value] * size_of_list]
 
                 if(left_layer_joined_json['joinedObjects'][replace]['inValues'][i] != None):
 
