@@ -540,29 +540,9 @@ export class BuildingsLayer extends Layer {
                 }
             }
 
-            // let functionValues = this._mesh.getFunctionVBO(knotId)[0].map(x => [x]) // TODO: give support to more then one timestamps
-
-            // functionByLevel = functionValues; 
         }
 
         if(level == LevelType.OBJECTS){
-
-            // let functions = this._mesh.getFunctionVBO(knotId)[0];
-
-            // let readFunctions = 0;
-            
-            // let coordsPerComp = this._mesh.getCoordsPerComp();            
-
-            // for(const numCoords of coordsPerComp){
-            //     let groupedFunctions = [];
-
-            //     for(let i = 0; i < numCoords; i++){
-            //         groupedFunctions.push(functions[i+readFunctions]);
-            //     }
-
-            //     readFunctions += numCoords;
-            //     functionByLevel.push(groupedFunctions);
-            // }
 
             let functions = this._mesh.getFunctionVBO(knotId);
 

@@ -21,13 +21,11 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
     protected _coords:  number[] = [];
     protected _normals: number[] = [];
     protected _function: number[][] = [];
+    protected _currentTimestepFunction: number = 0;
     protected _indices: number[] = [];
     protected _discardFuncInterval: number[] = [];
     protected _coordsPerComp: number[] = [];
     // protected _varyOpByFunc: number[] = [];
-
-    // TODO remove
-    protected _functionToUse: number = 0;
 
     // Color map definition
     private _colorMap: string | null = null;
@@ -133,14 +131,14 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         this._function = mesh.getFunctionVBO(knot.id);
 
         if (this._domain.length === 0) {
-            this._domain = d3.extent(this._function[this._functionToUse])
+            this._domain = d3.extent(this._function[this._currentTimestepFunction])
         }
 
         // @ts-ignore
         let scale = d3_scale[this._scale]().domain(this._domain).range(this._range);
 
-        for(let i = 0; i < this._function[this._functionToUse].length; i++){
-            this._function[this._functionToUse][i] = scale(this._function[this._functionToUse][i]);
+        for(let i = 0; i < this._function[this._currentTimestepFunction].length; i++){
+            this._function[this._currentTimestepFunction][i] = scale(this._function[this._currentTimestepFunction][i]);
         }
 
     }
@@ -272,7 +270,7 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         // send data to gpu
         if (this._functionDirty) {
             glContext.bufferData(
-                glContext.ARRAY_BUFFER, new Float32Array(this._function[this._functionToUse]), glContext.STATIC_DRAW
+                glContext.ARRAY_BUFFER, new Float32Array(this._function[this._currentTimestepFunction]), glContext.STATIC_DRAW
             );
         }
 

@@ -26,6 +26,7 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
     protected _coords:  number[] = [];
     protected _normals: number[] = [];
     protected _function: number[][] = []; // function values that will be sent to the frag shader
+    protected _currentTimestepFunction: number = 0;
     protected _unchangedFunction: number[][] = []; // original function value for each coordinate
     protected _indices: number[] = [];
     protected _idsLength: number;
@@ -183,7 +184,6 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
             // @ts-ignore
             let scale = d3_scale[this._scale]().domain(this._domain).range(this._range);
 
-
             for(let i = 0; i < tempFunction[j].length; i++){
                 tempFunction[j][i] = scale(tempFunction[j][i]);
             }
@@ -328,7 +328,7 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
         // send data to gpu
         if (this._functionDirty) {
             glContext.bufferData(
-                glContext.ARRAY_BUFFER, new Float32Array(this._function[this._functionToUse]), glContext.STATIC_DRAW
+                glContext.ARRAY_BUFFER, new Float32Array(this._function[this._currentTimestepFunction]), glContext.STATIC_DRAW
             );
         }
 
@@ -1154,7 +1154,7 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
 
         // let shadowAvg = 0;
         // this._pickedCoordinates.forEach((coordinateIndex) => {
-        //     shadowAvg += this._function[this._functionToUse][coordinateIndex*2];
+        //     shadowAvg += this._function[this._currentTimestepFunction][coordinateIndex*2];
         // });
         // shadowAvg = shadowAvg/this._pickedCoordinates.length;
 

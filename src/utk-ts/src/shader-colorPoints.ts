@@ -19,6 +19,7 @@ export class ShaderColorPoints extends Shader {
     // Data to be rendered
     protected _coords:  number[] = [];
     protected _function: number[][] = [];
+    protected _currentTimestepFunction: number = 0;
 
     // Color map definition
     private _colorMap: string | null = null;
@@ -81,15 +82,15 @@ export class ShaderColorPoints extends Shader {
         this._function = mesh.getFunctionVBO(knot.id);
 
         if (this._domain.length === 0) {
-            this._domain = d3.extent(this._function[0])
+            this._domain = d3.extent(this._function[this._currentTimestepFunction])
         }
 
         // @ts-ignore
         let scale = d3_scale[this._scale]().domain(this._domain).range(this._range);
 
-        for(let i = 0; i < this._function[0].length; i++){
+        for(let i = 0; i < this._function[this._currentTimestepFunction].length; i++){
             // this._function[0][i] = (this._function[0][i] - minFuncValue)/(maxFuncValue - minFuncValue);
-            this._function[0][i] = scale(this._function[0][i]);
+            this._function[this._currentTimestepFunction][i] = scale(this._function[this._currentTimestepFunction][i]);
         }
     }
 
@@ -188,7 +189,7 @@ export class ShaderColorPoints extends Shader {
         // send data to gpu
         if (this._functionDirty) {
             glContext.bufferData(
-                glContext.ARRAY_BUFFER, new Float32Array(this._function[0]), glContext.STATIC_DRAW
+                glContext.ARRAY_BUFFER, new Float32Array(this._function[this._currentTimestepFunction]), glContext.STATIC_DRAW
             );
         }
 

@@ -87,29 +87,32 @@ export class PlotManager {
 
         let processedKnotData: any = {};
 
-        for(let i = 0; i < this._plotsKnotsData.length; i++){
+        for(let i = 0; i < this._plotsKnotsData.length; i++){ 
             let knotData = this._plotsKnotsData[i];
 
             processedKnotData[knotData.knotId] = {'values': []}
 
-            for(let j = 0; j < knotData.elements.length; j++){
+            for(let j = 0; j < knotData.elements.length; j++){ // for each physical object
                 let element = knotData.elements[j];
 
-                let value: any = {};
+                for(let k = 0; k < element.abstract.length; k++){
+                    let value: any = {};
 
-                value[knotData.knotId+"_index"] = element.index;
-                value[knotData.knotId+"_abstract"] = element.abstract;
-                value[knotData.knotId+"_highlight"] = element.highlighted;
-                value[knotData.knotId+"_filteredIn"] = element.filteredIn;
+                    value[knotData.knotId+"_index"] = element.index;
+                    value[knotData.knotId+"_abstract"] = element.abstract[k];
+                    value[knotData.knotId+"_timestep"] = k;
+                    value[knotData.knotId+"_highlight"] = element.highlighted;
+                    value[knotData.knotId+"_filteredIn"] = element.filteredIn;
+    
+                    value[knotData.physicalId+"_index"] = element.index;
+                    value[knotData.physicalId+"_abstract"] = element.abstract[0];
+                    value[knotData.physicalId+"_highlight"] = element.highlighted;
+                    value[knotData.physicalId+"_filteredIn"] = element.filteredIn;
 
-                value[knotData.physicalId+"_index"] = element.index;
-                value[knotData.physicalId+"_abstract"] = element.abstract;
-                value[knotData.physicalId+"_highlight"] = element.highlighted;
-                value[knotData.physicalId+"_filteredIn"] = element.filteredIn;
+                    processedKnotData[knotData.knotId].values.push(value);
+                }
 
                 this._activeKnotPhysical[knotData.physicalId] = knotData.knotId;
-
-                processedKnotData[knotData.knotId].values.push(value);
             }
             
             this._updateStatusCallback("updateActiveKnotPhysical", this._activeKnotPhysical);
@@ -384,8 +387,9 @@ export class PlotManager {
 
                         value[physicalId+"_index"] = value[knotId+"_index"];
                         value[physicalId+"_abstract"] = value[knotId+"_abstract"];
-                        value[physicalId+"_highlight"] = value[knotId+"_abstract"];
-                        value[physicalId+"_filteredIn"] = value[knotId+"_abstract"];
+                        value[physicalId+"_timestep"] = value[knotId+"_timestep"];
+                        value[physicalId+"_highlight"] = value[knotId+"_highlight"];
+                        value[physicalId+"_filteredIn"] = value[knotId+"_filteredIn"];
                     }
                 }
             }
@@ -674,7 +678,7 @@ export class PlotManager {
 
     }
 
-    getAbstractValues(functionIndex: number, knotsId: string[], plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number, highlighted: boolean, index: number}[]}[]){
+    getAbstractValues(functionIndex: number, knotsId: string[], plotsKnotsData: {knotId: string, elements: {coordinates: number[], abstract: number[], highlighted: boolean, index: number}[]}[]){
         let abstractValues: any = {};
         
         for(const knotId of knotsId){
@@ -683,7 +687,7 @@ export class PlotManager {
                     let readCoords = 0;
                     for(let i = 0; i < knotData.elements.length; i++){
                         if(functionIndex >= readCoords && functionIndex < (knotData.elements[i].coordinates.length/3)+readCoords){
-                            abstractValues[knotId] = knotData.elements[i].abstract;
+                            abstractValues[knotId] = knotData.elements[i].abstract[0]; // TODO: support multiple timesteps
                             break;
                         }
                         readCoords += knotData.elements[i].coordinates.length/3;
