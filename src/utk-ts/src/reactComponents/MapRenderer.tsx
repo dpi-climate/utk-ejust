@@ -13,7 +13,7 @@ type MapRendererProps = {
   y: number,
   width: number,
   height: number,
-  layersIds: any,
+  listLayers: any,
   knotVisibility: any,
   genericPlots: any,
   togglePlots: any,
@@ -22,7 +22,7 @@ type MapRendererProps = {
   editGrammar: any
 }
 
-export const MapRendererContainer = ({obj, viewId, mapWidgets, x, y, width, height, layersIds, knotVisibility, genericPlots, togglePlots, inputBarId, componentId, editGrammar}:MapRendererProps) =>{
+export const MapRendererContainer = ({obj, viewId, mapWidgets, x, y, width, height, listLayers, knotVisibility, genericPlots, togglePlots, inputBarId, componentId, editGrammar}:MapRendererProps) =>{
 
     return(
       <React.Fragment>
@@ -41,7 +41,7 @@ export const MapRendererContainer = ({obj, viewId, mapWidgets, x, y, width, heig
           y={y}
           mapWidth={width}
           mapHeight={height}
-          layersIds={layersIds}
+          listLayers={listLayers}
           knotVisibility={knotVisibility}
           inputBarId={inputBarId}
           genericPlots={genericPlots}

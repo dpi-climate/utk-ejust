@@ -32,6 +32,7 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
     private _colorMapReverse: boolean = false;
     private _range: number[];
     private _domain: number[];
+    private _providedDomain: number[];
     private _scale: string;
 
     // Data loaction on GPU
@@ -81,6 +82,7 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         this._colorMap = colorMap;
         this._range = range;
         this._domain = domain;
+        this._providedDomain = domain;
         this._scale = scale;
 
         // creathe dhe shader variables    
@@ -124,14 +126,18 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         this._filteredDirty = true;
     }
 
-    public updateShaderData(mesh: Mesh, knot: IKnot): void {
+    public normalizeFunction(mesh: Mesh, knot: IKnot): void {
+
+        this._function = mesh.getFunctionVBO(knot.id);
         this._currentKnot = knot;
         this._functionDirty = true;
         this._colorOrPickedDirty = true;
-        this._function = mesh.getFunctionVBO(knot.id);
 
-        if (this._domain.length === 0) {
+
+        if (this._providedDomain.length === 0) {
             this._domain = d3.extent(this._function[this._currentTimestepFunction])
+        }else{
+            this._domain = this._providedDomain;
         }
 
         // @ts-ignore
@@ -140,7 +146,15 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         for(let i = 0; i < this._function[this._currentTimestepFunction].length; i++){
             this._function[this._currentTimestepFunction][i] = scale(this._function[this._currentTimestepFunction][i]);
         }
+    }
 
+    public updateCurrentTimestepFunction(mesh: Mesh, knot: IKnot, currentTimestepFunction: number): void {
+        this._currentTimestepFunction = currentTimestepFunction;
+        this.normalizeFunction(mesh, knot);
+    }
+
+    public updateShaderData(mesh: Mesh, knot: IKnot): void {
+        this.normalizeFunction(mesh, knot);
     }
 
     public updateShaderUniforms(data: any) {

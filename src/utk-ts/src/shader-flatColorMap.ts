@@ -25,6 +25,7 @@ export class ShaderFlatColorMap extends Shader {
     private _colorMap: string | null = null;
     private _range: number[];
     private _domain: number[];
+    private _providedDomain: number[];
     private _scale: string;
 
     // Data loaction on GPU
@@ -62,6 +63,7 @@ export class ShaderFlatColorMap extends Shader {
         this._colorMap = colorMap;
         this._range = range;
         this._domain = domain;
+        this._providedDomain = domain;
         this._scale = scale;
 
         // creathe dhe shader variables    
@@ -83,13 +85,13 @@ export class ShaderFlatColorMap extends Shader {
         }
     }
 
-    public updateShaderData(mesh: Mesh, knot: IKnot): void {
-        this._currentKnot = knot;
-        this._functionDirty = true;
+    public normalizeFunction(mesh: Mesh, knot: IKnot): void {
         this._function = mesh.getFunctionVBO(knot.id);
+        this._currentKnot = knot;
 
         let maxFuncValue = null;
         let minFuncValue = null;
+        this._functionDirty = true;
 
         for(let i = 0; i < this._function[this._currentTimestepFunction].length; i++){
 
@@ -118,8 +120,11 @@ export class ShaderFlatColorMap extends Shader {
         //         this._function[this._currentTimestepFunction][i] = (this._function[this._currentTimestepFunction][i] - minFuncValue)/(maxFuncValue - minFuncValue);
         //     }
         // }
-        if (this._domain.length === 0) {
-            this._domain = d3.extent(this._function[this._currentTimestepFunction])
+
+        if (this._providedDomain.length === 0) {
+            this._domain = d3.extent(this._function[this._currentTimestepFunction]);
+        }else{
+            this._domain = this._providedDomain;
         }
 
         // @ts-ignore
@@ -128,7 +133,11 @@ export class ShaderFlatColorMap extends Shader {
         for(let i = 0; i < this._function[this._currentTimestepFunction].length; i++){
             this._function[this._currentTimestepFunction][i] = scale(this._function[this._currentTimestepFunction][i]);
         }
+    }
 
+    public updateShaderData(mesh: Mesh, knot: IKnot, currentTimestepFunction: number = 0): void {
+        this._currentTimestepFunction = currentTimestepFunction;
+        this.normalizeFunction(mesh, knot);
     }
 
     public updateShaderUniforms(data: any) {

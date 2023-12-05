@@ -190,7 +190,7 @@ class MapView {
         //     }
         // }
         
-        // this._updateStatusCallback("layersIds", knotsGroups);
+        // this._updateStatusCallback("listLayers", knotsGroups);
 
         this.initPlotManager();
 

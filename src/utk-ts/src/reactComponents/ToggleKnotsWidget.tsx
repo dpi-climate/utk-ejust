@@ -331,7 +331,6 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
                         //     </Row>
                         // </React.Fragment>
                     // ))
-                    
                     grammarDefinition.args != undefined && grammarDefinition.args.categories != undefined ? grammarDefinition.args.categories.map((category: ICategory) => (
                         getCategoryHtml(category, listLayers, knotVisibility)
                     )) : <></>
