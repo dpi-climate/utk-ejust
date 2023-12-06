@@ -60,7 +60,7 @@ export class ShaderFlatColor extends Shader {
         }
     }
 
-    public updateShaderData(mesh: Mesh, knot: IKnot): void {
+    public updateShaderData(mesh: Mesh, knot: IKnot, currentTimestepFunction: number = 0): void {
         return;
     }
 

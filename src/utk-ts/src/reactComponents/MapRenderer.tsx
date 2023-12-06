@@ -19,10 +19,11 @@ type MapRendererProps = {
   togglePlots: any,
   inputBarId: string,
   componentId: string,
-  editGrammar: any
+  editGrammar: any,
+  broadcastMessage: any
 }
 
-export const MapRendererContainer = ({obj, viewId, mapWidgets, x, y, width, height, listLayers, knotVisibility, genericPlots, togglePlots, inputBarId, componentId, editGrammar}:MapRendererProps) =>{
+export const MapRendererContainer = ({obj, viewId, mapWidgets, x, y, width, height, listLayers, knotVisibility, genericPlots, togglePlots, inputBarId, componentId, editGrammar, broadcastMessage}:MapRendererProps) =>{
 
     return(
       <React.Fragment>
@@ -48,6 +49,7 @@ export const MapRendererContainer = ({obj, viewId, mapWidgets, x, y, width, heig
           togglePlots={togglePlots}
           componentId={componentId}
           editGrammar={editGrammar}
+          broadcastMessage={broadcastMessage}
         />
 
         {/* <div style={{position: "absolute", height: "160px", bottom: 0, width: (divWidth/12)*window.innerWidth, backgroundColor: "rgba(200,200,200,0.3)", padding: 0}}>

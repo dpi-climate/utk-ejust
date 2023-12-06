@@ -40,7 +40,7 @@ export class InteractionChannel {
                 }
             }
 
-            GrammarMethods.applyGrammar(url, grammar, "InteractionChannel", () => {});
+            // GrammarMethods.applyGrammar(url, grammar, "InteractionChannel", () => {});
         }
         
     }

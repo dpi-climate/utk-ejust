@@ -60,11 +60,15 @@ export class Knot {
         return this._knotSpecification;
     }
 
+    get thematicData(){
+        return this._thematicData;
+    }
+
     set visible(visible: boolean){
         this._visible = visible;
     }
 
-    set thematicData(thematicData: number[][]){
+    set thematicData(thematicData: number[][] | null){
         this._thematicData = thematicData;
     }
 
@@ -77,6 +81,12 @@ export class Knot {
 
         this._physicalLayer.camera = camera;
         this._physicalLayer.render(glContext, this._shaders[viewId]);
+    }
+
+    updateTimestep(timestep: number, viewId: number): void {
+        for(const shader of this._shaders[viewId]){
+            shader.updateShaderData(this._physicalLayer.mesh, this._knotSpecification, timestep);
+        }
     }
 
     loadShaders(glContext: WebGL2RenderingContext, centroid:number[] | Float32Array = [0,0,0], viewId: number): void {

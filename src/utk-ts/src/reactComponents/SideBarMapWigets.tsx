@@ -21,11 +21,12 @@ type SideBarMapWidgetsProps = {
     togglePlots: any,
     mapWidgets: {type: WidgetType, obj: any, grammarDefinition: IGenericWidget | undefined}[] // each viewObj has a an object representing its logic
     componentId: string,
-    editGrammar: any
+    editGrammar: any,
+    broadcastMessage: any
 }
 
 export var GrammarPanelVisibility = true;
-export const SideBarMapWidgets = ({x, y, mapWidth, mapHeight, listLayers, knotVisibility, inputBarId, genericPlots, togglePlots, mapWidgets, componentId, editGrammar}:SideBarMapWidgetsProps) =>{
+export const SideBarMapWidgets = ({x, y, mapWidth, mapHeight, listLayers, knotVisibility, inputBarId, genericPlots, togglePlots, mapWidgets, componentId, editGrammar, broadcastMessage}:SideBarMapWidgetsProps) =>{
 
     const handleClickLayers = (e: any) => {
 
@@ -89,6 +90,7 @@ export const SideBarMapWidgets = ({x, y, mapWidth, mapHeight, listLayers, knotVi
                         knotVisibility = {knotVisibility}
                         viewId = {"toggle_knot_"+index}
                         grammarDefinition = {component.grammarDefinition}
+                        broadcastMessage = {broadcastMessage}
                       />
                     </div>
                   </React.Fragment>

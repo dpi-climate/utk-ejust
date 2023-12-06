@@ -11,9 +11,10 @@ type ToggleKnotsWidgetProps = {
     knotVisibility: any
     viewId: string
     grammarDefinition: any
+    broadcastMessage: any
 }
 
-export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, grammarDefinition}:ToggleKnotsWidgetProps) =>{
+export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, grammarDefinition, broadcastMessage}:ToggleKnotsWidgetProps) =>{
    
     // Animation ====================================================
 
@@ -123,7 +124,7 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
 
     const groupVisibility = (groupedList:any, visibilityList: any, id: string) => {
         for(const layer of groupedList[id]){
-            if(visibilityList[layer]){
+            if(visibilityList[layer.id]){
                 return true;
             }
         }
@@ -137,25 +138,25 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
             let activated = false;
     
             for(const layer of groupedList[id]){ // deactivate all activated sub knots
-                if(visibilityList[layer]){
-                    obj.toggleKnot(layer, false);
+                if(visibilityList[layer.id]){
+                    obj.toggleKnot(layer.id, false);
                     activated = true;
                 }
             }
     
             if(!activated){ // activate the first sub knot if no sub knot was activated
-                obj.toggleKnot(groupedList[id][0], true);
+                obj.toggleKnot(groupedList[id][0].id, true);
             }
         }else{
             for(let i = 0; i < groupedList[id].length; i++){
                 let layer = groupedList[id][i]
                 if(value){
                     if(i == 0)
-                        obj.toggleKnot(layer, true);
+                        obj.toggleKnot(layer.id, true);
                     else
-                        obj.toggleKnot(layer, false);
+                        obj.toggleKnot(layer.id, false);
                 }else{
-                    obj.toggleKnot(layer, false);
+                    obj.toggleKnot(layer.id, false);
                 }
             }
         }
@@ -168,6 +169,22 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
 
             let mark = {
                 value: Math.round((i/layers.length)*100),
+                label: ''+i
+            };
+
+            marks.push(mark);
+        }
+
+        return marks;
+    }
+
+    const getMarksTimesteps = (layer: any) => {
+        let marks = [];
+        
+        for(let i = 0; i < layer.timesteps; i++){
+
+            let mark = {
+                value: Math.round((i/layer.timesteps)*100),
                 label: ''+i
             };
 
@@ -197,6 +214,10 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
         }
         
         setRange(newObj);
+    }
+
+    const handleChangeSlidesTimesteps = (e: any, layer: any, step: number) => {
+        broadcastMessage("", "updateTimestepKnot", {knotId: layer.id, timestep: Math.round(e.target.value/step), mapId: obj.viewId});
     }
 
     const [collapsedItems, setCollapsedItems] = useState<string[]>([]);
@@ -290,7 +311,21 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
                             {/* <Col md={3} style={{paddingLeft: 0}}>
                                 <Form.Control placeholder="FPS" type="text" onChange={(e) => {if(e.target.value != ''){setFps(parseInt(e.target.value))}}}/>
                             </Col> */}
-                    </Row></Col> : <></>
+                    </Row></Col> : listLayers[item][0].timesteps != undefined && listLayers[item][0].timesteps > 1 ?
+                        <Col>
+                        <Row style={{padding: 0}} className="align-items-center">
+                            <Col md={12}>
+                                <Slider
+                                    key={item+"_slider_timestep"}
+                                    defaultValue={0}
+                                    valueLabelDisplay="off"
+                                    step={Math.round((1/listLayers[item][0].timesteps)*100)}
+                                    marks = {getMarksTimesteps(listLayers[item][0])}
+                                    onChange={(e) => {handleChangeSlidesTimesteps(e, listLayers[item][0], Math.round((1/listLayers[item][0].timesteps)*100))}}
+                                    disabled = {!groupVisibility(listLayers, knotVisibility, item)}
+                                />
+                            </Col>
+                    </Row></Col>: <></>
                 }
             </Row>
         </React.Fragment>

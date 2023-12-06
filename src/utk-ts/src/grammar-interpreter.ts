@@ -404,19 +404,19 @@ class GrammarInterpreter {
                     knotsGroups[knotSpecification.group.group_name] = [{
                         id: knot.id,
                         position: knotSpecification.group.position,
-                        timesteps: knot.thematicData.length
+                        timesteps: knot.thematicData?.length
                     }];
                 }else{
                     knotsGroups[knotSpecification.group.group_name].push({
                         id: knot.id,
                         position: knotSpecification.group.position,
-                        timesteps: knot.thematicData.length
+                        timesteps: knot.thematicData?.length
                     });
                 }
             }else{
                 knotsGroups[knot.id] = [{
                     id: knot.id,
-                    timesteps: knot.thematicData.length
+                    timesteps: knot.thematicData?.length
                 }]; // group of single knot
             }
             

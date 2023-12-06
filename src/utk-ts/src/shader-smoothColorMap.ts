@@ -153,7 +153,7 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         this.normalizeFunction(mesh, knot);
     }
 
-    public updateShaderData(mesh: Mesh, knot: IKnot): void {
+    public updateShaderData(mesh: Mesh, knot: IKnot, currentTimestepFunction: number = 0): void {
         this.normalizeFunction(mesh, knot);
     }
 

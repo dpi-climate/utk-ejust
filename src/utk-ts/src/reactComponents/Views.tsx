@@ -305,6 +305,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
                     togglePlots={toggleAllPlots}
                     componentId={component.id}
                     editGrammar={setActiveGrammarAndType}
+                    broadcastMessage={broadcastMessage}
                   />
                 </div>
               </React.Fragment>
