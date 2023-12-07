@@ -52,7 +52,7 @@ export class ShaderFlatColorPoints extends Shader {
         this._coords = mesh.getCoordinatesVBO(centroid, viewId);
     }
 
-    public updateShaderData(mesh: Mesh, knot: IKnot): void {
+    public updateShaderData(mesh: Mesh, knot: IKnot, currentTimestepFunction: number = 0): void {
         return;
     }
 

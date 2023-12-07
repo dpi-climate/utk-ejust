@@ -403,16 +403,21 @@ class GrammarInterpreter {
                 if(!(knotSpecification.group.group_name in knotsGroups)){
                     knotsGroups[knotSpecification.group.group_name] = [{
                         id: knot.id,
-                        position: knotSpecification.group.position
+                        position: knotSpecification.group.position,
+                        timesteps: knot.thematicData?.length
                     }];
                 }else{
                     knotsGroups[knotSpecification.group.group_name].push({
                         id: knot.id,
-                        position: knotSpecification.group.position
+                        position: knotSpecification.group.position,
+                        timesteps: knot.thematicData?.length
                     });
                 }
             }else{
-                knotsGroups[knot.id] = [knot.id]; // group of single knot
+                knotsGroups[knot.id] = [{
+                    id: knot.id,
+                    timesteps: knot.thematicData?.length
+                }]; // group of single knot
             }
             
         }
@@ -428,7 +433,7 @@ class GrammarInterpreter {
             }
         }
         
-        updateStatus("layersIds", knotsGroups);
+        updateStatus("listLayers", knotsGroups);
 
         for(let i = 0; i < this._components_grammar.length; i++){
             if(this._components_grammar[i].grammar != undefined && this._components_grammar[i].grammar?.grammar_type == GrammarType.MAP){
@@ -842,7 +847,7 @@ class GrammarInterpreter {
             }
         }
 
-        let plotsKnotData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number, highlighted: boolean, filteredIn: boolean, index: number}[]}[] = [];
+        let plotsKnotData: {knotId: string, physicalId: string, allFilteredIn: boolean, elements: {coordinates: number[], abstract: number[], highlighted: boolean, filteredIn: boolean, index: number}[]}[] = [];
 
         for(const knotId of plotsKnots){
             for(const knot of this.getKnots()){
@@ -906,7 +911,7 @@ class GrammarInterpreter {
                             if(coordinates.length > 0){
                                 elements.push({
                                     coordinates: coordinates[i],
-                                    abstract: functionValues[i][0],
+                                    abstract: functionValues[i][0], // array with timesteps
                                     highlighted: highlighted[i],
                                     filteredIn: true,
                                     index: i
@@ -914,7 +919,7 @@ class GrammarInterpreter {
                             }else{
                                 elements.push({
                                     coordinates: [],
-                                    abstract: functionValues[i][0],
+                                    abstract: functionValues[i][0], // array with timesteps
                                     highlighted: highlighted[i],
                                     filteredIn: true,
                                     index: i

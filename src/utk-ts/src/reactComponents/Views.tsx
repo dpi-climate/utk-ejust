@@ -34,7 +34,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
   const [genericPlots, setGenericPlots] = useState<{id: number, knotsByPhysical: any, hidden: boolean, svgId: string, label: string, checked: boolean, edit: boolean, floating: boolean, position: IComponentPosition | undefined, componentId: string}[]>([]);
   const [knotVisibility, setKnotVisibility] = useState<any>({});
   const [currentPlotId, setCurrentPlotId] = useState(0);
-  const [layersIds, setLayersIds] = useState<any>({});
+  const [listLayers, setListLayers] = useState<any>({});
   const [activeGrammar, setActiveGrammar] = useState("grammar"); // store active component id
   const [activeGrammarType, setActiveGrammarType] = useState(GrammarType.MASTER); // type of active grammar
   const [activeKnotPhysical, setActiveKnotPhysical] = useState<any>({}); // object that, for each physical, stores the knotId of the activated knot
@@ -209,8 +209,8 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
       setSystemMessages(value);
     }else if(state == "genericPlots"){
       setGenericPlots(value);
-    }else if(state == "layersIds"){
-      setLayersIds(value);
+    }else if(state == "listLayers"){
+      setListLayers(value);
     }else if(state == "knotVisibility"){
       setKnotVisibility(value);
     }else if(state == "containerGenerator"){
@@ -298,13 +298,14 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
                     y={getTopLeft(component.position).top}
                     width={getSizes(component.position).width}
                     height={getSizes(component.position).height}
-                    layersIds={layersIds}
+                    listLayers={listLayers}
                     knotVisibility={knotVisibility}
                     inputBarId={inputBarId}
                     genericPlots={genericPlots}
                     togglePlots={toggleAllPlots}
                     componentId={component.id}
                     editGrammar={setActiveGrammarAndType}
+                    broadcastMessage={broadcastMessage}
                   />
                 </div>
               </React.Fragment>

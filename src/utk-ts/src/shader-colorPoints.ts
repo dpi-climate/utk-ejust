@@ -19,11 +19,13 @@ export class ShaderColorPoints extends Shader {
     // Data to be rendered
     protected _coords:  number[] = [];
     protected _function: number[][] = [];
+    protected _currentTimestepFunction: number = 0;
 
     // Color map definition
     private _colorMap: string | null = null;
     private _range: number[];
     private _domain: number[];
+    private _providedDomain: number[];
     private _scale: string;
 
     // Global color used on the layer
@@ -62,6 +64,7 @@ export class ShaderColorPoints extends Shader {
         this._colorMap = colorMap;
         this._range = range;
         this._domain = domain;
+        this._providedDomain = domain;
         this._scale = scale;
 
         // creathe dhe shader variables
@@ -75,22 +78,27 @@ export class ShaderColorPoints extends Shader {
         this._coords = mesh.getCoordinatesVBO(centroid, viewId);
     }
 
-    public updateShaderData(mesh: Mesh, knot: IKnot): void {
-        this._currentKnot = knot;
-        this._functionDirty = true;
+    public normalizeFunction(mesh: Mesh, knot: IKnot): void {
         this._function = mesh.getFunctionVBO(knot.id);
+        this._functionDirty = true;
 
-        if (this._domain.length === 0) {
-            this._domain = d3.extent(this._function[0])
+        if (this._providedDomain.length === 0) {
+            this._domain = d3.extent(this._function[this._currentTimestepFunction]);
+        }else{
+            this._domain = this._providedDomain;
         }
 
         // @ts-ignore
         let scale = d3_scale[this._scale]().domain(this._domain).range(this._range);
 
-        for(let i = 0; i < this._function[0].length; i++){
-            // this._function[0][i] = (this._function[0][i] - minFuncValue)/(maxFuncValue - minFuncValue);
-            this._function[0][i] = scale(this._function[0][i]);
+        for(let i = 0; i < this._function[this._currentTimestepFunction].length; i++){
+            this._function[this._currentTimestepFunction][i] = scale(this._function[this._currentTimestepFunction][i]);
         }
+    }
+
+    public updateShaderData(mesh: Mesh, knot: IKnot, currentTimestepFunction: number = 0): void {
+        this._currentTimestepFunction = currentTimestepFunction;
+        this.normalizeFunction(mesh, knot);
     }
 
     public updateShaderUniforms(data: any) {
@@ -188,7 +196,7 @@ export class ShaderColorPoints extends Shader {
         // send data to gpu
         if (this._functionDirty) {
             glContext.bufferData(
-                glContext.ARRAY_BUFFER, new Float32Array(this._function[0]), glContext.STATIC_DRAW
+                glContext.ARRAY_BUFFER, new Float32Array(this._function[this._currentTimestepFunction]), glContext.STATIC_DRAW
             );
         }
 

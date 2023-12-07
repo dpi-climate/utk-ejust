@@ -128,13 +128,13 @@ export class LayerManager {
         return null;
     }
 
-    getAbstractDataFromLink(linkScheme: ILinkDescription[]): number[] | null{
+    getAbstractDataFromLink(linkScheme: ILinkDescription[]): number[][] | null{
         
         if(linkScheme.length < 1){
             throw new Error("Can not get abstract data from link. Link scheme must have at least one element");
         }
 
-        let functionValues: number[] | null = null; // always in the coordinate level
+        let functionValues: number[][] | null = null; // always in the coordinate level. Can contain multiple timestaps.
 
         if(linkScheme[0].abstract == false){
             throw new Error("The first link in the link scheme must be between an abstract and physical layer");
@@ -158,20 +158,41 @@ export class LayerManager {
                 if(joinedObjects != null && joinedObjects.inValues != undefined){
                     functionValues = [];
 
+                    functionValues.push([]);
+
                     if(linkScheme[i].out.level == LevelType.COORDINATES || linkScheme[i].out.level == LevelType.COORDINATES3D){
                         for(const value of joinedObjects.inValues){
-                            functionValues.push(value);
+                            if(Array.isArray(value)){ // if value is array we are dealing with multiple timesteps
+                                for(let k = 0; k < value.length; k++){
+                                    if(k >= functionValues.length){
+                                        functionValues.push([]);
+                                    }
+                                    functionValues[k].push(value[k]);
+                                }
+                            }else{ // only one timestep
+                                functionValues[0].push(value);
+                            }
                         }
                     }else if(linkScheme[i].out.level == LevelType.OBJECTS){ // distributing the values to the coordinates of the object
-
                         let coordsPerComp = left_side.mesh.getCoordsPerComp();
-
-                        let distributedValues = [];
+                        let distributedValues: number[][] = [];
+                        distributedValues.push([]);
 
                         for(let j = 0; j < joinedObjects.inValues.length; j++){
 
-                            for(let k = 0; k < coordsPerComp[j]; k++){
-                                distributedValues.push(joinedObjects.inValues[j]);
+                            let value = joinedObjects.inValues[j];
+
+                            if(Array.isArray(value)){
+                                for(let l = 0; l < value.length; l++){
+                                    if(l >= distributedValues.length){
+                                        distributedValues.push([]);
+                                    }
+                                    for(let k = 0; k < coordsPerComp[j]; k++){
+                                        distributedValues[l].push(value[l]);
+                                    }
+                                }
+                            }else{
+                                distributedValues[0].push(value);
                             }
                         }
 
@@ -188,7 +209,8 @@ export class LayerManager {
 
                 // inner operation (changing geometry levels inside the same layer)
                 if(linkScheme[i].spatial_relation == SpatialRelationType.INNERAGG && functionValues != null && linkScheme[i].in != undefined && linkScheme[i].out.level != undefined){
-                    functionValues = left_side.innerAggFunc(functionValues, (<{name: string, level: LevelType}>linkScheme[i].in).level, <LevelType>linkScheme[i].out.level, <OperationType>linkScheme[i].operation);
+                    // functionValues = left_side.innerAggFunc(functionValues, (<{name: string, level: LevelType}>linkScheme[i].in).level, <LevelType>linkScheme[i].out.level, <OperationType>linkScheme[i].operation);
+                    throw new Error("INNERAGG is a deprecated spatial operation")
                 }else if(functionValues != null && linkScheme[i].in != undefined && linkScheme[i].out.level != undefined){ // sjoin with another physical layer
                     
                     if((<{name: string, level: string}>linkScheme[i].in).name == linkScheme[i].out.name){
@@ -203,7 +225,7 @@ export class LayerManager {
 
                     if(joinedObjects != null && joinedObjects.inIds != undefined && linkScheme[i].in != undefined){
 
-                        let joinedFunctionValues = [];
+                        let joinedFunctionValues: any[] = []; // each position stores one timestep
 
                         let right_side = this.searchByLayerId((<{name: string, level: string}>linkScheme[i].in).name);
 
@@ -215,66 +237,96 @@ export class LayerManager {
                             let idList = joinedObjects.inIds[j];
 
                             if(idList == null){
-                                joinedFunctionValues.push([null]);
-                            }else{
-
-                                let idsFuncValues: number[] = [];
-
-                                for(const id of idList){
-                                    let functionIndex = right_side.getFunctionValueIndexOfId(id, (<{name: string, level: LevelType}>linkScheme[i].in).level);
-                                    
-                                    if(functionIndex == null){
-                                        throw Error("Function index not found");
+                                for(let k = 0; k < functionValues.length; k ++){
+                                    if(k >= joinedFunctionValues.length){
+                                        joinedFunctionValues.push([]);
                                     }
 
-                                    idsFuncValues.push(functionValues[functionIndex]);
-
+                                    joinedFunctionValues[k].push([null]);
                                 }
 
-                                joinedFunctionValues.push(idsFuncValues);
-                            }
+                            }else{
 
+                                let idsFuncValues: number[][] = []; // each position stores a timestep
+
+                                for(const id of idList){
+                                    for(let k = 0; k < functionValues.length; k ++){
+                                        let functionIndex = right_side.getFunctionValueIndexOfId(id, (<{name: string, level: LevelType}>linkScheme[i].in).level);
+                                        
+                                        if(functionIndex == null){
+                                            throw Error("Function index not found");
+                                        }
+
+                                        if(k >= idsFuncValues.length){
+                                            idsFuncValues.push([]);
+                                        }
+
+                                        idsFuncValues[k].push(functionValues[k][functionIndex]);
+                                    }
+                                }
+
+                                for(let k = 0; k < functionValues.length; k ++){
+                                    if(k >= joinedFunctionValues.length){
+                                        joinedFunctionValues.push([]);
+                                    }
+
+                                    joinedFunctionValues[k].push(idsFuncValues[k]);
+                                }
+                            }
                         }
 
-                        let aggregatedValues = [];
+                        let aggregatedValues: number[][] = [];
 
                         // aggregate values
-                        for(let j = 0; j < joinedFunctionValues.length; j++){
-                            if(joinedFunctionValues[j][0] != null){
+                        for(let k = 0; k < joinedFunctionValues.length; k++){ // iterating over timesteps
 
-                                if(linkScheme[i].operation == OperationType.MAX){
-                                    aggregatedValues.push(Math.max(...<number[]>joinedFunctionValues[j]));
-                                }else if(linkScheme[i].operation == OperationType.MIN){
-                                    aggregatedValues.push(Math.min(...<number[]>joinedFunctionValues[j]));
-                                }else if(linkScheme[i].operation == OperationType.AVG){
-                                    let sum = (<number[]>joinedFunctionValues[j]).reduce((partialSum: number, value: number) => partialSum + value, 0);
-                                    aggregatedValues.push(sum/joinedFunctionValues[j].length);
-                                }else if(linkScheme[i].operation == OperationType.SUM){
-                                    aggregatedValues.push((<number[]>joinedFunctionValues[j]).reduce((partialSum: number, value: number) => partialSum + value, 0));
-                                }else if(linkScheme[i].operation == OperationType.COUNT){
-                                    aggregatedValues.push((<number[]>joinedFunctionValues[j]).length);
-                                }else if(linkScheme[i].operation == OperationType.NONE){
-                                    throw new Error('NONE operation cannot be used with when linking two physical layers');
+                            if(k >= aggregatedValues.length){
+                                aggregatedValues.push([]);
+                            }
+
+                            let currentJoinedFunctionValues = joinedFunctionValues[k];
+
+                            for(let j = 0; j < currentJoinedFunctionValues.length; j++){
+                                if(currentJoinedFunctionValues[j][0] != null){
+    
+                                    if(linkScheme[i].operation == OperationType.MAX){
+                                        aggregatedValues[k].push(Math.max(...<number[]>currentJoinedFunctionValues[j]));
+                                    }else if(linkScheme[i].operation == OperationType.MIN){
+                                        aggregatedValues[k].push(Math.min(...<number[]>currentJoinedFunctionValues[j]));
+                                    }else if(linkScheme[i].operation == OperationType.AVG){
+                                        let sum = (<number[]>currentJoinedFunctionValues[j]).reduce((partialSum: number, value: number) => partialSum + value, 0);
+                                        aggregatedValues[k].push(sum/currentJoinedFunctionValues[j].length);
+                                    }else if(linkScheme[i].operation == OperationType.SUM){
+                                        aggregatedValues[k].push((<number[]>currentJoinedFunctionValues[j]).reduce((partialSum: number, value: number) => partialSum + value, 0));
+                                    }else if(linkScheme[i].operation == OperationType.COUNT){
+                                        aggregatedValues[k].push((<number[]>currentJoinedFunctionValues[j]).length);
+                                    }else if(linkScheme[i].operation == OperationType.NONE){
+                                        throw new Error('NONE operation cannot be used with when linking two physical layers');
+                                    }
+                                }else{
+                                    aggregatedValues[k].push(0); // TODO: which value to use with null joins?
                                 }
-                            }else{
-                                aggregatedValues.push(0); // TODO: which value to use with null joins?
                             }
                         }
-
-                        let distributedValues = [];
-
-                        let groupedDistributedValues: number[][] = [];
+                        
+                        let distributedValues: number[][] = [];
 
                         if(linkScheme[i].out.level == LevelType.COORDINATES || linkScheme[i].out.level == LevelType.COORDINATES3D){
                             distributedValues = aggregatedValues;
                         }else if(linkScheme[i].out.level == LevelType.OBJECTS){
                             let coordsPerComp = left_side.mesh.getCoordsPerComp();
 
-                            for(let j = 0; j < aggregatedValues.length; j++){
-                                groupedDistributedValues.push([]);
-                                for(let k = 0; k < coordsPerComp[j]; k++){
-                                    groupedDistributedValues[groupedDistributedValues.length-1].push(aggregatedValues[j]);
-                                    distributedValues.push(aggregatedValues[j]);
+                            for(let l = 0; l < aggregatedValues.length; l++){ // iterating over timesteps
+                                let currentAggregatedValues = aggregatedValues[l];
+
+                                if(l >= distributedValues.length){
+                                    distributedValues.push([]);
+                                }
+
+                                for(let j = 0; j < currentAggregatedValues.length; j++){
+                                    for(let k = 0; k < coordsPerComp[j]; k++){
+                                        distributedValues[l].push(currentAggregatedValues[j]);
+                                    }
                                 }
                             }
                         }

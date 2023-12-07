@@ -188,7 +188,7 @@ export class Mesh {
 
     }
 
-    // this function override all timesteps
+    // this function overrides all timesteps
     private setFunctionValues(functionValues: number[][], knotId: string, comp: MeshComponent){
         for(const funcVer of comp.functions){
             if(funcVer.knot == knotId){
@@ -210,7 +210,7 @@ export class Mesh {
         return null;
     }
 
-    loadFunctionData(functionValues: number[] | null = null, knotId: string){
+    loadFunctionData(functionValues: number[][] | null = null, knotId: string){
 
         let functionIndex = 0;
 
@@ -219,18 +219,24 @@ export class Mesh {
 
             let coordinates = comp.coordinates;
 
-            let functionValuesCurrentGeometry = [];
+            let functionValuesCurrentGeometry: number[][] = [];
 
             if(functionValues != null){
-
                 let coordsByThree = Math.trunc(coordinates.length/3);
 
                 for(let i = 0; i < coordsByThree; i++){
-                    functionValuesCurrentGeometry.push(functionValues[functionIndex]);
+                    for(let k = 0; k < functionValues.length; k++){
+
+                        if(k >= functionValuesCurrentGeometry.length){
+                            functionValuesCurrentGeometry.push([]);
+                        }
+
+                        functionValuesCurrentGeometry[k].push(functionValues[k][functionIndex]);
+                    }
                     functionIndex += 1;
                 }
 
-                this.setFunctionValues([functionValuesCurrentGeometry], knotId, comp); // TODO: give support to different timesteps
+                this.setFunctionValues(functionValuesCurrentGeometry, knotId, comp); 
             }
         }
     }
@@ -542,13 +548,6 @@ export class Mesh {
     }
 
     getNormalsVBO(): number[] {
-        // const vbo: number[] = [];
-
-        // for (const comp of this._components) {
-        //     comp.normals.forEach( v => vbo.push(v) );
-        // }
-
-        // return vbo;
 
         if(this._allNormals.length == 0){
             for (const comp of this._components) {
@@ -569,33 +568,13 @@ export class Mesh {
 
             if(timesteps == null){
                 return vbo;
-                throw new Error(knotId+" not found while trying to recover function values");
             }
 
             for(let i = 0; i < timesteps.length; i++){ // all components must have the same number of functions
-                // let min =  Infinity;
-                // let max = -Infinity;
-                // for (const comp of this._components) {
-                //     // max value
-                //     max = comp.function[i].reduce(function(a, b) {
-                //         return Math.max(a, b);
-                //     }, max);
-        
-                //     // min value
-                //     min = comp.function[i].reduce(function(a, b) {
-                //         return Math.min(a, b);
-                //     }, min);
-                // };
-                
+
                 let currentFunctionVbo: number[] = [];
 
                 for (const comp of this._components) { 
-
-                    // if((max - min) == 0){
-                    //     comp.function[i].forEach( v => currentFunctionVbo.push( v ) );
-                    // }else{
-                    //     comp.function[i].forEach( v => currentFunctionVbo.push( (v - min) / (max - min) ) );
-                    // }
 
                     let currentTimesteps = this.getFunctionValues(knotId, comp);
 
@@ -614,16 +593,6 @@ export class Mesh {
     }
 
     getIndicesVBO() {
-        // const vbo: number[] = [];
-
-        // let nv = 0;
-        // for (const comp of this._components) {
-        //     comp.vTable.forEach( v => vbo.push(v + nv) );
-
-        //     nv += comp.nVertex();
-        // }
-
-        // return vbo;
     
         let nv = 0;
         if(this._allIndices.length == 0){
@@ -639,16 +608,6 @@ export class Mesh {
     }
 
     getIdsVBO(){
-        // const vbo: number[] = [];
-        
-        // let nv = 0;
-        // for (const comp of this._components) {
-        //     comp.ids.forEach( v => vbo.push(v + nv) ); // turn ids into global in relation to all geometries
-
-        //     nv += comp.nVertex();
-        // }
-
-        // return vbo;
 
         let nv = 0;
         if(this._allIds.length == 0){

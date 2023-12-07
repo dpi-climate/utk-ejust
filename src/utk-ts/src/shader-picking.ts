@@ -508,7 +508,7 @@ export class ShaderPicking extends Shader {
         this._auxiliaryShader.setPickedCells(this._pickedCells);
     }
 
-    public updateShaderData(mesh: Mesh, knot: IKnot): void {
+    public updateShaderData(mesh: Mesh, knot: IKnot, currentTimestepFunction: number = 0): void {
         return;
     }
 

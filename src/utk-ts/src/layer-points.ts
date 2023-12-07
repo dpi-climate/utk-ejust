@@ -52,7 +52,7 @@ export class PointsLayer extends Layer {
         throw Error("Filtering not supported for point layer");
     }
 
-    directAddMeshFunction(functionValues: number[], knotId: string): void{
+    directAddMeshFunction(functionValues: number[][], knotId: string): void{
         let distributedValues = this.distributeFunctionValues(functionValues);
 
         this._mesh.loadFunctionData(distributedValues, knotId);
@@ -128,7 +128,7 @@ export class PointsLayer extends Layer {
         throw new Error("Method not implemented.");
     }
 
-    distributeFunctionValues(functionValues: number[] | null): number[] | null{
+    distributeFunctionValues(functionValues: number[][] | null): number[][] | null{
         return functionValues;
     }
     innerAggFunc(functionValues: number[] | null, startLevel: LevelType, endLevel: LevelType, operation: OperationType): number[] | null {
@@ -166,8 +166,8 @@ export class PointsLayer extends Layer {
 
         return coordByLevel;
     }
-    getFunctionByLevel(level: LevelType, knotId: string): number[][] {
-        let functionByLevel: number[][] = [];
+    getFunctionByLevel(level: LevelType, knotId: string): number[][][] {
+        let functionByLevel: number[][][] = [];
 
         if(level == LevelType.COORDINATES){
             throw Error("Cannot get abstract information attached to COORDINATES because the layer does not have a 2D representation");            
@@ -175,9 +175,15 @@ export class PointsLayer extends Layer {
 
         if(level == LevelType.COORDINATES3D){
 
-            let functionValues = this._mesh.getFunctionVBO(knotId)[0].map(x => [x])
+            let functions = this._mesh.getFunctionVBO(knotId)
 
-            functionByLevel = functionValues; 
+            for(let i = 0; i < functions[0].length; i++){ // for each object 
+                functionByLevel.push([[]]);
+
+                for(let k = 0; k < functions.length; k++){ // for each timestep
+                    functionByLevel[functionByLevel.length-1][0].push(functions[k][i]) // there is only one coordinate in each object
+                }
+            }
         }
 
         if(level == LevelType.OBJECTS){
