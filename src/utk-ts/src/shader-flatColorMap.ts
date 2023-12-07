@@ -18,15 +18,14 @@ export class ShaderFlatColorMap extends Shader {
     // Data to be rendered
     protected _coords:  number[] = [];
     protected _function: number[][] = [];
+    protected _currentTimestepFunction: number = 0;
     protected _indices: number[] = [];
-
-    // TODO decide which function to use
-    protected _functionToUse: number = 0;
 
     // Color map definition
     private _colorMap: string | null = null;
     private _range: number[];
     private _domain: number[];
+    private _providedDomain: number[];
     private _scale: string;
 
     // Data loaction on GPU
@@ -64,6 +63,7 @@ export class ShaderFlatColorMap extends Shader {
         this._colorMap = colorMap;
         this._range = range;
         this._domain = domain;
+        this._providedDomain = domain;
         this._scale = scale;
 
         // creathe dhe shader variables    
@@ -85,17 +85,17 @@ export class ShaderFlatColorMap extends Shader {
         }
     }
 
-    public updateShaderData(mesh: Mesh, knot: IKnot): void {
-        this._currentKnot = knot;
-        this._functionDirty = true;
+    public normalizeFunction(mesh: Mesh, knot: IKnot): void {
         this._function = mesh.getFunctionVBO(knot.id);
+        this._currentKnot = knot;
 
         let maxFuncValue = null;
         let minFuncValue = null;
+        this._functionDirty = true;
 
-        for(let i = 0; i < this._function[this._functionToUse].length; i++){
+        for(let i = 0; i < this._function[this._currentTimestepFunction].length; i++){
 
-            let value = this._function[this._functionToUse][i];
+            let value = this._function[this._currentTimestepFunction][i];
 
             // get param for min max normalization only for filtered elements
             if(this._filtered.length == 0 || this._filtered[i] == 1){
@@ -116,21 +116,28 @@ export class ShaderFlatColorMap extends Shader {
 
         // // min max normalization
         // if(maxFuncValue != null && minFuncValue != null && maxFuncValue - minFuncValue != 0 && maxFuncValue >= 0 && minFuncValue >= 0){
-        //     for(let i = 0; i < this._function[this._functionToUse].length; i++){
-        //         this._function[this._functionToUse][i] = (this._function[this._functionToUse][i] - minFuncValue)/(maxFuncValue - minFuncValue);
+        //     for(let i = 0; i < this._function[this._currentTimestepFunction].length; i++){
+        //         this._function[this._currentTimestepFunction][i] = (this._function[this._currentTimestepFunction][i] - minFuncValue)/(maxFuncValue - minFuncValue);
         //     }
         // }
-        if (this._domain.length === 0) {
-            this._domain = d3.extent(this._function[this._functionToUse])
+
+        if (this._providedDomain.length === 0) {
+            this._domain = d3.extent(this._function[this._currentTimestepFunction]);
+        }else{
+            this._domain = this._providedDomain;
         }
 
         // @ts-ignore
         let scale = d3_scale[this._scale]().domain(this._domain).range(this._range);
 
-        for(let i = 0; i < this._function[this._functionToUse].length; i++){
-            this._function[this._functionToUse][i] = scale(this._function[this._functionToUse][i]);
+        for(let i = 0; i < this._function[this._currentTimestepFunction].length; i++){
+            this._function[this._currentTimestepFunction][i] = scale(this._function[this._currentTimestepFunction][i]);
         }
+    }
 
+    public updateShaderData(mesh: Mesh, knot: IKnot, currentTimestepFunction: number = 0): void {
+        this._currentTimestepFunction = currentTimestepFunction;
+        this.normalizeFunction(mesh, knot);
     }
 
     public updateShaderUniforms(data: any) {
@@ -251,7 +258,7 @@ export class ShaderFlatColorMap extends Shader {
         // send data to gpu
         if (this._functionDirty) {
             glContext.bufferData(
-                glContext.ARRAY_BUFFER, new Float32Array(this._function[this._functionToUse]), glContext.STATIC_DRAW
+                glContext.ARRAY_BUFFER, new Float32Array(this._function[this._currentTimestepFunction]), glContext.STATIC_DRAW
             );
         }
 

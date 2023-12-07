@@ -359,6 +359,7 @@ class FilesInterface:
                 else:
                     join_left_gdf.loc[index, 'id_right'] = right_layer_gdf.loc[index, 'id']
         else:
+
             if(left_level != 'coordinates3d'): # if it is not tridimensional geopandas can be used
                 if(spatial_relation == 'nearest'):
                     if(max_distance == -1):
@@ -437,6 +438,15 @@ class FilesInterface:
         if('value_right' not in join_left_gdf.columns):
             join_left_gdf = join_left_gdf.rename(columns={'value': 'value_right'})
 
+        size_of_list = 0
+
+        if 'value_right' in join_left_gdf.columns:
+
+            for elem in join_left_gdf.iloc:
+                if(isinstance(elem['value_right'], list) and size_of_list == 0):
+                    size_of_list = len(elem['value_right'])
+                    break
+            
         for elem in join_left_gdf.iloc:
 
             if(not abstract):
@@ -446,7 +456,7 @@ class FilesInterface:
 
                     left_layer_joined_json['joinedObjects'][replace]['inIds'][int(elem['id_left'])].append(int(elem['id_right']))
             else:
-                if(not pd.isna(elem['value_right'])):
+                if(isinstance(elem['value_right'], list) or not pd.isna(elem['value_right'])):
                     if(left_layer_joined_json['joinedObjects'][replace]['inValues'][int(elem['id_left'])] == None):
                         left_layer_joined_json['joinedObjects'][replace]['inValues'][int(elem['id_left'])] = []
 
@@ -456,21 +466,48 @@ class FilesInterface:
             for i in range(len(left_layer_joined_json['joinedObjects'][replace]['inValues'])):
 
                 if(left_layer_joined_json['joinedObjects'][replace]['inValues'][i] == None):
-                    left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = [0] # TODO: let the user defined default value
+
+                    if(size_of_list == 0):
+                        left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = [0]
+                    else:
+                        left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = [[default_value] * size_of_list]
 
                 if(left_layer_joined_json['joinedObjects'][replace]['inValues'][i] != None):
-                    if(operation == 'discard'):
-                        left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = left_layer_joined_json['joinedObjects'][replace]['inValues'][i][0]
-                    elif(operation == 'max'):
-                        left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = max(left_layer_joined_json['joinedObjects'][replace]['inValues'][i])
-                    elif(operation == 'min'):
-                        left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = min(left_layer_joined_json['joinedObjects'][replace]['inValues'][i])
-                    elif(operation == 'sum'):
-                        left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = sum(left_layer_joined_json['joinedObjects'][replace]['inValues'][i])
-                    elif(operation == 'avg'):
-                        left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = sum(left_layer_joined_json['joinedObjects'][replace]['inValues'][i])/len(left_layer_joined_json['joinedObjects'][replace]['inValues'][i])
-                    elif(operation == 'count'):
-                        left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = len(left_layer_joined_json['joinedObjects'][replace]['inValues'][i])
+
+                    if isinstance(left_layer_joined_json['joinedObjects'][replace]['inValues'][i][0], list): # the position might be storing a list of lists (multiple timesteps)
+                        final_list = []
+                        for k in range(len(left_layer_joined_json['joinedObjects'][replace]['inValues'][i][0])): 
+                            partial_list = []
+                            for j in range(len(left_layer_joined_json['joinedObjects'][replace]['inValues'][i])):
+                                partial_list.append(left_layer_joined_json['joinedObjects'][replace]['inValues'][i][j][k])
+
+                            if(operation == 'discard'):
+                                final_list.append(partial_list[0])
+                            elif(operation == 'max'):
+                                final_list.append(max(partial_list))
+                            elif(operation == 'min'):
+                                final_list.append(min(partial_list))
+                            elif(operation == 'sum'):
+                                final_list.append(sum(partial_list))
+                            elif(operation == 'avg'):
+                                final_list.append(sum(partial_list)/len(partial_list))
+                            elif(operation == 'count'):
+                                final_list.append(len(partial_list))
+                    
+                        left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = final_list
+                    else:
+                        if(operation == 'discard'):
+                            left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = left_layer_joined_json['joinedObjects'][replace]['inValues'][i][0]
+                        elif(operation == 'max'):
+                            left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = max(left_layer_joined_json['joinedObjects'][replace]['inValues'][i])
+                        elif(operation == 'min'):
+                            left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = min(left_layer_joined_json['joinedObjects'][replace]['inValues'][i])
+                        elif(operation == 'sum'):
+                            left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = sum(left_layer_joined_json['joinedObjects'][replace]['inValues'][i])
+                        elif(operation == 'avg'):
+                            left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = sum(left_layer_joined_json['joinedObjects'][replace]['inValues'][i])/len(left_layer_joined_json['joinedObjects'][replace]['inValues'][i])
+                        elif(operation == 'count'):
+                            left_layer_joined_json['joinedObjects'][replace]['inValues'][i] = len(left_layer_joined_json['joinedObjects'][replace]['inValues'][i])
 
         # if(id_left_layer+"_joined" not in self.joinedJson):
         self.joinedJson[id_left_layer+"_joined"] = left_layer_joined_json

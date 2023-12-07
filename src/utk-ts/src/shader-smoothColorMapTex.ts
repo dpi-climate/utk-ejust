@@ -26,6 +26,7 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
     protected _coords:  number[] = [];
     protected _normals: number[] = [];
     protected _function: number[][] = []; // function values that will be sent to the frag shader
+    protected _currentTimestepFunction: number = 0;
     protected _unchangedFunction: number[][] = []; // original function value for each coordinate
     protected _indices: number[] = [];
     protected _idsLength: number;
@@ -45,6 +46,7 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
     private _colorMapReverse: boolean = false;
     private _range: number[];
     private _domain: number[];
+    private _providedDomain: number[];
     private _scale: string;
 
     // Data loaction on GPU
@@ -110,6 +112,7 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
         this._colorMapReverse = colorMapReverse;
         this._range = range;
         this._domain = domain;
+        this._providedDomain = domain;
         this._scale = scale;
 
         // create the shader variables    
@@ -167,22 +170,23 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
         this._filteredDirty = true;
     }
 
-    public updateShaderData(mesh: Mesh, knot: IKnot): void {
-        this._currentKnot = knot;
+    public normalizeFunction(mesh: Mesh, knot: IKnot): void {
         this._functionDirty = true;
+        this._currentKnot = knot;
         this._colorOrPickedDirty = true;
-        
+
         let tempFunction = mesh.getFunctionVBO(knot.id);
 
         for(let j = 0; j < tempFunction.length; j++){
 
-            if (this._domain.length === 0) {
+            if (this._providedDomain.length === 0) {
                 this._domain = d3.extent(tempFunction[j])
+            }else{
+                this._domain = this._providedDomain;
             }
             
             // @ts-ignore
             let scale = d3_scale[this._scale]().domain(this._domain).range(this._range);
-
 
             for(let i = 0; i < tempFunction[j].length; i++){
                 tempFunction[j][i] = scale(tempFunction[j][i]);
@@ -202,7 +206,11 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
                 this._function[i].push(0);
             });
         }
+    }
 
+    public updateShaderData(mesh: Mesh, knot: IKnot, currentTimestepFunction: number = 0): void {
+        this._currentTimestepFunction = currentTimestepFunction;
+        this.normalizeFunction(mesh, knot);
     }
 
     public updateShaderUniforms(data: any) {
@@ -328,7 +336,7 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
         // send data to gpu
         if (this._functionDirty) {
             glContext.bufferData(
-                glContext.ARRAY_BUFFER, new Float32Array(this._function[this._functionToUse]), glContext.STATIC_DRAW
+                glContext.ARRAY_BUFFER, new Float32Array(this._function[this._currentTimestepFunction]), glContext.STATIC_DRAW
             );
         }
 
@@ -1154,7 +1162,7 @@ export class ShaderSmoothColorMapTex extends AuxiliaryShader {
 
         // let shadowAvg = 0;
         // this._pickedCoordinates.forEach((coordinateIndex) => {
-        //     shadowAvg += this._function[this._functionToUse][coordinateIndex*2];
+        //     shadowAvg += this._function[this._currentTimestepFunction][coordinateIndex*2];
         // });
         // shadowAvg = shadowAvg/this._pickedCoordinates.length;
 

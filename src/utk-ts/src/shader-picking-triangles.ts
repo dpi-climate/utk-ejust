@@ -369,7 +369,7 @@ export class ShaderPickingTriangles extends Shader {
         this._auxiliaryShader.clearPicking();
     }
 
-    public updateShaderData(mesh: Mesh, knot: IKnot): void {
+    public updateShaderData(mesh: Mesh, knot: IKnot, currentTimestepFunction: number = 0): void {
         return;
     }
 

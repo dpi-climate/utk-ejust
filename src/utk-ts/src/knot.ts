@@ -25,7 +25,7 @@ import { ShaderFlatColorPoints } from "./shader-flatColorPoints";
 export class Knot {
 
     protected _physicalLayer: Layer; // the physical format the data will assume
-    protected _thematicData: number[] | null;
+    protected _thematicData: number[][] | null;
     protected _knotSpecification: IKnot;
     protected _id: string;
     protected _shaders: any = {};
@@ -61,11 +61,15 @@ export class Knot {
         return this._knotSpecification;
     }
 
+    get thematicData(){
+        return this._thematicData;
+    }
+
     set visible(visible: boolean){
         this._visible = visible;
     }
 
-    set thematicData(thematicData: number[]){
+    set thematicData(thematicData: number[][] | null){
         this._thematicData = thematicData;
     }
 
@@ -78,6 +82,12 @@ export class Knot {
 
         this._physicalLayer.camera = camera;
         this._physicalLayer.render(glContext, this._shaders[viewId]);
+    }
+
+    updateTimestep(timestep: number, viewId: number): void {
+        for(const shader of this._shaders[viewId]){
+            shader.updateShaderData(this._physicalLayer.mesh, this._knotSpecification, timestep);
+        }
     }
 
     loadShaders(glContext: WebGL2RenderingContext, centroid:number[] | Float32Array = [0,0,0], viewId: number): void {
@@ -186,7 +196,7 @@ export class Knot {
 
     // send function values to the mesh of the layer
     addMeshFunction(layerManager: LayerManager){
-        let functionValues: number[] | null = null;
+        let functionValues: number[][] | null = null;
         
         if(this._knotSpecification.integration_scheme != null){
             functionValues = layerManager.getAbstractDataFromLink(this._knotSpecification.integration_scheme)
@@ -235,8 +245,8 @@ export class Knot {
 
             for(const key of functionsPerKnotsKeys){
                 if(functionSize == -1){
-                    functionSize = functionsPerKnot[key].length;
-                }else if(functionSize != functionsPerKnot[key].length){
+                    functionSize = functionsPerKnot[key][0].length;
+                }else if(functionSize != functionsPerKnot[key][0].length){
                     throw Error("All knots used in knot_op must have the same length");
                 }
             }
@@ -245,7 +255,9 @@ export class Knot {
                 throw Error("Could not retrieve valid function values for knot_op "+this._knotSpecification.id);
             }
 
-            let prevResult: number[] = new Array(functionSize);
+            let prevResult: number[][] = [];
+
+            // let prevResult: number[] = new Array(functionSize);
 
             let linkIndex = 0;
 
@@ -257,19 +269,26 @@ export class Knot {
                 let functionValue0 = functionsPerKnot[scheme.out.name];
                 let functionValue1 = functionsPerKnot[(<{name: string, level: string}>scheme.in).name];
             
-                for(let j = 0; j < functionValue0.length; j++){
+                for(let k = 0; k < functionValue0.length; k++){ // iterating over timesteps
 
-                    let operation = (<string>scheme.op).replaceAll(scheme.out.name, functionValue0[j]+'').replaceAll((<{name: string, level: string}>scheme.in).name, functionValue1[j]+''); 
-                    
-                    if(linkIndex != 0){
-                        operation = operation.replaceAll("prevResult", prevResult[j]+'');
+                    prevResult.push(new Array(functionSize));
+
+                    let currentFunctionValue0 = functionValue0[k];
+                    let currentFunctionValue1 = functionValue1[k];
+
+                    for(let j = 0; j < currentFunctionValue0.length; j++){
+    
+                        let operation = (<string>scheme.op).replaceAll(scheme.out.name, currentFunctionValue0[j]+'').replaceAll((<{name: string, level: string}>scheme.in).name, currentFunctionValue1[j]+''); 
+                        
+                        if(linkIndex != 0){
+                            operation = operation.replaceAll("prevResult", prevResult[k][j]+'');
+                        }
+    
+                        prevResult[k][j] = eval(operation); // TODO deal with security problem
                     }
-
-                    prevResult[j] = eval(operation); // TODO deal with security problem
                 }
 
                 linkIndex += 1;
-
             }
 
             this._physicalLayer.directAddMeshFunction(prevResult, this._knotSpecification.id);

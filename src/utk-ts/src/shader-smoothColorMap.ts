@@ -21,19 +21,18 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
     protected _coords:  number[] = [];
     protected _normals: number[] = [];
     protected _function: number[][] = [];
+    protected _currentTimestepFunction: number = 0;
     protected _indices: number[] = [];
     protected _discardFuncInterval: number[] = [];
     protected _coordsPerComp: number[] = [];
     // protected _varyOpByFunc: number[] = [];
-
-    // TODO remove
-    protected _functionToUse: number = 0;
 
     // Color map definition
     private _colorMap: string | null = null;
     private _colorMapReverse: boolean = false;
     private _range: number[];
     private _domain: number[];
+    private _providedDomain: number[];
     private _scale: string;
 
     // Data loaction on GPU
@@ -83,6 +82,7 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         this._colorMap = colorMap;
         this._range = range;
         this._domain = domain;
+        this._providedDomain = domain;
         this._scale = scale;
 
         // creathe dhe shader variables    
@@ -126,23 +126,31 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         this._filteredDirty = true;
     }
 
-    public updateShaderData(mesh: Mesh, knot: IKnot): void {
+    public normalizeFunction(mesh: Mesh, knot: IKnot): void {
+
+        this._function = mesh.getFunctionVBO(knot.id);
         this._currentKnot = knot;
         this._functionDirty = true;
         this._colorOrPickedDirty = true;
-        this._function = mesh.getFunctionVBO(knot.id);
 
-        if (this._domain.length === 0) {
-            this._domain = d3.extent(this._function[this._functionToUse])
+
+        if (this._providedDomain.length === 0) {
+            this._domain = d3.extent(this._function[this._currentTimestepFunction])
+        }else{
+            this._domain = this._providedDomain;
         }
 
         // @ts-ignore
         let scale = d3_scale[this._scale]().domain(this._domain).range(this._range);
 
-        for(let i = 0; i < this._function[this._functionToUse].length; i++){
-            this._function[this._functionToUse][i] = scale(this._function[this._functionToUse][i]);
+        for(let i = 0; i < this._function[this._currentTimestepFunction].length; i++){
+            this._function[this._currentTimestepFunction][i] = scale(this._function[this._currentTimestepFunction][i]);
         }
+    }
 
+    public updateShaderData(mesh: Mesh, knot: IKnot, currentTimestepFunction: number = 0): void {
+        this._currentTimestepFunction = currentTimestepFunction;
+        this.normalizeFunction(mesh, knot);
     }
 
     public updateShaderUniforms(data: any) {
@@ -272,7 +280,7 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         // send data to gpu
         if (this._functionDirty) {
             glContext.bufferData(
-                glContext.ARRAY_BUFFER, new Float32Array(this._function[this._functionToUse]), glContext.STATIC_DRAW
+                glContext.ARRAY_BUFFER, new Float32Array(this._function[this._currentTimestepFunction]), glContext.STATIC_DRAW
             );
         }
 

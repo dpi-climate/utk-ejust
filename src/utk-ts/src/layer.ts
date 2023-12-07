@@ -100,9 +100,9 @@ export abstract class Layer {
     /**
      * Distributes the function values inside the layer according to its semantics so it can be rendered. (i.e. function values of coordinates in building cells are averaged)
      * This function is called as the last step of the rendering pipeline (after all the joins and operations with the abstract data)
-     * @param functionValues function values per coordinate
+     * @param functionValues function values per coordinate per timestep
      */
-    abstract distributeFunctionValues(functionValues: number[] | null): number[] | null;
+    abstract distributeFunctionValues(functionValues: number[][] | null): number[][] | null;
 
     /**
      * Aggregates the function values to a more coarse level 
@@ -119,7 +119,7 @@ export abstract class Layer {
 
     abstract getCoordsByLevel(level: LevelType, centroid:number[] | Float32Array, viewId: number): number[][];
 
-    abstract getFunctionByLevel(level: LevelType, knotId: string): number[][];
+    abstract getFunctionByLevel(level: LevelType, knotId: string): number[][][];
 
     abstract getHighlightsByLevel(level: LevelType, shaders: (Shader|AuxiliaryShader)[]): boolean[];
 
@@ -132,7 +132,7 @@ export abstract class Layer {
     abstract setHighlightElements(elements: number[], level: LevelType, value: boolean, shaders: (Shader|AuxiliaryShader)[], centroid:number[] | Float32Array, viewId: number): void;
 
     // bypass the data extraction from link and data directly into the mesh
-    abstract directAddMeshFunction(functionValues: number[], knotId: string): void;
+    abstract directAddMeshFunction(functionValues: number[][], knotId: string): void;
 
     abstract getSelectedFiltering(shaders: (Shader|AuxiliaryShader)[]): number[] | null;
 }

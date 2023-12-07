@@ -27,6 +27,7 @@ examples/wrf_temp_building
 examples/downtown_manhattan
 examples/downtown_nyc
 examples/multiple_downtown_nyc
+examples/multiple_timesteps_nyc
 
 urbantk_cache/
 examples/downtown_nyc

@@ -111,6 +111,16 @@ class MapView {
         return this._plotManager;
     }
 
+    updateTimestep(message: any, _this: any): void {
+        for(const knot of _this._knotManager.knots){
+            if(knot.id == message.knotId){
+                knot.updateTimestep(message.timestep, message.mapId);
+            }
+        }
+
+        _this.render();
+    }
+
     /**
      * Map initialization function
      */
@@ -190,7 +200,7 @@ class MapView {
         //     }
         // }
         
-        // this._updateStatusCallback("layersIds", knotsGroups);
+        // this._updateStatusCallback("listLayers", knotsGroups);
 
         this.initPlotManager();
 
@@ -199,6 +209,8 @@ class MapView {
         }else{
             this._layerManager.filterBbox = [];
         }
+
+        updateStatusCallback("subscribe", {id: "mapview"+this._viewId, channel: "updateTimestepKnot", callback: this.updateTimestep, ref: this});
 
         this.render();
     }
@@ -303,89 +315,6 @@ class MapView {
         this._camera = CameraFactory.getInstance();
         this._camera.resetCamera(params.position, params.direction.up, params.direction.lookAt, params.direction.right, this._updateStatusCallback);
     }
-
-    // async initLayers(): Promise<void> {
-
-    //     let layers: string[] = [];
-    //     let joinedList: boolean[] = [];
-    //     let centroid = this.camera.getWorldOrigin();
-
-    //     for(const knot of this._grammarInterpreter.getKnots()){
-    //         if(!knot.knot_op){
-    //             // load layers from knots if they dont already exist
-    //             for(let i = 0; i < knot.integration_scheme.length; i++){
-
-    //                 let joined = false // if the layers was joined with another layer
-
-    //                 if(knot.integration_scheme[i].in != undefined && knot.integration_scheme[i].in.name != knot.integration_scheme[i].out){
-    //                     joined = true;
-    //                 }
-
-    //                 if(!layers.includes(knot.integration_scheme[i].out.name)){
-    //                     layers.push(knot.integration_scheme[i].out.name);
-    //                     joinedList.push(joined);
-    //                 }else if(joined){
-    //                     joinedList[layers.indexOf(knot.integration_scheme[i].out.name)] = joined;
-    //                 }
-    //             }
-    //         }
-    //     }
-
-    //     for (let i = 0; i < layers.length; i++) {
-
-    //         let element = layers[i];
-
-    //         // loads from file if not provided
-    //         const layer = await DataApi.getLayer(element);
-
-    //         // adds the new layer
-    //         await this.addLayer(layer, centroid, joinedList[i]);
-    //     }
-
-    // }
-
-    // /**
-    //  * Add layer geometry and function
-    //  */
-    // async addLayer(layerData: ILayerData, centroid: number[] | Float32Array, joined: boolean): Promise<void> {
-
-    //     // gets the layer data if available
-    //     const features = 'data' in layerData ? layerData.data : undefined;
-
-    //     if (!features) { return; }
-
-    //     // loads the layers data
-    //     const layer = this._layerManager.createLayer(layerData, centroid, features);
-
-    //     // not able to create the layer
-    //     if (!layer) { return; }
-
-    //     if(joined){
-    //         let joinedJson = await DataApi.getJoinedJson(layer.id);
-    //         if(joinedJson)
-    //             layer.setJoinedJson(joinedJson);
-    //     }
-
-    //     // render
-    //     this.render();
-    // }
-
-    // initKnots(){
-
-    //     let knotsMap = this._grammarInterpreter.getMap(this._viewId).knots;
-
-    //     for(const knotGrammar of this._grammarInterpreter.getKnots()){
-    //         let layerId = this._grammarInterpreter.getKnotOutputLayer(knotGrammar);
-            
-    //         let layer = this._layerManager.searchByLayerId(layerId);
-
-    //         let knot = this._knotManager.createKnot(knotGrammar.id, <Layer>layer, knotGrammar, this._grammarInterpreter, knotsMap.includes(knotGrammar.id), this);
-            
-    //         knot.processThematicData(this._layerManager); // send thematic data to the mesh of the physical layer TODO: put this inside the constructor of Knot
-            
-    //         knot.loadShaders(this._glContext); // instantiate the shaders inside the knot TODO: put this inside the constructor of Knot
-    //     }
-    // }
 
     /**
      * Inits the mouse events
