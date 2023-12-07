@@ -5,8 +5,6 @@ npm run build && cd ..\utk-dashboard\ && npm run build:web && cd ..\utk-ts
 cd src
 python utk_server.py start --bundle utk-dashboard\build\utk-app\ --data "..\examples\wrf_chicago"
 
-
-
 Example of load_thematic/thematic_from_netcdf(...):
 
     file_path = "../../examples/wrf_chicago/wrfout_d03_2023-06-09_20_00_00"
