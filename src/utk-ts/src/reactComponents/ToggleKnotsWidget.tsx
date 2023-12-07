@@ -320,6 +320,7 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
                                     defaultValue={0}
                                     valueLabelDisplay="off"
                                     step={Math.round((1/listLayers[item][0].timesteps)*100)}
+                                    max={Math.round((1/listLayers[item][0].timesteps)*100)*(listLayers[item][0].timesteps-1)}
                                     marks = {getMarksTimesteps(listLayers[item][0])}
                                     onChange={(e) => {handleChangeSlidesTimesteps(e, listLayers[item][0], Math.round((1/listLayers[item][0].timesteps)*100))}}
                                     disabled = {!groupVisibility(listLayers, knotVisibility, item)}

@@ -148,12 +148,8 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         }
     }
 
-    public updateCurrentTimestepFunction(mesh: Mesh, knot: IKnot, currentTimestepFunction: number): void {
-        this._currentTimestepFunction = currentTimestepFunction;
-        this.normalizeFunction(mesh, knot);
-    }
-
     public updateShaderData(mesh: Mesh, knot: IKnot, currentTimestepFunction: number = 0): void {
+        this._currentTimestepFunction = currentTimestepFunction;
         this.normalizeFunction(mesh, knot);
     }
 
