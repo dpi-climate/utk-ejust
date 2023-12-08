@@ -336,38 +336,42 @@ export class PlotManager {
                     let elementsKeys = Object.keys(elements);
 
                     for(const knotId of elementsKeys){
-                        if(allFilteredInDict[knotId]){ // if every object is filtered in no object is selected therefore filteredIn should be reset because the next interaction will filter in the object
-                            value[knotId+"_filteredIn"] = false;
-                            if(invertedDict[knotId] != undefined){
-                                value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
-                            }    
-                        }
 
-                        if(value[knotId+"_index"] != undefined && value[knotId+"_index"] == elements[knotId]){
-                            
-                            if(toggle){
-                                value[knotId+"_filteredIn"] = !value[knotId+"_filteredIn"];
+                        if(elem.knots.includes(knotId)){
+                            if(allFilteredInDict[knotId]){ // if every object is filtered in no object is selected therefore filteredIn should be reset because the next interaction will filter in the object
+                                value[knotId+"_filteredIn"] = false;
                                 if(invertedDict[knotId] != undefined){
                                     value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
+                                }    
+                            }
+    
+                            if(value[knotId+"_index"] != undefined && value[knotId+"_index"] == elements[knotId]){
+                                
+                                if(toggle){
+                                    value[knotId+"_filteredIn"] = !value[knotId+"_filteredIn"];
+                                    if(invertedDict[knotId] != undefined){
+                                        value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
+                                    }
+                                }else{
+                                    value[knotId+"_filteredIn"] = truthValue;
+                                    if(invertedDict[knotId] != undefined){
+                                        value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
+                                    }
                                 }
-                            }else{
-                                value[knotId+"_filteredIn"] = truthValue;
+                            }
+    
+                            if(allFilteredOutDict[knotId]){
+                                value[knotId+"_filteredIn"] = true;
                                 if(invertedDict[knotId] != undefined){
                                     value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
                                 }
                             }
-                        }
-
-                        if(allFilteredOutDict[knotId]){
-                            value[knotId+"_filteredIn"] = true;
-                            if(invertedDict[knotId] != undefined){
-                                value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
+    
+                            if(!value[knotId+"_filteredIn"]){
+                                this._filtered[i] = true;
                             }
                         }
 
-                        if(!value[knotId+"_filteredIn"]){
-                            this._filtered[i] = true;
-                        }
                     }
                 }
             }

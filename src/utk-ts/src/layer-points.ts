@@ -128,7 +128,8 @@ export class PointsLayer extends Layer {
     }
 
     setHighlightElements(elements: number[], level: LevelType, value: boolean, shaders: (Shader|AuxiliaryShader)[], centroid:number[] | Float32Array = [0,0,0], viewId: number): void {
-        throw new Error("Method not implemented.");
+        return;
+        // throw new Error("Method not implemented.");
     }
 
     distributeFunctionValues(functionValues: number[][] | null): number[][] | null{

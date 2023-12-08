@@ -182,7 +182,6 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
         let marks = [];
         
         for(let i = 0; i < layer.timesteps; i++){
-
             let mark = {
                 value: Math.round((i/layer.timesteps)*100),
                 label: ''+i
@@ -233,6 +232,7 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
     const getCategoryHtml = (category: ICategory, listLayers: any, knotVisibility: any) => {
         if(Object.keys(listLayers).length == 0 || knotVisibility.length == 0)
             return
+
         
         return<li key={category.category_name+"_li"}>
             <div key={category.category_name+"_span"} style={{margin: "5px", fontWeight: "bold", cursor: "pointer", color: collapsedItems.includes(category.category_name) ? 'black' : '#009687' }} onClick={() => toggleCollapse(category.category_name)}>
@@ -290,7 +290,7 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
 
         return <React.Fragment key={item+"_fragment"}>
             <Row style={{paddingTop: "5px", paddingBottom: "5px"}} className="align-items-center">
-                <Col md={5}>
+                <Col md={3}>
                     <Form.Check key={item+"_check"} checked={groupVisibility(listLayers, knotVisibility, item)} type="checkbox" label={item} id={item} onChange={() => {toggleGroup(listLayers, knotVisibility, item)}}/> 
                 </Col>
                 {
