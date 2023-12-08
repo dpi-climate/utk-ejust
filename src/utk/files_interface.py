@@ -375,7 +375,12 @@ class FilesInterface:
                 join_left_gdf = left_layer_gdf.copy(deep=True)
 
                 if(abstract):
-                    join_left_gdf['value_right'] = np.nan
+                    if(isinstance(right_layer_gdf.loc[0, 'value'], list)):
+                        nan_list = [np.nan] * len(right_layer_gdf.loc[0, 'value'])
+
+                        join_left_gdf['value_right'] = pd.Series([nan_list] * len(join_left_gdf))
+                    else:
+                        join_left_gdf['value_right'] = np.nan
                 else:
                     join_left_gdf['id_right'] = np.nan
 
@@ -395,11 +400,11 @@ class FilesInterface:
                 for index, point in enumerate(points):
                     if(abstract):
                         if(len(right_layer_gdf.axes[0]) <= point):
-                            join_left_gdf.loc[index, 'value_right'] = default_value
+                            join_left_gdf.at[index, 'value_right'] = default_value
                         else:
-                            join_left_gdf.loc[index, 'value_right'] = right_layer_gdf.loc[point, 'value']
+                            join_left_gdf.at[index, 'value_right'] = right_layer_gdf.loc[point, 'value']
                     else:
-                        join_left_gdf.loc[index, 'id_right'] = right_layer_gdf.loc[point, 'id']
+                        join_left_gdf.at[index, 'id_right'] = right_layer_gdf.loc[point, 'id']
 
         if(alreadyExistingJoinedIndex == -1): # if it is a new join
             if('joinedLayers' in left_layer_joined_json):

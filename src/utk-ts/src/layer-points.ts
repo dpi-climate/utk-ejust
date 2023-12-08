@@ -17,6 +17,9 @@ export class PointsLayer extends Layer {
     // protected _zOrder: number;
     protected _coordsByCOORDINATES3D: number[][] = [];
 
+    protected _highlightByCOORDINATES: boolean[][] = [];
+    protected _highlightByCOORDINATES3D: boolean[][] = [];
+
     constructor(info: ILayerData, zOrder: number = 0, geometryData: ILayerFeature[]) {
         super(
             info.id,
@@ -194,6 +197,62 @@ export class PointsLayer extends Layer {
     }
 
     getHighlightsByLevel(level: LevelType): boolean[] {
-        throw new Error("Method not implemented.");
+
+        let booleanHighlights: boolean[] = [];
+        let highlightsByLevel: boolean[][] = [];
+
+        let totalNumberOfCoords = this._mesh.getTotalNumberOfCoords();
+
+        for(let i = 0; i < totalNumberOfCoords; i++){
+            booleanHighlights.push(false);
+        }
+
+        if(level == LevelType.OBJECTS){
+            throw new Error("There is not highlight for OBJECTS in a points layer");
+        }
+
+        if(level == LevelType.COORDINATES){
+            if(this._highlightByCOORDINATES.length == 0){
+                highlightsByLevel = booleanHighlights.map(x => [x])
+
+                this._highlightByCOORDINATES = highlightsByLevel;
+            }else{
+                highlightsByLevel = this._highlightByCOORDINATES;
+            }
+
+        }
+
+        if(level == LevelType.COORDINATES3D){
+
+            if(this._highlightByCOORDINATES3D.length == 0){
+                highlightsByLevel = booleanHighlights.map(x => [x])
+
+                this._highlightByCOORDINATES3D = highlightsByLevel;
+            }else{
+                highlightsByLevel = this._highlightByCOORDINATES3D;
+            }
+
+        }
+
+        let flattenedHighlights: boolean[] = [];
+
+        // flattening the highlight data
+        for(const elemHighlights of highlightsByLevel){
+            let allHighlighted = true;
+
+            for(const value of elemHighlights){
+                if(!value){
+                    allHighlighted = false;
+                }
+            }
+
+            if(allHighlighted) // all the coordinates of the element must be highlighted for it to be considered highlighted
+                flattenedHighlights.push(true)
+            else
+                flattenedHighlights.push(false)
+
+        }
+
+        return flattenedHighlights;
     }
 }

@@ -133,7 +133,6 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         this._functionDirty = true;
         this._colorOrPickedDirty = true;
 
-
         if (this._providedDomain.length === 0) {
             this._domain = d3.extent(this._function[this._currentTimestepFunction])
         }else{

@@ -20,7 +20,8 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "strictPropertyInitialization": false,
-    "useUnknownInCatchVariables": false
+    "useUnknownInCatchVariables": false,
+    "sourceMap": true
   },
   "include": [
     "src"

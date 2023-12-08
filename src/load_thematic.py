@@ -4,7 +4,6 @@ import os
 import json
 from netCDF4 import Dataset
 import numpy as np
-from .utils import *
 
 import sys
 from wrf import getvar, interplevel, to_np
@@ -12,7 +11,7 @@ import math
 '''
     Converts a dataframe into an abstract layer
 '''
-def thematic_from_df(df, output_filepath, latitude_column, longitude_column, coordinates_projection, z_column = None, value_column=None):
+def thematic_from_df(df, output_filepath, latitude_column, longitude_column, coordinates_projection, z_column = None, value_column=None, default_value=0):
     df_lat_lon = df.drop_duplicates(subset=[latitude_column, longitude_column])
 
     latitude_list = df_lat_lon[latitude_column].tolist()
@@ -47,9 +46,16 @@ def thematic_from_df(df, output_filepath, latitude_column, longitude_column, coo
             point_values_list = [1] * len(df_lat_lon.index)
         
         values_list.append(point_values_list)
-    
+
+    max_size_list = [len(elem) for elem in values_list]
+    max_size = max(max_size_list)
+
+    for sub_list in values_list:
+        while len(sub_list) < max_size:
+            sub_list.append(default_value)
+
     abstract_json = {
-        "id": Path(output_filepath).stem,
+        "id": os.path.basename(output_filepath).replace(".json",""),
         "coordinates": coordinates,
         "values": [elem for elem in values_list]
     }
@@ -382,32 +388,32 @@ def thematic_from_netcdf(file_path, variables, coords, layer_id, operations=[], 
     coordinates shape: (n,3)
     Considers that coordinates do not have a coordinates system but are in meters
 '''
-def thematic_from_npy(filepath_coordinates, filepath_values, layer_id, center_around=[]):
+# def thematic_from_npy(filepath_coordinates, filepath_values, layer_id, center_around=[]):
 
-    coordinates = np.load(filepath_coordinates)
-    values = np.load(filepath_values)
+#     coordinates = np.load(filepath_coordinates)
+#     values = np.load(filepath_values)
 
-    coordinates = coordinates.flatten()
+#     coordinates = coordinates.flatten()
 
-    if(len(center_around) > 0):
-        coordinates = center_coordinates_around(coordinates, center_around)
+#     if(len(center_around) > 0):
+#         coordinates = center_coordinates_around(coordinates, center_around)
 
-    flat_values = []
+#     flat_values = []
 
-    if(isinstance(values[0], np.ndarray)):
-        flat_values = [item for row in values for item in row] 
-    else:
-        flat_values = values.tolist()
+#     if(isinstance(values[0], np.ndarray)):
+#         flat_values = [item for row in values for item in row] 
+#     else:
+#         flat_values = values.tolist()
 
-    abstract_json = {
-        "id": layer_id,
-        "coordinates": coordinates.tolist(),
-        "values": flat_values
-    }
+#     abstract_json = {
+#         "id": layer_id,
+#         "coordinates": coordinates.tolist(),
+#         "values": flat_values
+#     }
 
-    json_object = json.dumps(abstract_json)
+#     json_object = json.dumps(abstract_json)
     
-    directory = os.path.dirname(filepath_coordinates)
+#     directory = os.path.dirname(filepath_coordinates)
 
-    with open(os.path.join(directory,layer_id+".json"), "w") as outfile:
-        outfile.write(json_object)
+#     with open(os.path.join(directory,layer_id+".json"), "w") as outfile:
+#         outfile.write(json_object)

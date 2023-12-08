@@ -89,21 +89,21 @@ function Home() {
 
   return (
     <>
-    <Nav>
+    {/* <Nav>
       <div className="col-auto navcol">
         <TemporalOptions fields={fieldsList} data={temporalPanelData} setData={setTempPanelData}/>
       </div>
       <div className="col-auto navcol">
         <TimeBtn activeTime={activeTime} nTimes={nTimes} setTime={setTime}/>
       </div>
-    </Nav>
+    </Nav> */}
     <Main>
       <div className="analyzes">
         <div className="spatial">
         {/* {GridPointSelector()} */}
           <Map time={activeTime} setTime={setTime}/>
         </div>
-        <div className="temporal overflow-auto">
+        {/* <div className="temporal overflow-auto">
           <div className="container">
             <TemporalPanel fields={fieldsList} timeSeries={temporalPanelData} activeTime={activeTime} />
           </div>
@@ -117,7 +117,7 @@ function Home() {
           <div className="m-2">
             <ScatterPanel fields={fieldsList} data={scatter} setScatter={setScatter}/>
           </div>
-        </div>
+        </div> */}
       </div>
     </Main>
     </>

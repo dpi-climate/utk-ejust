@@ -21,6 +21,7 @@ import { IKnot } from "./interfaces";
 import { LayerManager } from "./layer-manager";
 import { ShaderColorPoints } from "./shader-colorPoints";
 import { ShaderFlatColorPoints } from "./shader-flatColorPoints";
+import { PointsLayer } from "./layer-points";
 
 export class Knot {
 
@@ -138,7 +139,7 @@ export class Knot {
                 break;
                 case RenderStyle.PICKING: 
 
-                    if(this._physicalLayer instanceof TrianglesLayer){
+                    if(this._physicalLayer instanceof TrianglesLayer || this._physicalLayer instanceof PointsLayer){
                         let auxShader = undefined;
     
                         if(this._shaders[viewId].length > 0){
