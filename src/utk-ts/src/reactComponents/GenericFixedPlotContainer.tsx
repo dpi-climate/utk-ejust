@@ -48,8 +48,8 @@ export const GenericFixedPlotContainer = ({
                 <Row className="justify-content-center">
                     {
                         (Object.keys(knotsByPhysical)).map((key: any) => {
-                            return <div>
-                                <label>{key}</label>
+                            return <div style={{marginTop: "30px", marginBottom: "20px"}}>
+                                <label style={{marginRight: "10px", fontWeight: "bold"}}>{key}:</label>
                                 <select style={{width: "200px"}} key={"selectKnotsByPhysical"+key} value={selectActiveKnotPhysical[key]} onChange={e => updateActiveKnotPhysical(key, e.target.value)}>
                                     {
                                         knotsByPhysical[key].map((knotId: string) => (

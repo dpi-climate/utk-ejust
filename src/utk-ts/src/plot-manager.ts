@@ -106,6 +106,7 @@ export class PlotManager {
     
                     value[knotData.physicalId+"_index"] = element.index;
                     value[knotData.physicalId+"_abstract"] = element.abstract[0];
+                    value[knotData.physicalId+"_timestep"] = k;
                     value[knotData.physicalId+"_highlight"] = element.highlighted;
                     value[knotData.physicalId+"_filteredIn"] = element.filteredIn;
 
@@ -380,20 +381,29 @@ export class PlotManager {
     }
 
     updatePlotsActivePhysical(){
+
+        const getPhysical = (knotId: string) => {
+            for(const knotData of this._plotsKnotsData){
+                if(knotId == knotData.knotId){
+                    return knotData.physicalId;
+                }
+            }
+        }
+
         for(let i = 0; i < this._plots.length; i++){
             let elem = this._plots[i].grammar;
 
             if(elem.plot.data != undefined){
                 for(const value of elem.plot.data.values){
                     for(const physicalId of Object.keys(this._activeKnotPhysical)){
-
                         let knotId = this._activeKnotPhysical[physicalId];
-
-                        value[physicalId+"_index"] = value[knotId+"_index"];
-                        value[physicalId+"_abstract"] = value[knotId+"_abstract"];
-                        value[physicalId+"_timestep"] = value[knotId+"_timestep"];
-                        value[physicalId+"_highlight"] = value[knotId+"_highlight"];
-                        value[physicalId+"_filteredIn"] = value[knotId+"_filteredIn"];
+                        if(physicalId == getPhysical(elem.knots[0]) && elem.knots.includes(knotId)){ // TODO: all the knots of the plot need to have the same physical
+                            value[physicalId+"_index"] = value[knotId+"_index"];
+                            value[physicalId+"_abstract"] = value[knotId+"_abstract"];
+                            value[physicalId+"_timestep"] = value[knotId+"_timestep"];
+                            value[physicalId+"_highlight"] = value[knotId+"_highlight"];
+                            value[physicalId+"_filteredIn"] = value[knotId+"_filteredIn"];
+                        }
                     }
                 }
             }
