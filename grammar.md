@@ -40,6 +40,12 @@ grammar_position:{
 
 In the previous example the editor is occupying columns 1 through 5 and line 4.
 
+Through the grammar flag it is possible to choose to display (true) or hide (false) the editor:  
+
+```js
+grammar: true
+```
+
 ### Knots 
 
 `knot := (id, group?, knotOp?, colorMap?, integration_scheme+)`

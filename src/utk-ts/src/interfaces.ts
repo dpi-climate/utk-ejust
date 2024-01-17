@@ -8,6 +8,7 @@ export interface IMasterGrammar {
     components: (IComponent)[],
     knots: IKnot[],
     grid: IGrid,
+    grammar: boolean,
     grammar_position?: IComponentPosition
 }
 

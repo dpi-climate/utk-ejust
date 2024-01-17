@@ -40,6 +40,23 @@ def add_cors_headers(response):
 
 @app.route('/')
 def root():
+
+    if("grammar" in request.args):
+
+        grammarBool = request.args.get('grammar')
+
+        grammar = {}
+        with open(grammarpath, "r", encoding="utf-8") as f:
+            grammar = json.load(f)
+
+        if(grammarBool == "True"): # activate grammar
+            grammar["grammar"] = True            
+        elif(grammarBool == "False"):
+            grammar["grammar"] = False
+
+        with open(grammarpath, "w", encoding="utf-8") as f:
+            f.write(json.dumps(grammar, indent=4))
+
     return send_from_directory(bundlepath, 'index.html')
 
 @app.route('/<path:name>')

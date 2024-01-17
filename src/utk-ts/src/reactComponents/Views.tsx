@@ -39,6 +39,8 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
   const [activeGrammarType, setActiveGrammarType] = useState(GrammarType.MASTER); // type of active grammar
   const [activeKnotPhysical, setActiveKnotPhysical] = useState<any>({}); // object that, for each physical, stores the knotId of the activated knot
   
+  const [refreshView, setRefreshView] = useState<boolean>(false); 
+
   const [subscribers, _setSubscribers] = useState<any>({}); // each key represent a channel that stores objects of type {id: string, callback: any, ref: any}
   const subscribersRef = useRef(subscribers);
   const setSubscribers = (data: string) => {
@@ -254,6 +256,12 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
     }
 
     grammarInterpreter.init(updateStatus);
+
+    window.addEventListener("resize", () => {
+      console.log("refreshing view");
+
+      setRefreshView(!refreshView);
+    });
   }, []);
 
   useEffect(() => {
@@ -309,7 +317,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
                   />
                 </div>
               </React.Fragment>
-            } else if(component.type == ComponentIdentifier.GRAMMAR) {
+            } else if(component.type == ComponentIdentifier.GRAMMAR && grammar.grammar != false) {
               // return <></>
               return <React.Fragment key={component.type+index}>
                 <div className='component' style={{position: "absolute", left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}>

@@ -149,8 +149,7 @@ class MapView {
 
         // inits the mouse events
         this.initMouseEvents();
-        // bind the window events
-        this.initWindowEvents();
+
         // inits the keyboard events
         this.initKeyboardEvents();
 
@@ -337,18 +336,6 @@ class MapView {
         this._keyboard.setMap(this);
     }
 
-    /**
-     * inits the window events
-     */
-    initWindowEvents(): void {
-        // resize listener
-        window.addEventListener('resize', () => {
-            // resizes the canvas
-            this.resize();
-            this.render();
-        });
-    }
-
     public setCamera(camera: {position: number[], direction: {right: number[], lookAt: number[], up: number[]}}): void{
         this._camera.setPosition(camera.position[0], camera.position[1]);
         this.render();
@@ -435,6 +422,8 @@ class MapView {
      */
     resize(): void {
 
+        console.log("resize map");
+
         const targetWidth = this._mapDiv.clientWidth;
         const targetHeight = this._mapDiv.clientHeight;
 
@@ -460,6 +449,7 @@ class MapView {
             }
         }
 
+        this.render();            
     }
 }
 

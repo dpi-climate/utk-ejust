@@ -89,6 +89,23 @@ class GrammarInterpreter {
         this.processGrammar(grammar);
     }
 
+    /**
+     * inits the window events
+     */
+    initWindowEvents(): void {
+
+        const resizeHandler = (event: any) => {
+            for(const component of this._components){
+                if(component.type == ComponentIdentifier.MAP){
+                    component.obj.resize();
+                }
+            }
+        }
+
+        window.removeEventListener("resize", resizeHandler);
+        window.addEventListener("resize", resizeHandler);
+    }
+
     // TODO: it should be possible to create more than one map. So map should not be a singleton
     public initViews(mainDiv: HTMLElement, grammar: IMasterGrammar, originalGrammar: IMasterGrammar, components_grammar: {id: string, originalGrammar: (IMapGrammar | IPlotGrammar), grammar: (IMapGrammar | IPlotGrammar | undefined)}[]){
 
