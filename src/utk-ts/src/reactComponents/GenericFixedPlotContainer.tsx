@@ -44,7 +44,7 @@ export const GenericFixedPlotContainer = ({
 
     return(
         <React.Fragment key={id}>
-            <div style={{padding: 0, width: "100%", height: "100%"}}>
+            <div style={{padding: 0, paddingLeft: "10px", width: "100%", height: "100%"}}>
                 <Row className="justify-content-center">
                     {
                         (Object.keys(knotsByPhysical)).map((key: any) => {
