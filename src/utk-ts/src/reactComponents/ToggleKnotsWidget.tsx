@@ -336,7 +336,7 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
       <React.Fragment>
         {/* <div className="d-flex align-items-center justify-content-center"> */}
         <div style={{overflowY: "auto", overflowX: "clip", height: "73%", padding: "10px"}} id={"toggle_widget_"+viewId}>
-            <ul style={{listStyleType: "none", padding: 0, margin: 0}}>
+            <ul style={{listStyleType: "none", padding: 10, margin: 0}}>
                 {
                     // Object.keys(listLayers).map((item, index) => (
                         // <React.Fragment key={item+"_fragment"}>
@@ -367,7 +367,8 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
                         //     </Row>
                         // </React.Fragment>
                     // ))
-                    grammarDefinition.args != undefined && grammarDefinition.args.categories != undefined ? grammarDefinition.args.categories.map((category: ICategory) => (
+                    grammarDefinition.args != undefined && grammarDefinition.args.categories != undefined ? 
+                    grammarDefinition.args.categories.map((category: ICategory) => (
                         getCategoryHtml(category, listLayers, knotVisibility)
                     )) : <></>
                 }
