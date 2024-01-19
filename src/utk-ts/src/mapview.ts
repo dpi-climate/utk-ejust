@@ -422,13 +422,15 @@ class MapView {
      */
     resize(): void {
 
-        console.log("resize map");
-
         const targetWidth = this._mapDiv.clientWidth;
         const targetHeight = this._mapDiv.clientHeight;
 
+        console.log(targetWidth);
+        console.log(targetHeight);
+        
         const value = Math.max(targetWidth, targetHeight);
-        this._glContext.viewport(0, 0, value, value);
+        // this._glContext.viewport(0, 0, value, value);
+        this._glContext.viewport(0, 0, targetWidth, targetHeight);
         this._canvas.width = targetWidth;
         this._canvas.height = targetHeight;
 

@@ -44,6 +44,7 @@ class GrammarInterpreter {
     protected _ajv: any;
     protected _ajv_map: any;
     protected _ajv_plots: any;
+    protected _viewReactElem: any;
 
     protected _cameraUpdateCallback: any;
 
@@ -100,6 +101,8 @@ class GrammarInterpreter {
                     component.obj.resize();
                 }
             }
+
+            // this.renderViews(this._mainDiv, this._preProcessedGrammar);
         }
 
         window.removeEventListener("resize", resizeHandler);
@@ -148,9 +151,9 @@ class GrammarInterpreter {
             components_id += 1;
         }
 
-        if(grammar.grammar_position != undefined){
-            this._components.push({id: "grammar", type: ComponentIdentifier.GRAMMAR, obj: {init: () => {}}, position: grammar.grammar_position});
-        }
+        // if(grammar.grammar_position != undefined){
+        this._components.push({id: "grammar", type: ComponentIdentifier.GRAMMAR, obj: {init: () => {}}, position: {width: [], height: []}});
+        // }
         
         this.renderViews(mainDiv, originalGrammar);
     }
@@ -287,6 +290,8 @@ class GrammarInterpreter {
             
             await this.replaceVariablesAndInitViews();
         }
+
+        this.initWindowEvents();
     }
 
     public updateComponentGrammar(component_grammar: IMapGrammar | IPlotGrammar, componentInfo: any = undefined){
@@ -930,7 +935,8 @@ class GrammarInterpreter {
                                     coordinates: coordinates[i],
                                     abstract: functionValues[i][0], // array with timesteps
                                     highlighted: highlighted[i],
-                                    filteredIn: true,
+                                    // filteredIn: true, // temp
+                                    filteredIn: false,
                                     index: i
                                 });
                             }else{
@@ -938,7 +944,8 @@ class GrammarInterpreter {
                                     coordinates: [],
                                     abstract: functionValues[i][0], // array with timesteps
                                     highlighted: highlighted[i],
-                                    filteredIn: true,
+                                    // filteredIn: true, // temp
+                                    filteredIn: false,
                                     index: i
                                 });
                             }
@@ -952,7 +959,8 @@ class GrammarInterpreter {
                     let knotData = {
                         knotId: knotId,
                         physicalId: lastLink.out.name,
-                        allFilteredIn: true,
+                        // allFilteredIn: true, // temp
+                        allFilteredIn: false,
                         elements: elements
                     }
 
@@ -1007,8 +1015,9 @@ class GrammarInterpreter {
         for(const component of this._components_grammar){
             grammars.push(component);
         }
-
-        this._root.render(React.createElement(Views, {viewObjs: this._components, mapsWidgets: this._maps_widgets, viewIds: viewIds, grammar: grammar, componentsGrammar: grammars, mainDivSize: {width: mainDiv.offsetWidth, height: mainDiv.offsetHeight}, grammarInterpreter: this}));
+ 
+        // this._root.render(React.createElement(Views, {viewObjs: this._components, mapsWidgets: this._maps_widgets, viewIds: viewIds, grammar: grammar, componentsGrammar: grammars, mainDivSize: {width: mainDiv.offsetWidth, height: mainDiv.offsetHeight}, grammarInterpreter: this}));
+        this._root.render(React.createElement(Views, {viewObjs: this._components, mapsWidgets: this._maps_widgets, viewIds: viewIds, grammar: grammar, componentsGrammar: grammars, mainDiv: mainDiv, grammarInterpreter: this}));
     }
 
 }

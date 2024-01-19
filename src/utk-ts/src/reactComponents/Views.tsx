@@ -1,6 +1,8 @@
 import React, {useEffect, useState, useRef} from 'react';
 import { GrammarPanelContainer } from './GrammarPanel';
 import { MapRendererContainer } from './MapRenderer';
+import { faArrowRight, faArrowLeft } from '@fortawesome/free-solid-svg-icons'
+import { Button } from "react-bootstrap";
 import { ComponentIdentifier, GrammarType, WidgetType} from '../constants';
 import {GrammarMethods} from '../grammar-methods';
 import './Dragbox.css'
@@ -20,12 +22,14 @@ type ViewProps = {
   viewIds: string[]
   grammar: IMasterGrammar
   componentsGrammar: { id: string, originalGrammar: IMapGrammar | IPlotGrammar, grammar: IMapGrammar | IPlotGrammar | undefined, position: IComponentPosition | undefined }[]
-  mainDivSize: {width: number, height: number}
+  // mainDivSize: {width: number, height: number}
+  mainDiv: any
   grammarInterpreter: any
 }
 
 // Render components
-function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, mainDivSize, grammarInterpreter}: ViewProps) {
+// function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, mainDivSize, grammarInterpreter}: ViewProps) {
+function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, mainDiv, grammarInterpreter}: ViewProps) {
 
   const [camera, setCamera] = useState<{position: number[], direction: {right: number[], lookAt: number[], up: number[]}}>({position: [], direction: {right: [], lookAt: [], up: []}}); // TODO: if we have multiple map instances we have multiple cameras
   const [filterKnots, setFilterKnots] = useState<number[]>([]);
@@ -232,7 +236,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
 
     let margin = 14;
 
-    return {width: widthPercentage*mainDivSize.width-margin, height: heightPercentage*mainDivSize.height-margin};
+    return {width: widthPercentage*mainDiv.offsetWidth-margin, height: heightPercentage*mainDiv.offsetHeight-margin};
   }
 
   const getTopLeft = (position: IComponentPosition) => {
@@ -242,7 +246,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
 
     let margin = 14;
 
-    return {top: topPercentange*mainDivSize.height+(margin/2), left: leftPercentange*mainDivSize.width+(margin/2)}
+    return {top: topPercentange*mainDiv.offsetHeight+(margin/2), left: leftPercentange*mainDiv.offsetWidth+(margin/2)}
   }
 
   // Executes after component rendered
@@ -258,10 +262,17 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
     grammarInterpreter.init(updateStatus);
 
     window.addEventListener("resize", () => {
-      console.log("refreshing view");
-
       setRefreshView(!refreshView);
     });
+
+    d3.select("#toggleSideBar").on("click", (event) => {
+      let currentClassed = d3.select(".sidebarGrammar").classed("sidebarGrammar--isHidden");
+      d3.select(".sidebarGrammar").classed("sidebarGrammar--isHidden", !currentClassed);
+      d3.select("#toggleSideBar").classed("sidebarGrammar--isOpen", currentClassed);
+      d3.select("#rightArrow").classed("hidden", currentClassed);
+      d3.select("#leftArrow").classed("hidden", !currentClassed);
+    });
+
   }, []);
 
   useEffect(() => {
@@ -283,8 +294,8 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
       <div style={{backgroundColor: "#EAEAEA", height: "100%", width: "100%", position: "relative"}}>
         {
           <MasterWidgets
-            width={mainDivSize.width}
-            height={mainDivSize.height}
+            width={mainDiv.offsetWidth}
+            height={mainDiv.offsetHeight}
             genericPlots={genericPlots}
             togglePlots={toggleAllPlots}
             editGrammar={setActiveGrammarAndType}
@@ -320,7 +331,11 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
             } else if(component.type == ComponentIdentifier.GRAMMAR && grammar.grammar != false) {
               // return <></>
               return <React.Fragment key={component.type+index}>
-                <div className='component' style={{position: "absolute", left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}>
+                <button id={"toggleSideBar"}>
+                  <FontAwesomeIcon id={"rightArrow"} size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faArrowRight} />
+                  <FontAwesomeIcon id={"leftArrow"} className='hidden' size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faArrowLeft} />
+                </button>
+                <div className='component sidebarGrammar sidebarGrammar--isHidden'>
                   <GrammarPanelContainer 
                     obj = {grammarInterpreter}
                     viewId={viewIds[index]}

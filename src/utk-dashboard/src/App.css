@@ -24,17 +24,17 @@
 
 .App {
   margin: 0px;
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows:
+  /* display: grid; */
+  /* grid-template-columns: 1fr; */
+  /* grid-template-rows:
     var(--nav-height)
-    1fr;
-  grid-template-areas: 
+    1fr; */
+  /* grid-template-areas: 
     "menu"
-    "content";
-  height: 100vh;
+    "content"; */
+  /* height: 100vh; */
   background-color: #F5F5F5;
-  text-align: center;
+  /* text-align: center; */
 }
 
 header.menu {

@@ -45,24 +45,28 @@ export const GenericFixedPlotContainer = ({
     return(
         <React.Fragment key={id}>
             <div style={{padding: 0, width: "100%", height: "100%"}}>
-                <Row className="justify-content-center">
-                    {
-                        (Object.keys(knotsByPhysical)).map((key: any) => {
-                            return <div style={{marginTop: "30px", marginBottom: "20px"}}>
-                                <label style={{marginRight: "10px", fontWeight: "bold"}}>{key}:</label>
-                                <select style={{width: "200px"}} key={"selectKnotsByPhysical"+key} value={selectActiveKnotPhysical[key]} onChange={e => updateActiveKnotPhysical(key, e.target.value)}>
-                                    {
-                                        knotsByPhysical[key].map((knotId: string) => (
-                                            <option value={knotId} key={"optionKnotsByPhysical"+knotId}>{knotId}</option>
-                                        ))
-                                    }
-                                </select>
-                            </div>
-                        })
-                    }
+                <Row className="justify-content-center" style={{height: "100%"}}>
+                    <Row className="justify-content-center" style={{height: "30%", padding: 0}}>
+                        {
+                            (Object.keys(knotsByPhysical)).map((key: any) => {
+                                return <div style={{marginTop: "30px", marginBottom: "20px"}}>
+                                    <label style={{marginRight: "10px", fontWeight: "bold"}}>{key}:</label>
+                                    <select style={{width: "200px"}} key={"selectKnotsByPhysical"+key} value={selectActiveKnotPhysical[key]} onChange={e => updateActiveKnotPhysical(key, e.target.value)}>
+                                        {
+                                            knotsByPhysical[key].map((knotId: string) => (
+                                                <option value={knotId} key={"optionKnotsByPhysical"+knotId}>{knotId}</option>
+                                            ))
+                                        }
+                                    </select>
+                                </div>
+                            })
+                        }
+                    </Row>
+                    <Row style={{width: "90%", height:"65%", padding: 0, overflow: "scroll"}}>
+                        <div id={svgId}>
+                        </div>
+                    </Row>
                 </Row>
-                <div id={svgId}>
-                </div>
             </div>
         </React.Fragment>
     )
