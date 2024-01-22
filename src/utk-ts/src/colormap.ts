@@ -1,5 +1,5 @@
 import * as d3_scale from 'd3-scale-chromatic';
-import * as d3_color from 'd3-color'
+import * as d3_color from 'd3-color';
 
 export abstract class ColorMap {
   protected static interpolator: (t: number) => string;

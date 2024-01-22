@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { GrammarType, WidgetType } from "../constants";
 import { IGenericWidget } from "../interfaces";
 import { ToggleKnotsWidget } from './ToggleKnotsWidget';
@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faLayerGroup, faChartSimple, faEyeSlash, faSearch, faEye, faCode } from '@fortawesome/free-solid-svg-icons'
 import * as d3 from "d3";
 import { InteractionChannel } from "../interaction-channel";
+import { ColorScaleContainer } from './ColorScale';
 
 type SideBarMapWidgetsProps = {
     x: number,
@@ -55,8 +56,53 @@ export const SideBarMapWidgets = ({x, y, mapWidth, mapHeight, listLayers, knotVi
     //   togglePlots();
     // }
 
+    const [colorScales, setColorScales] = useState<{range: number[], domain: number[], cmap: string, id: string, scale: string, visible: boolean}[]>([]);
+
+    useEffect(() => {
+
+      let colorScalesAux: any = [];
+
+      for(const group of Object.keys(listLayers)){
+          for(const layer of listLayers[group]){
+            colorScalesAux.push({range: layer.range, domain: layer.domain, cmap: layer.cmap, id: layer.id, scale: layer.scale, visible: false});
+          }
+      }
+
+      setColorScales(colorScalesAux);
+
+    }, [listLayers]);
+
+    const toggleColorScaleVisibility = (id: string) => {
+      let colorScalesAux: any = [];
+      
+      for(const colorScale of colorScales){
+
+        colorScalesAux.push({...colorScale});
+
+        if(colorScale.id == id){
+          colorScalesAux[colorScalesAux.length-1].visible = !colorScalesAux[colorScalesAux.length-1].visible;
+        }
+      }
+
+      setColorScales(colorScalesAux);
+    }
+
     return (
         <React.Fragment>
+          {
+              colorScales.map((colorScaleInfo: {range: number[], domain: number[], cmap: string, id: string, scale: string, visible: boolean}) => (
+                  <ColorScaleContainer 
+                      id={colorScaleInfo.id}
+                      x={20}
+                      y={-250}
+                      range={colorScaleInfo.range}
+                      domain={colorScaleInfo.domain}
+                      cmap={colorScaleInfo.cmap}
+                      scale={colorScaleInfo.scale}
+                      disp={colorScaleInfo.visible}
+                  />
+              ))
+          }
           {mapWidgets.length > 1 ? <div style={{backgroundColor: "white", width: "75px", position: "absolute", left: "10px", top: "10px", padding: "5px", borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)"}}>
             <Row>
               <FontAwesomeIcon size="2x" style={{color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px"}} icon={faCode} onClick={() => editGrammar(componentId, GrammarType.MAP)} />
@@ -91,6 +137,7 @@ export const SideBarMapWidgets = ({x, y, mapWidth, mapHeight, listLayers, knotVi
                         viewId = {"toggle_knot_"+index}
                         grammarDefinition = {component.grammarDefinition}
                         broadcastMessage = {broadcastMessage}
+                        toggleColorScaleVisibility = {toggleColorScaleVisibility}
                       />
                     </div>
                   </React.Fragment>
