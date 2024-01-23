@@ -4,22 +4,20 @@ import { Mesh } from "./mesh";
 import { MapStyle } from './map-style';
 
 // @ts-ignore
-import vsPicking from './shaders/picking-triangles.vs';
+import vsPicking from './shaders/picking-points.vs';
 // @ts-ignore
-import fsPicking from './shaders/picking-triangles.fs';
+import fsPicking from './shaders/picking-points.fs';
 import { AuxiliaryShaderTriangles } from "./auxiliaryShaderTriangles";
 
 import { IKnot } from "./interfaces";
 
-export class ShaderPickingTriangles extends Shader {
+export class ShaderPickingPoints extends Shader {
     // Data to be rendered
     protected _coords:  number[] = [];
-    protected _indices: number[] = [];
     protected _objectsIds: number[] = [];
 
     // Data loaction on GPU
     protected _glCoords:  WebGLBuffer | null = null;
-    protected _glIndices: WebGLBuffer | null = null;
     protected _glObjectsIds: WebGLBuffer | null = null;
 
     // Data has chaged
@@ -164,8 +162,6 @@ export class ShaderPickingTriangles extends Shader {
 
         this._coords = mesh.getCoordinatesVBO(centroid, viewId);
         
-        this._indices = mesh.getIndicesVBO();
-
         this._objectsIds = [];
 
         this._coordsPerComp = mesh.getCoordsPerComp();
@@ -304,6 +300,8 @@ export class ShaderPickingTriangles extends Shader {
 
         let id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
         
+        console.log(id);
+
         if(this.isFilteredIn(id)){ // filtered in so can be interacted
             this._auxiliaryShader.setPickedObject([id]);
         }
@@ -462,15 +460,45 @@ export class ShaderPickingTriangles extends Shader {
         this._coordsId = glContext.getAttribLocation(this._shaderProgram, 'vertCoords');
         // Create a buffer for the positions.
         this._glCoords = glContext.createBuffer();
-
-        // Creates the elements buffer
-        this._glIndices = glContext.createBuffer();
     }
 
     public bindVertexArrayObject(glContext: WebGL2RenderingContext, mesh: Mesh): void {
         if (!this._shaderProgram) {
             return;
         }
+
+        // remove
+        for(let i = 0; i < this._objectsIds.length/4; i++){
+            if(this._objectsIds[i*4] > 0){
+                this._objectsIds[i*4] *= 10
+            }
+
+            if(this._objectsIds[i*4+1] > 0){
+                this._objectsIds[i*4+1] *= 10
+            }
+
+            if(this._objectsIds[i*4+2] > 0){
+                this._objectsIds[i*4+2] *= 10
+            }
+
+            // this._objectsIds[i*4] = 1.0;
+            // this._objectsIds[i*4+1] = 1.0;
+            // this._objectsIds[i*4+2] = 0.0;
+            this._objectsIds[i*4+3] = 1.0;
+        }
+
+       // binds the position buffer
+       glContext.bindBuffer(glContext.ARRAY_BUFFER, this._glCoords);
+       // send data to gpu
+       if (this._coordsDirty) {
+           glContext.bufferData(
+               glContext.ARRAY_BUFFER, new Float32Array(this._coords), glContext.STATIC_DRAW
+           );
+       }
+       
+       // binds the VAO
+       glContext.vertexAttribPointer(this._coordsId, mesh.dimension, glContext.FLOAT, false, 0, 0);
+       glContext.enableVertexAttribArray(this._coordsId);
 
         // binds the position buffer
         glContext.bindBuffer(glContext.ARRAY_BUFFER, this._glObjectsIds);
@@ -485,30 +513,60 @@ export class ShaderPickingTriangles extends Shader {
         glContext.vertexAttribPointer(this._objectsIdsId, 4, glContext.FLOAT, false, 0, 0);
         glContext.enableVertexAttribArray(this._objectsIdsId);
 
-        // binds the position buffer
-        glContext.bindBuffer(glContext.ARRAY_BUFFER, this._glCoords);
-        // send data to gpu
-        if (this._coordsDirty) {
-            glContext.bufferData(
-                glContext.ARRAY_BUFFER, new Float32Array(this._coords), glContext.STATIC_DRAW
-            );
-        }
-        
-        // binds the VAO
-        glContext.vertexAttribPointer(this._coordsId, mesh.dimension, glContext.FLOAT, false, 0, 0);
-        glContext.enableVertexAttribArray(this._coordsId);
-
-        // binds the indices buffer
-        glContext.bindBuffer(glContext.ELEMENT_ARRAY_BUFFER, this._glIndices);
-        // send data to g4pu
-        if (this._coordsDirty) {
-            glContext.bufferData(
-            glContext.ELEMENT_ARRAY_BUFFER, new Uint32Array(this._indices), glContext.STATIC_DRAW);
-        }
-
         this._coordsDirty = false;
         this._objectsIdsDirty = false;
     }
+
+    // public renderPass(glContext: WebGL2RenderingContext, glPrimitive: number, camera: any, mesh: Mesh, zOrder: number): void {
+    //     if (!this._shaderProgram) {
+    //         return;
+    //     }
+
+    //     glContext.useProgram(this._shaderProgram); 
+        
+    //     if(this._resizeDirty){
+    //         this.setFramebufferAttachmentSizes(glContext, glContext.canvas.width, glContext.canvas.height);
+    //         this._resizeDirty = false;
+    //     }
+
+    //     // binds data
+    //     this.bindTextures(glContext);
+    //     this.bindUniforms(glContext, camera);
+    //     this.bindVertexArrayObject(glContext, mesh);
+
+    //     // draw the geometry
+    //     glContext.drawArrays(glPrimitive, 0, this._coords.length/3);
+
+    //     if(this._pickFilterDirty){
+    //         this.pickPixelFilter(glContext);
+    //         this._pickFilterDirty = false;
+    //     }
+
+    //     if(this._pickObjectDirty){
+    //         this.pickObject(glContext);
+    //         this._pickObjectDirty = false;
+    //     }
+
+    //     if(this._pickObjectAreaDirty){
+    //         this.pickObjectArea(glContext);
+    //         this._pickObjectAreaDirty = false;
+    //     }
+        
+    //     const sky = MapStyle.getColor('sky').concat([1.0]);
+
+    //     let blankColorRGBA = []
+
+    //     blankColorRGBA.push(255);
+    //     blankColorRGBA.push(255);
+    //     blankColorRGBA.push(255);
+    //     blankColorRGBA.push(255);
+
+    //     glContext.clearColor(blankColorRGBA[0], blankColorRGBA[1], blankColorRGBA[2], blankColorRGBA[3]);
+    //     glContext.clear(glContext.COLOR_BUFFER_BIT | glContext.DEPTH_BUFFER_BIT);
+
+    //     glContext.bindFramebuffer(glContext.FRAMEBUFFER, null);
+
+    // }
 
     public renderPass(glContext: WebGL2RenderingContext, glPrimitive: number, camera: any, mesh: Mesh, zOrder: number): void {
         if (!this._shaderProgram) {
@@ -517,47 +575,11 @@ export class ShaderPickingTriangles extends Shader {
 
         glContext.useProgram(this._shaderProgram); 
         
-        if(this._resizeDirty){
-            this.setFramebufferAttachmentSizes(glContext, glContext.canvas.width, glContext.canvas.height);
-            this._resizeDirty = false;
-        }
-
         // binds data
-        this.bindTextures(glContext);
         this.bindUniforms(glContext, camera);
         this.bindVertexArrayObject(glContext, mesh);
-
-        // draw the geometry
-        glContext.drawElements(glPrimitive, this._indices.length, glContext.UNSIGNED_INT, 0);
-
-        if(this._pickFilterDirty){
-            this.pickPixelFilter(glContext);
-            this._pickFilterDirty = false;
-        }
-
-        if(this._pickObjectDirty){
-            this.pickObject(glContext);
-            this._pickObjectDirty = false;
-        }
-
-        if(this._pickObjectAreaDirty){
-            this.pickObjectArea(glContext);
-            this._pickObjectAreaDirty = false;
-        }
         
-        const sky = MapStyle.getColor('sky').concat([1.0]);
-
-        let blankColorRGBA = []
-
-        blankColorRGBA.push(255);
-        blankColorRGBA.push(255);
-        blankColorRGBA.push(255);
-        blankColorRGBA.push(255);
-
-        glContext.clearColor(blankColorRGBA[0], blankColorRGBA[1], blankColorRGBA[2], blankColorRGBA[3]);
-        glContext.clear(glContext.COLOR_BUFFER_BIT | glContext.DEPTH_BUFFER_BIT);
-
-        glContext.bindFramebuffer(glContext.FRAMEBUFFER, null);
-
+        glContext.drawArrays(glPrimitive, 0, this._coords.length/3);
     }
+
 }

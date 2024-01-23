@@ -1,5 +1,6 @@
 import { Shader } from "./shader";
 import { Mesh } from "./mesh";
+import { AuxiliaryShaderTriangles } from "./auxiliaryShaderTriangles";
 
 import { ColorMap } from "./colormap";
 
@@ -14,11 +15,12 @@ import * as d3_scale from 'd3-scale';
 
 const d3 = require('d3');
 
-export class ShaderFlatColorPointsMap extends Shader {
+export class ShaderFlatColorPointsMap extends AuxiliaryShaderTriangles {
     // Data to be rendered
     protected _coords:  number[] = [];
     protected _function: number[][] = [];
     protected _currentTimestepFunction: number = 0;
+    protected _coordsPerComp: number[] = [];
 
     // TODO decide which function to use
     protected _functionToUse: number = 0;
@@ -35,23 +37,29 @@ export class ShaderFlatColorPointsMap extends Shader {
     protected _glFunction: WebGLBuffer | null = null;
     protected _glIndices: WebGLBuffer | null = null;
     protected _glFiltered: WebGLBuffer | null = null;
+    protected _glColorOrPicked: WebGLBuffer | null = null;
 
     // Data has changed
     protected _coordsDirty: boolean = false;
     protected _functionDirty: boolean = false;
     protected _colorMapDirty: boolean = false;
     protected _filteredDirty: boolean = false;
+    protected _colorOrPickedDirty: boolean = false;
 
     // Id of each property in the VAO
     protected _coordsId = -1;
     protected _functionId = -1;
     protected _filteredId = -1;
+    protected _colorOrPickedId = -1;
 
     // Uniforms location
     protected _uModelViewMatrix: WebGLUniformLocation | null = null;
     protected _uProjectionMatrix: WebGLUniformLocation | null = null;
     protected _uWorldOrigin: WebGLUniformLocation | null = null;
     protected _uColorMap: WebGLUniformLocation | null = null;
+
+    protected _currentPickedElement: number[]; // stores the indices of the currently picked elements
+    protected _colorOrPicked: number[] = [];
 
     protected _filtered: number[] = [];
 
@@ -79,9 +87,12 @@ export class ShaderFlatColorPointsMap extends Shader {
         this._filteredDirty = true;
         this._coords = mesh.getCoordinatesVBO(centroid, viewId);
 
-        let totalNumberOfCoords = mesh.getTotalNumberOfCoords()
+        this._coordsPerComp = mesh.getCoordsPerComp();
+
+        let totalNumberOfCoords = mesh.getTotalNumberOfCoords();
 
         for(let i = 0; i < totalNumberOfCoords; i++){
+            this._colorOrPicked.push(0.0);
             this._filtered.push(1.0); // 1 true to include
         }
     }
@@ -90,6 +101,7 @@ export class ShaderFlatColorPointsMap extends Shader {
         this._function = mesh.getFunctionVBO(knot.id);
         this._currentKnot = knot;
         this._functionDirty = true;
+        this._colorOrPickedDirty = true;
         
         let maxFuncValue = null;
         let minFuncValue = null;
@@ -209,11 +221,40 @@ export class ShaderFlatColorPointsMap extends Shader {
         this._filteredId = glContext.getAttribLocation(this._shaderProgram, 'inFiltered');
         this._glFiltered = glContext.createBuffer();
 
+        this._colorOrPickedId = glContext.getAttribLocation(this._shaderProgram, 'inColorOrPicked');
+        this._glColorOrPicked = glContext.createBuffer();
+
         // Creates the coords id.
         this._functionId = glContext.getAttribLocation(this._shaderProgram, 'funcValues');
         // Creates the function id
         this._glFunction = glContext.createBuffer();
 
+    }
+
+    public setPickedObject(ids: number[]): void {
+        
+        this._currentPickedElement = ids;
+        
+        for(const objectId of ids){
+            let readCoords = 0;
+            for(let i = 0; i < this._coordsPerComp.length; i++){
+                if(objectId == i){
+                    break;
+                }
+    
+                readCoords += this._coordsPerComp[i];
+            }
+    
+            for(let i = 0; i < this._coordsPerComp[objectId]; i++){
+                if(this._colorOrPicked[readCoords+i] == 1){
+                    this._colorOrPicked[readCoords+i] = 0;
+                }else if(this._colorOrPicked[readCoords+i] == 0){
+                    this._colorOrPicked[readCoords+i] = 1;
+                }
+            }
+        }
+
+        this._colorOrPickedDirty = true;
     }
 
     public bindVertexArrayObject(glContext: WebGL2RenderingContext, mesh: Mesh): void {
@@ -244,6 +285,16 @@ export class ShaderFlatColorPointsMap extends Shader {
         glContext.vertexAttribPointer(this._filteredId, 1, glContext.FLOAT, false, 0, 0);
         glContext.enableVertexAttribArray(this._filteredId); 
 
+        glContext.bindBuffer(glContext.ARRAY_BUFFER, this._glColorOrPicked);
+        if (this._colorOrPickedDirty) {
+            glContext.bufferData(
+                glContext.ARRAY_BUFFER, new Float32Array(this._colorOrPicked), glContext.STATIC_DRAW
+            );
+        }
+
+        glContext.vertexAttribPointer(this._colorOrPickedId, 1, glContext.FLOAT, false, 0, 0);
+        glContext.enableVertexAttribArray(this._colorOrPickedId); 
+
         // binds the position buffer
         glContext.bindBuffer(glContext.ARRAY_BUFFER, this._glFunction);
         // send data to gpu
@@ -258,11 +309,28 @@ export class ShaderFlatColorPointsMap extends Shader {
 
         this._coordsDirty = false;
         this._functionDirty = false;
+        this._colorOrPickedDirty = false;
         this._filteredDirty = false;
     }
 
     public setHighlightElements(coordinates: number[], value: boolean): void {
-        throw Error("The shader flat color map can not highlight elements yet");
+        for(const coordIndex of coordinates){
+            if(value)
+                this._colorOrPicked[coordIndex] = 1;
+            else
+                this._colorOrPicked[coordIndex] = 0;
+        }
+
+        this._colorOrPickedDirty = true;
+    }
+
+    public clearPicking(){
+
+        for(let i = 0; i < this._colorOrPicked.length; i++){
+            this._colorOrPicked[i] = 0;
+        }
+
+        this._colorOrPickedDirty = true;
     }
 
     public renderPass(glContext: WebGL2RenderingContext, glPrimitive: number, camera: any, mesh: Mesh, zOrder: number): void {
@@ -275,17 +343,17 @@ export class ShaderFlatColorPointsMap extends Shader {
         // binds data
         this.bindUniforms(glContext, camera);
 
-        glContext.stencilFunc(
-            glContext.GEQUAL,     // the test
-            zOrder,            // reference value
-            0xFF,         // mask
-        );
+        // glContext.stencilFunc(
+        //     glContext.GEQUAL,     // the test
+        //     zOrder,            // reference value
+        //     0xFF,         // mask
+        // );
 
-        glContext.stencilOp(
-            glContext.KEEP,     // what to do if the stencil test fails
-            glContext.KEEP,     // what to do if the depth test fails
-            glContext.REPLACE,     // what to do if both tests pass
-        );
+        // glContext.stencilOp(
+        //     glContext.KEEP,     // what to do if the stencil test fails
+        //     glContext.KEEP,     // what to do if the depth test fails
+        //     glContext.REPLACE,     // what to do if both tests pass
+        // );
 
         this.bindVertexArrayObject(glContext, mesh);
         this.bindTextures(glContext);

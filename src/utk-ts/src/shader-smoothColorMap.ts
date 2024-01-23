@@ -389,7 +389,6 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         }
 
         this._colorOrPickedDirty = true;
-
     }
 
     public renderPass(glContext: WebGL2RenderingContext, glPrimitive: number, camera: any, mesh: Mesh, zOrder: number): void {

@@ -11,9 +11,11 @@ uniform highp vec2 uWorldOrigin;
 in highp vec3 vertCoords;
 in highp float funcValues; 
 in lowp float inFiltered; // Indicates if a pixel is filtered in or out
+in lowp float inColorOrPicked; // Indicates if a pixel should be colored by function or picked color
 
 out highp vec2 texCoords;
 out lowp float filtered;
+out lowp float vColorOrPicked;
 
 vec2 latLngToPixel(highp float latitude, highp float longitude){
   highp float sinLatitude = sin(latitude * pi_180);
@@ -30,7 +32,7 @@ void main() {
   highp vec3 finalPos = vertCoords;// - vec3(uWorldOrigin, 0);
 
   filtered = inFiltered;
-
+  vColorOrPicked = inColorOrPicked;
   texCoords = vec2(funcValues, 0);
   gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(finalPos, 1.0);
   gl_PointSize = 10.0;

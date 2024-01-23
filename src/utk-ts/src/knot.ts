@@ -22,6 +22,7 @@ import { LayerManager } from "./layer-manager";
 import { ShaderColorPoints } from "./shader-colorPoints";
 import { ShaderFlatColorPoints } from "./shader-flatColorPoints";
 import { PointsLayer } from "./layer-points";
+import { ShaderPickingPoints } from "./shader-picking-points";
 
 export class Knot {
 
@@ -162,7 +163,13 @@ export class Knot {
                         }
     
                         if(auxShader && auxShader instanceof AuxiliaryShaderTriangles){
-                            shader = new ShaderPickingTriangles(glContext, auxShader);
+
+                            if(this._physicalLayer instanceof TrianglesLayer){
+                                shader = new ShaderPickingTriangles(glContext, auxShader);
+                            }else{
+                                shader = new ShaderPickingPoints(glContext, auxShader);
+                            }
+
                         }else{
                             throw new Error("The shader picking needs an auxiliary shader. The auxiliary shader is the one right before (order matters) shader picking in renderStyle array. SMOOTH_COLOR_MAP can be used as an auxiliary array");
                         }
@@ -465,7 +472,7 @@ export class Knot {
                 let shaders = this._shaders[parseInt(key)];
                 for(let j = 0; j < shaders.length; j++){
                     let shader = shaders[j];
-                    if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles){
+                    if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles || shader instanceof ShaderPickingPoints){
                         shader.clearPicking();
                     }
                 }
@@ -577,7 +584,7 @@ export class Knot {
             if(highlightTriangleObject || areaHighlightTriangleObjects){
 
                 //triangles layer interactions
-                if(this._physicalLayer instanceof TrianglesLayer){ // TODO: generalize this
+                if(this._physicalLayer instanceof TrianglesLayer || this._physicalLayer instanceof PointsLayer){ // TODO: generalize this
                     for(const key of Object.keys(this._maps)){
                         let map = this._maps[parseInt(key)];
                         let currentPoint = map.mouse.currentPoint;
@@ -600,7 +607,7 @@ export class Knot {
                     map.render();
                 }
 
-                if(this._physicalLayer instanceof TrianglesLayer){ // TODO: generalize this
+                if(this._physicalLayer instanceof TrianglesLayer || this._physicalLayer instanceof PointsLayer){ // TODO: generalize this
                     for(const key of Object.keys(this._shaders)){
                         let shaders = this._shaders[parseInt(key)];
                         let objectIds = this._physicalLayer.getIdLastHighlightedElement(shaders);
