@@ -24,6 +24,8 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
     const [maxTimestep, setMaxTimestep] = useState<number>(0);
     const [minTimestep, setMinTimestep] = useState<number>(0);
 
+    const [sliderValue, setSliderValue] = useState<number[]>([0,1]);
+
     const [fps, _setFps] = useState<number>(5);
 
     const fpsRef = useRef(fps);
@@ -175,6 +177,8 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
         setMinTimestep(minMaxTimesteps[0]);
         setMaxTimestep(minMaxTimesteps[1]);
 
+        setSliderValue([0,Math.round((1/(minTimestep+1))*100)]);
+
     }, [listLayers]);
 
     const getMarks = (layers: any) => {
@@ -230,14 +234,23 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
         setRange(newObj);
     }
 
-    const handleChangeSlidesTimesteps = (e: any, layer: any, step: number) => {
+    const handleChangeSlidesTimesteps = (sliderValue: number[], layer: any, step: number) => {
+
         // even though it is a range of values the timestep shown is always the first
-        let currentTimestep = Math.round(e.target.value[0]/step);
+        let currentTimestep = Math.round(sliderValue[0]/step);
 
         if(currentTimestep <= layer.timesteps-1){ // TODO: add lower boundary
             broadcastMessage("", "updateTimestepKnot", {knotId: layer.id, timestep: currentTimestep, mapId: obj.viewId});
         }
     }
+
+    useEffect(() => {
+        for(const item of Object.keys(listLayers)){
+            if(listLayers[item].length == 1){
+                handleChangeSlidesTimesteps(sliderValue, listLayers[item][0], getSlideSteps(listLayers))
+            }
+        }
+    }, [sliderValue]);
 
     const [collapsedItems, setCollapsedItems] = useState<string[]>([]);
 
@@ -375,13 +388,18 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
                             <Col md={12}>
                                 <Slider
                                     key={item+"_slider_timestep"}
-                                    defaultValue={[0,0+Math.round((1/maxTimestep)*100)]}
+                                    // defaultValue={[0,0+Math.round((1/maxTimestep)*100)]}
+                                    value={sliderValue}
                                     valueLabelDisplay="off"
                                     step={Math.round((1/(maxTimestep - minTimestep))*100)}
                                     min={0}
                                     max={Math.round((1/maxTimestep)*100)*(maxTimestep-1)}
                                     marks = {getMarksTimesteps(listLayers[item][0], maxTimestep - minTimestep)}
-                                    onChange={(e) => {handleChangeSlidesTimesteps(e, listLayers[item][0], getSlideSteps(listLayers))}}
+                                    onChange={(e: any) => {
+                                        if(e != null && e.target != null){
+                                            setSliderValue(e.target.value);
+                                        }
+                                    }}
                                     disabled = {!groupVisibility(listLayers, knotVisibility, item)}
                                 />
                             </Col>

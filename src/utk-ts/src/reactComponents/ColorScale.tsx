@@ -54,8 +54,8 @@ export const ColorScaleContainer = ({
               
         let svg = d3.select('#'+id)
             .append('svg')
-            .attr('width', 100)
-            .attr('height', 220);
+            .attr('width', 70)
+            .attr('height', 190);
 
         let grad = svg.append('defs')
             .append('linearGradient')
@@ -76,7 +76,7 @@ export const ColorScaleContainer = ({
 
         svg.append('rect')
             .attr('x', 10)
-            .attr('y', 10)
+            .attr('y', 20)
             .attr('width', 50)
             .attr('height', 150)
             .style('fill', 'url(#grad'+id+')');
@@ -89,8 +89,8 @@ export const ColorScaleContainer = ({
 
         svg.append('text')
             .attr("text-anchor", "middle")
-            .attr("x", 25)
-            .attr("y", 165)
+            .attr("x", 35)
+            .attr("y", 190)
             .text(domain[0]);
     }, []);
 
