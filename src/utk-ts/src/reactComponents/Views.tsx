@@ -350,6 +350,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
                     activeGrammar = {activeGrammar}
                     activeGrammarType={activeGrammarType}
                     componentsGrammar = {componentsGrammar}
+                    editGrammar={setActiveGrammarAndType}
                   />
                 </div>
               </React.Fragment>

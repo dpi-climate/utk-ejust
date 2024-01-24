@@ -24,6 +24,9 @@ import schema_categories from '../json-schema-categories.json';
 import { GrammarPanelVisibility } from "./SideBarMapWigets";
 import { GrammarType } from "../constants";
 
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCode } from '@fortawesome/free-solid-svg-icons'
+
 // declaring the types of the props
 type GrammarPanelProps = {
     obj: any,
@@ -38,7 +41,8 @@ type GrammarPanelProps = {
     applyGrammarButtonId: string,
     linkMapAndGrammarId: string,
     activeGrammar: string,
-    activeGrammarType: GrammarType
+    activeGrammarType: GrammarType,
+    editGrammar: any
 }
 
 export const GrammarPanelContainer = ({
@@ -54,7 +58,8 @@ export const GrammarPanelContainer = ({
     applyGrammarButtonId,
     linkMapAndGrammarId, 
     activeGrammar,
-    activeGrammarType
+    activeGrammarType,
+    editGrammar
 }: GrammarPanelProps
 ) =>{
 
@@ -378,7 +383,7 @@ export const GrammarPanelContainer = ({
 
     return(
         <React.Fragment>
-            <div className="my-editor" style={{overflow: "auto", fontSize: "24px", height: "max(90%,calc(100% - 40px))"}}>
+            <div className="my-editor" style={{overflow: "auto", fontSize: "24px", height: "calc(100% - 75px)"}}>
                 <JSONEditorReact
                     content={checkIfAddCameraAndFilter(grammar, camera, tempGrammar, filterKnots)}
                     schema={activeSchema}
@@ -391,11 +396,16 @@ export const GrammarPanelContainer = ({
                     indentation={2}
                 />
             </div>
-            <div className="d-flex align-items-center justify-content-center" style={{overflow: "auto", height: "min(10%, 40px)"}}>
-                <Button variant="secondary" id={applyGrammarButtonId} style={{marginRight: "10px"}}>Apply Grammar</Button>
+            <div className="d-flex align-items-center justify-content-left" style={{overflow: "auto", height: "75px"}}>
+                <Button variant="primary" id={applyGrammarButtonId} style={{marginLeft: "10px", marginRight: "20px", height: "54px"}}>Apply Grammar</Button>
                 <input name="linkMapAndGrammar" type="checkbox" id={linkMapAndGrammarId} style={{marginRight: "5px"}}></input>
                 <label htmlFor="linkMapAndGrammar">Link</label>
             </div>
+            <div style={{ zIndex: 5, backgroundColor: "white", width: "75px", position: "absolute", right: "10px", bottom: "10px", padding: "5px", borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)" }}>
+                <Row>
+                    <FontAwesomeIcon size="2x" style={{ color: "#696969", padding: 0, marginTop: "5px", marginBottom: "5px" }} icon={faCode} onClick={() => editGrammar("grammar", GrammarType.MASTER)} />
+                </Row>
+            </div>  
         </React.Fragment>
     )
 }
