@@ -467,25 +467,25 @@ export class ShaderPickingPoints extends Shader {
             return;
         }
 
-        // remove
-        for(let i = 0; i < this._objectsIds.length/4; i++){
-            if(this._objectsIds[i*4] > 0){
-                this._objectsIds[i*4] *= 10
-            }
+        // // remove
+        // for(let i = 0; i < this._objectsIds.length/4; i++){
+        //     if(this._objectsIds[i*4] > 0){
+        //         this._objectsIds[i*4] *= 10
+        //     }
 
-            if(this._objectsIds[i*4+1] > 0){
-                this._objectsIds[i*4+1] *= 10
-            }
+        //     if(this._objectsIds[i*4+1] > 0){
+        //         this._objectsIds[i*4+1] *= 10
+        //     }
 
-            if(this._objectsIds[i*4+2] > 0){
-                this._objectsIds[i*4+2] *= 10
-            }
+        //     if(this._objectsIds[i*4+2] > 0){
+        //         this._objectsIds[i*4+2] *= 10
+        //     }
 
-            // this._objectsIds[i*4] = 1.0;
-            // this._objectsIds[i*4+1] = 1.0;
-            // this._objectsIds[i*4+2] = 0.0;
-            this._objectsIds[i*4+3] = 1.0;
-        }
+        //     // this._objectsIds[i*4] = 1.0;
+        //     // this._objectsIds[i*4+1] = 1.0;
+        //     // this._objectsIds[i*4+2] = 0.0;
+        //     this._objectsIds[i*4+3] = 1.0;
+        // }
 
        // binds the position buffer
        glContext.bindBuffer(glContext.ARRAY_BUFFER, this._glCoords);
@@ -517,57 +517,6 @@ export class ShaderPickingPoints extends Shader {
         this._objectsIdsDirty = false;
     }
 
-    // public renderPass(glContext: WebGL2RenderingContext, glPrimitive: number, camera: any, mesh: Mesh, zOrder: number): void {
-    //     if (!this._shaderProgram) {
-    //         return;
-    //     }
-
-    //     glContext.useProgram(this._shaderProgram); 
-        
-    //     if(this._resizeDirty){
-    //         this.setFramebufferAttachmentSizes(glContext, glContext.canvas.width, glContext.canvas.height);
-    //         this._resizeDirty = false;
-    //     }
-
-    //     // binds data
-    //     this.bindTextures(glContext);
-    //     this.bindUniforms(glContext, camera);
-    //     this.bindVertexArrayObject(glContext, mesh);
-
-    //     // draw the geometry
-    //     glContext.drawArrays(glPrimitive, 0, this._coords.length/3);
-
-    //     if(this._pickFilterDirty){
-    //         this.pickPixelFilter(glContext);
-    //         this._pickFilterDirty = false;
-    //     }
-
-    //     if(this._pickObjectDirty){
-    //         this.pickObject(glContext);
-    //         this._pickObjectDirty = false;
-    //     }
-
-    //     if(this._pickObjectAreaDirty){
-    //         this.pickObjectArea(glContext);
-    //         this._pickObjectAreaDirty = false;
-    //     }
-        
-    //     const sky = MapStyle.getColor('sky').concat([1.0]);
-
-    //     let blankColorRGBA = []
-
-    //     blankColorRGBA.push(255);
-    //     blankColorRGBA.push(255);
-    //     blankColorRGBA.push(255);
-    //     blankColorRGBA.push(255);
-
-    //     glContext.clearColor(blankColorRGBA[0], blankColorRGBA[1], blankColorRGBA[2], blankColorRGBA[3]);
-    //     glContext.clear(glContext.COLOR_BUFFER_BIT | glContext.DEPTH_BUFFER_BIT);
-
-    //     glContext.bindFramebuffer(glContext.FRAMEBUFFER, null);
-
-    // }
-
     public renderPass(glContext: WebGL2RenderingContext, glPrimitive: number, camera: any, mesh: Mesh, zOrder: number): void {
         if (!this._shaderProgram) {
             return;
@@ -575,11 +524,63 @@ export class ShaderPickingPoints extends Shader {
 
         glContext.useProgram(this._shaderProgram); 
         
+        if(this._resizeDirty){
+            this.setFramebufferAttachmentSizes(glContext, glContext.canvas.width, glContext.canvas.height);
+            this._resizeDirty = false;
+        }
+
         // binds data
+        this.bindTextures(glContext);
         this.bindUniforms(glContext, camera);
         this.bindVertexArrayObject(glContext, mesh);
-        
+
+        // draw the geometry
         glContext.drawArrays(glPrimitive, 0, this._coords.length/3);
+
+        if(this._pickFilterDirty){
+            this.pickPixelFilter(glContext);
+            this._pickFilterDirty = false;
+        }
+
+        if(this._pickObjectDirty){
+            this.pickObject(glContext);
+            this._pickObjectDirty = false;
+        }
+
+        if(this._pickObjectAreaDirty){
+            this.pickObjectArea(glContext);
+            this._pickObjectAreaDirty = false;
+        }
+        
+        const sky = MapStyle.getColor('sky').concat([1.0]);
+
+        let blankColorRGBA = []
+
+        blankColorRGBA.push(255);
+        blankColorRGBA.push(255);
+        blankColorRGBA.push(255);
+        blankColorRGBA.push(255);
+
+        glContext.clearColor(blankColorRGBA[0], blankColorRGBA[1], blankColorRGBA[2], blankColorRGBA[3]);
+        glContext.clear(glContext.COLOR_BUFFER_BIT | glContext.DEPTH_BUFFER_BIT);
+
+        glContext.bindFramebuffer(glContext.FRAMEBUFFER, null);
+
     }
+
+    // remove
+    // public renderPass(glContext: WebGL2RenderingContext, glPrimitive: number, camera: any, mesh: Mesh, zOrder: number): void {
+    //     if (!this._shaderProgram) {
+    //         return;
+    //     }
+
+    //     glContext.useProgram(this._shaderProgram); 
+        
+    //     // binds data
+    //     this.bindUniforms(glContext, camera);
+    //     this.bindVertexArrayObject(glContext, mesh);
+        
+    //     glContext.drawArrays(glPrimitive, 0, this._coords.length/3);
+    // }
 
 }
