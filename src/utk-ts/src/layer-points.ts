@@ -113,8 +113,17 @@ export class PointsLayer extends Layer {
 
         // the abs surfaces are loaded first to update the stencil
         for (const shader of shaders) {
-            shader.renderPass(glContext, glContext.POINTS, this._camera, this._mesh, -1);
+            if(shader instanceof ShaderPickingPoints){
+                shader.renderPass(glContext, glContext.POINTS, this._camera, this._mesh, -1);
+            }
         }
+
+        for (const shader of shaders) {
+            if(!(shader instanceof ShaderPickingPoints)){
+                shader.renderPass(glContext, glContext.POINTS, this._camera, this._mesh, -1);
+            }
+        }
+
 
         // disables stencil
         // glContext.disable(glContext.STENCIL_TEST);
