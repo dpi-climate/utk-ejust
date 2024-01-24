@@ -12,13 +12,19 @@ type ToggleKnotsWidgetProps = {
     viewId: string
     grammarDefinition: any
     broadcastMessage: any
+    toggleColorScaleVisibility: any
 }
 
-export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, grammarDefinition, broadcastMessage}:ToggleKnotsWidgetProps) =>{
+export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, grammarDefinition, broadcastMessage, toggleColorScaleVisibility}:ToggleKnotsWidgetProps) =>{
    
     // Animation ====================================================
 
     const [initialTime, setInitialTime] = useState<number>(Date.now());
+
+    const [maxTimestep, setMaxTimestep] = useState<number>(0);
+    const [minTimestep, setMinTimestep] = useState<number>(0);
+
+    const [sliderValue, setSliderValue] = useState<number[]>([0,1]);
 
     const [fps, _setFps] = useState<number>(5);
 
@@ -45,6 +51,8 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
         listLayersStateRef.current = data;
         _setListLayersState(data);
     };
+
+    // const [colorScales, setColorScales] = useState<{range: number[], domain: number[], cmap: string, id: string, scale: string}[]>([]);
     
     useEffect(() => {
 
@@ -67,7 +75,7 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
                 for(let j = 0; j < inputs.length; j++){
                     let input = inputs[j] as HTMLInputElement;
 
-                    if(input.checked && listLayersStateRef.current[input.id].length > 1){
+                    if(input.checked && listLayersStateRef.current[input.id] != undefined && listLayersStateRef.current[input.id].length > 1){
                         groupsToAnimate.push(input.id);
                     }
                 }   
@@ -162,6 +170,17 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
         }
     }
 
+    useEffect(() => {
+
+        let minMaxTimesteps = getMinMaxTimesteps(listLayers);
+
+        setMinTimestep(minMaxTimesteps[0]);
+        setMaxTimestep(minMaxTimesteps[1]);
+
+        setSliderValue([0,Math.round((1/(minTimestep+1))*100)]);
+
+    }, [listLayers]);
+
     const getMarks = (layers: any) => {
         let marks = [];
         
@@ -178,12 +197,12 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
         return marks;
     }
 
-    const getMarksTimesteps = (layer: any) => {
+    const getMarksTimesteps = (layer: any, totalSteps: number) => {
         let marks = [];
         
         for(let i = 0; i < layer.timesteps; i++){
             let mark = {
-                value: Math.round((i/layer.timesteps)*100),
+                value: Math.round((i/totalSteps)*100),
                 label: ''+i
             };
 
@@ -215,9 +234,23 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
         setRange(newObj);
     }
 
-    const handleChangeSlidesTimesteps = (e: any, layer: any, step: number) => {
-        broadcastMessage("", "updateTimestepKnot", {knotId: layer.id, timestep: Math.round(e.target.value/step), mapId: obj.viewId});
+    const handleChangeSlidesTimesteps = (sliderValue: number[], layer: any, step: number) => {
+
+        // even though it is a range of values the timestep shown is always the first
+        let currentTimestep = Math.round(sliderValue[0]/step);
+
+        if(currentTimestep <= layer.timesteps-1){ // TODO: add lower boundary
+            broadcastMessage("", "updateTimestepKnot", {knotId: layer.id, timestep: currentTimestep, mapId: obj.viewId});
+        }
     }
+
+    useEffect(() => {
+        for(const item of Object.keys(listLayers)){
+            if(listLayers[item].length == 1){
+                handleChangeSlidesTimesteps(sliderValue, listLayers[item][0], getSlideSteps(listLayers))
+            }
+        }
+    }, [sliderValue]);
 
     const [collapsedItems, setCollapsedItems] = useState<string[]>([]);
 
@@ -286,12 +319,50 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
             ))
     }
 
+    const getMinMaxTimesteps = (listLayers: any) => {
+
+        let maxTimesteps = 0;
+
+        for(const item of Object.keys(listLayers)){
+            if(listLayers[item].length == 1){
+                if(listLayers[item][0].timesteps >= maxTimesteps){
+                    maxTimesteps = listLayers[item][0].timesteps;
+                }
+            }
+        }
+
+        // let minTimesteps = maxTimesteps;
+
+        // for(const item of Object.keys(listLayers)){
+        //     if(listLayers[item].length == 1){
+        //         if(listLayers[item][0].timesteps <= minTimesteps){
+        //             minTimesteps = listLayers[item][0].timesteps;
+        //         }
+        //     }
+        // }
+
+        return [0, maxTimesteps];
+    }
+
+    const getSlideSteps = (listLayers: any) => {
+        let minMaxTimesteps = getMinMaxTimesteps(listLayers);
+
+        return Math.round((1/(minMaxTimesteps[1] - minMaxTimesteps[0]))*100);
+    }
+
     const getGroupHtml = (item:string, listLayers: any, knotVisibility: any) => {
 
         return <React.Fragment key={item+"_fragment"}>
             <Row style={{paddingTop: "5px", paddingBottom: "5px"}} className="align-items-center">
                 <Col md={3}>
-                    <Form.Check key={item+"_check"} checked={groupVisibility(listLayers, knotVisibility, item)} type="checkbox" label={item} id={item} onChange={() => {toggleGroup(listLayers, knotVisibility, item)}}/> 
+                    <Row>
+                        <Col md={9}>
+                            <Form.Check key={item+"_check"} checked={groupVisibility(listLayers, knotVisibility, item)} type="checkbox" label={item} id={item} onChange={() => {toggleGroup(listLayers, knotVisibility, item)}}/> 
+                        </Col>
+                        <Col md={3}>
+                            <Form.Check key={item+"_check_color"} type="checkbox" onChange={(event) => {toggleColorScaleVisibility(item)}}/> 
+                        </Col>
+                    </Row>
                 </Col>
                 {
                     listLayers[item].length > 1 ?
@@ -317,12 +388,18 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
                             <Col md={12}>
                                 <Slider
                                     key={item+"_slider_timestep"}
-                                    defaultValue={0}
+                                    // defaultValue={[0,0+Math.round((1/maxTimestep)*100)]}
+                                    value={sliderValue}
                                     valueLabelDisplay="off"
-                                    step={Math.round((1/listLayers[item][0].timesteps)*100)}
-                                    max={Math.round((1/listLayers[item][0].timesteps)*100)*(listLayers[item][0].timesteps-1)}
-                                    marks = {getMarksTimesteps(listLayers[item][0])}
-                                    onChange={(e) => {handleChangeSlidesTimesteps(e, listLayers[item][0], Math.round((1/listLayers[item][0].timesteps)*100))}}
+                                    step={Math.round((1/(maxTimestep - minTimestep))*100)}
+                                    min={0}
+                                    max={Math.round((1/maxTimestep)*100)*(maxTimestep-1)}
+                                    marks = {getMarksTimesteps(listLayers[item][0], maxTimestep - minTimestep)}
+                                    onChange={(e: any) => {
+                                        if(e != null && e.target != null){
+                                            setSliderValue(e.target.value);
+                                        }
+                                    }}
                                     disabled = {!groupVisibility(listLayers, knotVisibility, item)}
                                 />
                             </Col>
@@ -336,7 +413,7 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
       <React.Fragment>
         {/* <div className="d-flex align-items-center justify-content-center"> */}
         <div style={{overflowY: "auto", overflowX: "clip", height: "73%", padding: "10px"}} id={"toggle_widget_"+viewId}>
-            <ul style={{listStyleType: "none", padding: 10, margin: 0}}>
+            <ul style={{listStyleType: "none", padding: 0, margin: 0}}>
                 {
                     // Object.keys(listLayers).map((item, index) => (
                         // <React.Fragment key={item+"_fragment"}>
@@ -367,8 +444,7 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, viewId, gram
                         //     </Row>
                         // </React.Fragment>
                     // ))
-                    grammarDefinition.args != undefined && grammarDefinition.args.categories != undefined ? 
-                    grammarDefinition.args.categories.map((category: ICategory) => (
+                    grammarDefinition.args != undefined && grammarDefinition.args.categories != undefined ? grammarDefinition.args.categories.map((category: ICategory) => (
                         getCategoryHtml(category, listLayers, knotVisibility)
                     )) : <></>
                 }

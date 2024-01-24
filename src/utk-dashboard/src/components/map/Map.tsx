@@ -44,7 +44,7 @@ const Map = ({ time, setTime } : MapProps) => {
   }, [time]);
 
   // return <div id='spatial-div' style={{height: "100vh", width: "100%"}}></div>
-  return <div id='spatial-div' style={{ height: "90vh",width: "100%"}}></div>
+  return <div id='spatial-div' style={{ height: "100vh",width: "100%"}}></div>
 }
 
 export { Map }

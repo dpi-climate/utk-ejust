@@ -22,6 +22,7 @@ import { LayerManager } from "./layer-manager";
 import { ShaderColorPoints } from "./shader-colorPoints";
 import { ShaderFlatColorPoints } from "./shader-flatColorPoints";
 import { PointsLayer } from "./layer-points";
+import { ShaderPickingPoints } from "./shader-picking-points";
 
 export class Knot {
 
@@ -33,6 +34,10 @@ export class Knot {
     protected _visible: boolean;
     protected _grammarInterpreter: any;
     protected _maps: any = {};
+    protected _cmap: string = 'interpolateReds';
+    protected _range: number[] = [0, 1];
+    protected _domain: number[] = [];
+    protected _scale: string = 'scaleLinear';
 
     constructor(id: string, physicalLayer: Layer, knotSpecification: IKnot, grammarInterpreter: any, visible: boolean) {
         this._physicalLayer = physicalLayer;
@@ -66,6 +71,22 @@ export class Knot {
         return this._thematicData;
     }
 
+    get cmap(){
+        return this._cmap;
+    }
+
+    get range(){
+        return this._range;
+    }
+
+    get domain(){
+        return this._domain;
+    }
+
+    get scale(){
+        return this._scale;
+    }
+
     set visible(visible: boolean){
         this._visible = visible;
     }
@@ -95,25 +116,20 @@ export class Knot {
         this._shaders[viewId] = [];
         const color = MapStyle.getColor(this._physicalLayer.style);
 
-        let cmap = 'interpolateReds';
-        let range = [0, 1];
-        let domain: number[] = [];
-        let scale = "scaleLinear";
-
         if(this._knotSpecification['color_map'] != undefined){
-            cmap = <string>this._knotSpecification['color_map'];
+            this._cmap = <string>this._knotSpecification['color_map'];
         }
 
         if(this._knotSpecification['range'] != undefined){
-            range = <number[]>this._knotSpecification['range'];
+            this._range = <number[]>this._knotSpecification['range'];
         }
 
         if(this._knotSpecification['domain'] != undefined){
-            domain = <number[]>this._knotSpecification['domain'];
+            this._domain = <number[]>this._knotSpecification['domain'];
         }
 
         if(this._knotSpecification['scale'] != undefined){
-            scale = <string>this._knotSpecification['scale'];
+            this._scale = <string>this._knotSpecification['scale'];
         }
 
         for (const type of this._physicalLayer.renderStyle) {
@@ -123,19 +139,19 @@ export class Knot {
                     shader = new ShaderFlatColor(glContext, color);
                 break;
                 case RenderStyle.FLAT_COLOR_MAP:
-                    shader = new ShaderFlatColorMap(glContext, cmap, range, domain, scale);
+                    shader = new ShaderFlatColorMap(glContext, this._cmap, this._range, this._domain, this._scale);
                 break;
                 case RenderStyle.FLAT_COLOR_POINTS_MAP:
-                    shader = new ShaderFlatColorPointsMap(glContext, cmap, range, domain, scale);
+                    shader = new ShaderFlatColorPointsMap(glContext, this._cmap, this._range, this._domain, this._scale);
                 break;
                 case RenderStyle.SMOOTH_COLOR:
                     shader = new ShaderSmoothColor(glContext, color);
                 break;
                 case RenderStyle.SMOOTH_COLOR_MAP:
-                    shader = new ShaderSmoothColorMap(glContext, cmap, range, domain, scale);
+                    shader = new ShaderSmoothColorMap(glContext, this._cmap, this._range, this._domain, this._scale);
                 break;
                 case RenderStyle.SMOOTH_COLOR_MAP_TEX:
-                    shader = new ShaderSmoothColorMapTex(glContext, cmap, range, domain, scale);
+                    shader = new ShaderSmoothColorMapTex(glContext, this._cmap, this._range, this._domain, this._scale);
                 break;
                 case RenderStyle.PICKING: 
 
@@ -147,7 +163,13 @@ export class Knot {
                         }
     
                         if(auxShader && auxShader instanceof AuxiliaryShaderTriangles){
-                            shader = new ShaderPickingTriangles(glContext, auxShader);
+
+                            if(this._physicalLayer instanceof TrianglesLayer){
+                                shader = new ShaderPickingTriangles(glContext, auxShader);
+                            }else{
+                                shader = new ShaderPickingPoints(glContext, auxShader);
+                            }
+
                         }else{
                             throw new Error("The shader picking needs an auxiliary shader. The auxiliary shader is the one right before (order matters) shader picking in renderStyle array. SMOOTH_COLOR_MAP can be used as an auxiliary array");
                         }
@@ -170,7 +192,7 @@ export class Knot {
                     shader = new ShaderAbstractSurface(glContext);
                 break;
                 case RenderStyle.COLOR_POINTS:
-                    shader = new ShaderColorPoints(glContext, cmap, range, domain, scale);
+                    shader = new ShaderColorPoints(glContext, this._cmap, this._range, this._domain, this._scale);
                 break;
                 case RenderStyle.FLAT_COLOR_POINTS:
                     shader = new ShaderFlatColorPoints(glContext, color);
@@ -450,7 +472,7 @@ export class Knot {
                 let shaders = this._shaders[parseInt(key)];
                 for(let j = 0; j < shaders.length; j++){
                     let shader = shaders[j];
-                    if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles){
+                    if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles || shader instanceof ShaderPickingPoints){
                         shader.clearPicking();
                     }
                 }
@@ -562,7 +584,7 @@ export class Knot {
             if(highlightTriangleObject || areaHighlightTriangleObjects){
 
                 //triangles layer interactions
-                if(this._physicalLayer instanceof TrianglesLayer){ // TODO: generalize this
+                if(this._physicalLayer instanceof TrianglesLayer || this._physicalLayer instanceof PointsLayer){ // TODO: generalize this
                     for(const key of Object.keys(this._maps)){
                         let map = this._maps[parseInt(key)];
                         let currentPoint = map.mouse.currentPoint;
@@ -585,17 +607,23 @@ export class Knot {
                     map.render();
                 }
 
-                if(this._physicalLayer instanceof TrianglesLayer){ // TODO: generalize this
+                if(this._physicalLayer instanceof TrianglesLayer || this._physicalLayer instanceof PointsLayer){ // TODO: generalize this
                     for(const key of Object.keys(this._shaders)){
                         let shaders = this._shaders[parseInt(key)];
                         let objectIds = this._physicalLayer.getIdLastHighlightedElement(shaders);
                         let map = this._maps[parseInt(key)]
 
+                        let level = LevelType.OBJECTS;
+
+                        if(this._physicalLayer instanceof PointsLayer){
+                            level = LevelType.COORDINATES3D;
+                        }
+
                         if(objectIds != undefined){
                             if(objectIds.length > 1){ // if more than one id is being highlighted at the same time that is an area interaction
-                                map.updateGrammarPlotsHighlight(this._physicalLayer.id, LevelType.OBJECTS, null, true); // clear
+                                map.updateGrammarPlotsHighlight(this._physicalLayer.id, level, null, true); // clear
                             }
-                            map.updateGrammarPlotsHighlight(this._physicalLayer.id, LevelType.OBJECTS, objectIds);
+                            map.updateGrammarPlotsHighlight(this._physicalLayer.id, level, objectIds);
                         }
                     }
                 }

@@ -11,14 +11,18 @@ import { ShaderSmoothColorMapTex } from "./shader-smoothColorMapTex";
 import { ShaderPicking } from "./shader-picking";
 import { ShaderPickingTriangles } from "./shader-picking-triangles";
 import { ShaderAbstractSurface } from "./shader-abstractSurface";
+import { ShaderPickingPoints } from "./shader-picking-points";
+import { AuxiliaryShaderTriangles } from "./auxiliaryShaderTriangles";
+import { ShaderFlatColorPointsMap } from "./shader-flatColorPointsMap";
 
 export class PointsLayer extends Layer {
 
     // protected _zOrder: number;
     protected _coordsByCOORDINATES3D: number[][] = [];
-
+    protected _dimensions: number;
     protected _highlightByCOORDINATES: boolean[][] = [];
     protected _highlightByCOORDINATES3D: boolean[][] = [];
+    protected _highlightByOBJECTS: boolean[][] = [];
 
     constructor(info: ILayerData, zOrder: number = 0, geometryData: ILayerFeature[]) {
         super(
@@ -32,6 +36,7 @@ export class PointsLayer extends Layer {
 
         this.updateMeshGeometry(geometryData);
 
+        this._dimensions = 3;
         // this._zOrder = zOrder;
 
     }
@@ -91,15 +96,10 @@ export class PointsLayer extends Layer {
                 throw Error("SMOOTH_COLOR_MAP_TEX not supported for point cloud layer");
             }
 
-            if(shader instanceof ShaderPicking || shader instanceof ShaderPickingTriangles){
-                throw Error("PICKING not supported for point cloud layer");
-            }
-
             if(shader instanceof ShaderAbstractSurface){
                 throw Error("ABSTRACT_SURFACES not supported for point cloud layer");
             }
         }
-
 
         // enables the depth test
         glContext.enable(glContext.DEPTH_TEST);
@@ -115,8 +115,17 @@ export class PointsLayer extends Layer {
 
         // the abs surfaces are loaded first to update the stencil
         for (const shader of shaders) {
-            shader.renderPass(glContext, glContext.POINTS, this._camera, this._mesh, -1);
+            if(shader instanceof ShaderPickingPoints){
+                shader.renderPass(glContext, glContext.POINTS, this._camera, this._mesh, -1);
+            }
         }
+
+        for (const shader of shaders) {
+            if(!(shader instanceof ShaderPickingPoints)){
+                shader.renderPass(glContext, glContext.POINTS, this._camera, this._mesh, -1);
+            }
+        }
+
 
         // disables stencil
         // glContext.disable(glContext.STENCIL_TEST);
@@ -128,8 +137,71 @@ export class PointsLayer extends Layer {
     }
 
     setHighlightElements(elements: number[], level: LevelType, value: boolean, shaders: (Shader|AuxiliaryShader)[], centroid:number[] | Float32Array = [0,0,0], viewId: number): void {
-        return;
-        // throw new Error("Method not implemented.");
+        if(elements[0] == undefined)
+            return;
+
+        let coords = this.getCoordsByLevel(level, centroid, viewId);
+        
+        for(let i = 0; i < elements.length; i++){
+            let offsetCoords = 0;
+            let coordsIndex = [];
+            let elementIndex = elements[i];
+
+            for(let j = 0; j < elementIndex; j++){
+                offsetCoords += (coords[j].length)/this._dimensions;
+            }
+
+            for(let k = 0; k < (coords[elementIndex].length)/this._dimensions; k++){
+                coordsIndex.push(offsetCoords+k);
+            }
+
+            for(const shader of shaders){
+                if(shader instanceof ShaderPickingPoints){
+                    shader.setHighlightElements(coordsIndex, value);
+                }
+            }
+
+        }
+    }
+
+    highlightElement(glContext: WebGL2RenderingContext, x: number, y: number, shaders: (Shader|AuxiliaryShader)[]){
+        if(!glContext.canvas || !(glContext.canvas instanceof HTMLCanvasElement)){
+            return;
+        }
+
+        let pixelX = x * glContext.canvas.width / glContext.canvas.clientWidth;
+        let pixelY = glContext.canvas.height - y * glContext.canvas.height / glContext.canvas.clientHeight - 1;
+
+        for(const shader of shaders){
+            if(shader instanceof ShaderPickingPoints){
+                shader.updatePickObjectPosition(pixelX, pixelY);
+            }
+        }
+    }
+
+    getIdLastHighlightedElement(shaders: (Shader|AuxiliaryShaderTriangles)[]){
+        for(const shader of shaders){
+            if(shader instanceof ShaderFlatColorPointsMap){
+                let picked = shader.currentPickedElement;
+                shader.currentPickedElement = [];
+                return picked;
+            }
+        }
+    }
+
+    highlightElementsInArea(glContext: WebGL2RenderingContext, x: number, y: number, shaders: (Shader|AuxiliaryShader)[], radius: number){
+        if(!glContext.canvas || !(glContext.canvas instanceof HTMLCanvasElement)){
+            return;
+        }
+
+        let pixelX = x * glContext.canvas.width / glContext.canvas.clientWidth;
+        let pixelY = glContext.canvas.height - y * glContext.canvas.height / glContext.canvas.clientHeight - 1;
+
+        for(const shader of shaders){
+            if(shader instanceof ShaderPickingPoints){
+                shader.updatePickObjectArea(pixelX, pixelY, radius);
+            }
+        }
     }
 
     distributeFunctionValues(functionValues: number[][] | null): number[][] | null{
@@ -177,7 +249,7 @@ export class PointsLayer extends Layer {
             throw Error("Cannot get abstract information attached to COORDINATES because the layer does not have a 2D representation");            
         }
 
-        if(level == LevelType.COORDINATES3D){
+        if(level == LevelType.COORDINATES3D || level == LevelType.OBJECTS){
 
             let functions = this._mesh.getFunctionVBO(knotId)
 
@@ -190,15 +262,14 @@ export class PointsLayer extends Layer {
             }
         }
 
-        if(level == LevelType.OBJECTS){
-            throw Error("Cannot get abstract information attached to OBJECTS because the layer does not have a 2D representation");            
-        }
+        // if(level == LevelType.OBJECTS){
+        //     // throw Error("Cannot get abstract information attached to OBJECTS because the layer does not have a 2D representation");            
+        // }
 
         return functionByLevel;  
     }
 
     getHighlightsByLevel(level: LevelType): boolean[] {
-
         let booleanHighlights: boolean[] = [];
         let highlightsByLevel: boolean[][] = [];
 
@@ -208,11 +279,11 @@ export class PointsLayer extends Layer {
             booleanHighlights.push(false);
         }
 
-        if(level == LevelType.OBJECTS){
-            throw new Error("There is not highlight for OBJECTS in a points layer");
-        }
-
         if(level == LevelType.COORDINATES){
+            if(this._dimensions != 2){
+                throw Error("Cannot get highlight information related to COORDINATES because the layer does not have a 2D representation");            
+            }
+
             if(this._highlightByCOORDINATES.length == 0){
                 highlightsByLevel = booleanHighlights.map(x => [x])
 
@@ -224,6 +295,9 @@ export class PointsLayer extends Layer {
         }
 
         if(level == LevelType.COORDINATES3D){
+            if(this._dimensions != 3){
+                throw Error("Cannot get highlight information related to COORDINATES3D because the layer does not have a 3D representation");            
+            }
 
             if(this._highlightByCOORDINATES3D.length == 0){
                 highlightsByLevel = booleanHighlights.map(x => [x])
@@ -231,6 +305,30 @@ export class PointsLayer extends Layer {
                 this._highlightByCOORDINATES3D = highlightsByLevel;
             }else{
                 highlightsByLevel = this._highlightByCOORDINATES3D;
+            }
+
+        }
+
+        if(level == LevelType.OBJECTS){
+            if(this._highlightByOBJECTS.length == 0){
+                let readHighlights = 0;
+                
+                let coordsPerComp = this._mesh.getCoordsPerComp();
+
+                for(const numCoords of coordsPerComp){
+                    let groupedHighlights = [];
+    
+                    for(let i = 0; i < numCoords; i++){
+                        groupedHighlights.push(booleanHighlights[i+readHighlights]);
+                    }
+    
+                    readHighlights += numCoords;
+                    highlightsByLevel.push(groupedHighlights);
+                }
+
+                this._highlightByOBJECTS = highlightsByLevel;
+            }else{
+                highlightsByLevel = this._highlightByOBJECTS;
             }
 
         }
@@ -256,4 +354,64 @@ export class PointsLayer extends Layer {
 
         return flattenedHighlights;
     }
+
+    // getHighlightsByLevel(level: LevelType): boolean[] {
+
+    //     let booleanHighlights: boolean[] = [];
+    //     let highlightsByLevel: boolean[][] = [];
+
+    //     let totalNumberOfCoords = this._mesh.getTotalNumberOfCoords();
+
+    //     for(let i = 0; i < totalNumberOfCoords; i++){
+    //         booleanHighlights.push(false);
+    //     }
+
+    //     if(level == LevelType.OBJECTS){
+    //         throw new Error("There is not highlight for OBJECTS in a points layer");
+    //     }
+
+    //     if(level == LevelType.COORDINATES){
+    //         if(this._highlightByCOORDINATES.length == 0){
+    //             highlightsByLevel = booleanHighlights.map(x => [x])
+
+    //             this._highlightByCOORDINATES = highlightsByLevel;
+    //         }else{
+    //             highlightsByLevel = this._highlightByCOORDINATES;
+    //         }
+
+    //     }
+
+    //     if(level == LevelType.COORDINATES3D){
+
+    //         if(this._highlightByCOORDINATES3D.length == 0){
+    //             highlightsByLevel = booleanHighlights.map(x => [x])
+
+    //             this._highlightByCOORDINATES3D = highlightsByLevel;
+    //         }else{
+    //             highlightsByLevel = this._highlightByCOORDINATES3D;
+    //         }
+
+    //     }
+
+    //     let flattenedHighlights: boolean[] = [];
+
+    //     // flattening the highlight data
+    //     for(const elemHighlights of highlightsByLevel){
+    //         let allHighlighted = true;
+
+    //         for(const value of elemHighlights){
+    //             if(!value){
+    //                 allHighlighted = false;
+    //             }
+    //         }
+
+    //         if(allHighlighted) // all the coordinates of the element must be highlighted for it to be considered highlighted
+    //             flattenedHighlights.push(true)
+    //         else
+    //             flattenedHighlights.push(false)
+
+    //     }
+
+    //     return flattenedHighlights;
+    // }
 }

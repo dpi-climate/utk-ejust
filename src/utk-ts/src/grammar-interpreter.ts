@@ -44,6 +44,7 @@ class GrammarInterpreter {
     protected _ajv: any;
     protected _ajv_map: any;
     protected _ajv_plots: any;
+    protected _viewReactElem: any;
 
     protected _cameraUpdateCallback: any;
 
@@ -89,6 +90,25 @@ class GrammarInterpreter {
         this.processGrammar(grammar);
     }
 
+    /**
+     * inits the window events
+     */
+    initWindowEvents(): void {
+
+        const resizeHandler = (event: any) => {
+            for(const component of this._components){
+                if(component.type == ComponentIdentifier.MAP){
+                    component.obj.resize();
+                }
+            }
+
+            // this.renderViews(this._mainDiv, this._preProcessedGrammar);
+        }
+
+        window.removeEventListener("resize", resizeHandler);
+        window.addEventListener("resize", resizeHandler);
+    }
+
     // TODO: it should be possible to create more than one map. So map should not be a singleton
     public initViews(mainDiv: HTMLElement, grammar: IMasterGrammar, originalGrammar: IMasterGrammar, components_grammar: {id: string, originalGrammar: (IMapGrammar | IPlotGrammar), grammar: (IMapGrammar | IPlotGrammar | undefined)}[]){
 
@@ -131,9 +151,9 @@ class GrammarInterpreter {
             components_id += 1;
         }
 
-        if(grammar.grammar_position != undefined){
-            this._components.push({id: "grammar", type: ComponentIdentifier.GRAMMAR, obj: {init: () => {}}, position: grammar.grammar_position});
-        }
+        // if(grammar.grammar_position != undefined){
+        this._components.push({id: "grammar", type: ComponentIdentifier.GRAMMAR, obj: {init: () => {}}, position: {width: [], height: []}});
+        // }
         
         this.renderViews(mainDiv, originalGrammar);
     }
@@ -270,6 +290,8 @@ class GrammarInterpreter {
             
             await this.replaceVariablesAndInitViews();
         }
+
+        this.initWindowEvents();
     }
 
     public updateComponentGrammar(component_grammar: IMapGrammar | IPlotGrammar, componentInfo: any = undefined){
@@ -404,18 +426,30 @@ class GrammarInterpreter {
                     knotsGroups[knotSpecification.group.group_name] = [{
                         id: knot.id,
                         position: knotSpecification.group.position,
+                        cmap: knot.cmap,
+                        domain: knot.domain,
+                        scale: knot.scale,
+                        range: knot.range,
                         timesteps: knot.thematicData?.length
                     }];
                 }else{
                     knotsGroups[knotSpecification.group.group_name].push({
                         id: knot.id,
                         position: knotSpecification.group.position,
+                        cmap: knot.cmap,
+                        domain: knot.domain,
+                        scale: knot.scale,
+                        range: knot.range,
                         timesteps: knot.thematicData?.length
                     });
                 }
             }else{
                 knotsGroups[knot.id] = [{
                     id: knot.id,
+                    cmap: knot.cmap,
+                    domain: knot.domain,
+                    scale: knot.scale,
+                    range: knot.range,
                     timesteps: knot.thematicData?.length
                 }]; // group of single knot
             }
@@ -913,7 +947,8 @@ class GrammarInterpreter {
                                     coordinates: coordinates[i],
                                     abstract: functionValues[i][0], // array with timesteps
                                     highlighted: highlighted[i],
-                                    filteredIn: true,
+                                    // filteredIn: true, // temp
+                                    filteredIn: false,
                                     index: i
                                 });
                             }else{
@@ -921,7 +956,8 @@ class GrammarInterpreter {
                                     coordinates: [],
                                     abstract: functionValues[i][0], // array with timesteps
                                     highlighted: highlighted[i],
-                                    filteredIn: true,
+                                    // filteredIn: true, // temp
+                                    filteredIn: false,
                                     index: i
                                 });
                             }
@@ -935,7 +971,8 @@ class GrammarInterpreter {
                     let knotData = {
                         knotId: knotId,
                         physicalId: lastLink.out.name,
-                        allFilteredIn: true,
+                        // allFilteredIn: true, // temp
+                        allFilteredIn: false,
                         elements: elements
                     }
 
@@ -990,8 +1027,9 @@ class GrammarInterpreter {
         for(const component of this._components_grammar){
             grammars.push(component);
         }
-
-        this._root.render(React.createElement(Views, {viewObjs: this._components, mapsWidgets: this._maps_widgets, viewIds: viewIds, grammar: grammar, componentsGrammar: grammars, mainDivSize: {width: mainDiv.offsetWidth, height: mainDiv.offsetHeight}, grammarInterpreter: this}));
+ 
+        // this._root.render(React.createElement(Views, {viewObjs: this._components, mapsWidgets: this._maps_widgets, viewIds: viewIds, grammar: grammar, componentsGrammar: grammars, mainDivSize: {width: mainDiv.offsetWidth, height: mainDiv.offsetHeight}, grammarInterpreter: this}));
+        this._root.render(React.createElement(Views, {viewObjs: this._components, mapsWidgets: this._maps_widgets, viewIds: viewIds, grammar: grammar, componentsGrammar: grammars, mainDiv: mainDiv, grammarInterpreter: this}));
     }
 
 }

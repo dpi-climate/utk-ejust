@@ -149,8 +149,7 @@ class MapView {
 
         // inits the mouse events
         this.initMouseEvents();
-        // bind the window events
-        this.initWindowEvents();
+
         // inits the keyboard events
         this.initKeyboardEvents();
 
@@ -228,18 +227,19 @@ class MapView {
 
         if(!clear && elements != null){
             for(const elementIndex of elements){
-                let elements: any = {};
+                let elementsObject: any = {};
             
                 for(const knot of this._grammarInterpreter.getKnots()){
                     let lastLink = this._grammarInterpreter.getKnotLastLink(knot);
         
                     if(lastLink.out.name == layerId && lastLink.out.level == level){
-                        elements[knot.id] = elementIndex;
+                        elementsObject[knot.id] = elementIndex;
                     }
+
                 }
-                
-                this.plotManager.applyInteractionEffectsLocally(elements, true, true, true); // apply to the local plot manager
-                this._grammarInterpreter.plotManager.applyInteractionEffectsLocally(elements, true, true, true); // apply to the global plot manager
+
+                this.plotManager.applyInteractionEffectsLocally(elementsObject, true, true, true); // apply to the local plot manager
+                this._grammarInterpreter.plotManager.applyInteractionEffectsLocally(elementsObject, true, true, true); // apply to the global plot manager
                 // this.plotManager.setHighlightElementsLocally(elements, true, true);
                 // this.plotManager.setFilterElementsLocally(elements)
             }
@@ -337,18 +337,6 @@ class MapView {
         this._keyboard.setMap(this);
     }
 
-    /**
-     * inits the window events
-     */
-    initWindowEvents(): void {
-        // resize listener
-        window.addEventListener('resize', () => {
-            // resizes the canvas
-            this.resize();
-            this.render();
-        });
-    }
-
     public setCamera(camera: {position: number[], direction: {right: number[], lookAt: number[], up: number[]}}): void{
         this._camera.setPosition(camera.position[0], camera.position[1]);
         this.render();
@@ -438,8 +426,12 @@ class MapView {
         const targetWidth = this._mapDiv.clientWidth;
         const targetHeight = this._mapDiv.clientHeight;
 
+        console.log(targetWidth);
+        console.log(targetHeight);
+        
         const value = Math.max(targetWidth, targetHeight);
-        this._glContext.viewport(0, 0, value, value);
+        // this._glContext.viewport(0, 0, value, value);
+        this._glContext.viewport(0, 0, targetWidth, targetHeight);
         this._canvas.width = targetWidth;
         this._canvas.height = targetHeight;
 
@@ -460,6 +452,7 @@ class MapView {
             }
         }
 
+        this.render();            
     }
 }
 

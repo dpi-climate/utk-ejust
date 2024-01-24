@@ -129,14 +129,16 @@ export class PlotManager {
         // update local data
         for(const plotKnotData of this._plotsKnotsData){
 
-            plotKnotData.allFilteredIn = true;
+            // plotKnotData.allFilteredIn = true; // temp
+            plotKnotData.allFilteredIn = false;
 
             if(knotsIds.includes(plotKnotData.knotId)){
 
                 physicalIds.push(plotKnotData.physicalId);
 
                 for(const element of plotKnotData.elements){
-                    element.filteredIn = true;
+                    // element.filteredIn = true; // temp
+                    element.filteredIn = false;
                 }
             }
         }
@@ -149,13 +151,15 @@ export class PlotManager {
                 for(const value of elem.plot.data.values){  
                     for(const knotId of knotsIds){
                         if(value[knotId+"_index"] != undefined){
-                            value[knotId+"_filteredIn"] = true;
+                            value[knotId+"_filteredIn"] = false;
+                            // value[knotId+"_filteredIn"] = true; // temp
                         }
                     }
 
                     for(const physicalId of physicalIds){
                         if(value[physicalId+"_index"] != undefined){
-                            value[physicalId+"_filteredIn"] = true;
+                            value[physicalId+"_filteredIn"] = false;
+                            // value[physicalId+"_filteredIn"] = true; // temp
                         }
                     }
                 }
@@ -203,6 +207,7 @@ export class PlotManager {
     }
 
     applyInteractionEffectsLocally(elements: any, truthValue: boolean, toggle: boolean = false, fromMap: boolean = false){
+        
         this.setHighlightElementsLocally(elements, truthValue, toggle);
         if(fromMap){ // only filter elements if the interaction comes from map
             this.setFilterElementsLocally(elements, truthValue, toggle);
@@ -274,24 +279,26 @@ export class PlotManager {
 
     setFilterElementsLocally(elements: any, truthValue: boolean, toggle: boolean = false){
 
-        let allFilteredInDict: any = {}; // knotId -> filteredIn
-        let allFilteredOutDict: any = {};
+        // temp
+        // let allFilteredInDict: any = {}; // knotId -> filteredIn
+        // let allFilteredOutDict: any = {};
 
         // update local data
         for(const plotKnotData of this._plotsKnotsData){
             if(elements[plotKnotData.knotId] != undefined){
 
-                allFilteredInDict[plotKnotData.knotId] = plotKnotData.allFilteredIn;
+                // temp
+                // allFilteredInDict[plotKnotData.knotId] = plotKnotData.allFilteredIn;
 
-                if(plotKnotData.allFilteredIn){ // no object is selected (all are filtered in)
-                    for(const element of plotKnotData.elements){
-                        element.filteredIn = false;
-                    }
+                // if(plotKnotData.allFilteredIn){ // no object is selected (all are filtered in)
+                //     for(const element of plotKnotData.elements){
+                //         element.filteredIn = false;
+                //     }
 
-                    plotKnotData.allFilteredIn = false;
-                }
+                //     plotKnotData.allFilteredIn = false;
+                // }
 
-                let allFilteredOut = true;
+                // let allFilteredOut = true;
 
                 for(const element of plotKnotData.elements){
                     if(element.index == elements[plotKnotData.knotId]){
@@ -301,20 +308,22 @@ export class PlotManager {
                             element.filteredIn = truthValue;
                         }
                     }
-                    if(element.filteredIn)
-                        allFilteredOut = false;
+                    // temp
+                    // if(element.filteredIn)
+                    //     allFilteredOut = false;
                 }
 
-                allFilteredOutDict[plotKnotData.knotId] = allFilteredOut;
+                // temp
+                // allFilteredOutDict[plotKnotData.knotId] = allFilteredOut;
 
-                if(allFilteredOut){ // if no object is selected then include all (all are filtered in)
-                    for(const element of plotKnotData.elements){
-                        if(element.index == elements[plotKnotData.knotId]){
-                            element.filteredIn = true;
-                        }
-                    }
-                    plotKnotData.allFilteredIn = true;
-                } 
+                // if(allFilteredOut){ // if no object is selected then include all (all are filtered in)
+                //     for(const element of plotKnotData.elements){
+                //         if(element.index == elements[plotKnotData.knotId]){
+                //             element.filteredIn = true;
+                //         }
+                //     }
+                //     plotKnotData.allFilteredIn = true;
+                // } 
             }
         }
 
@@ -339,12 +348,14 @@ export class PlotManager {
                     for(const knotId of elementsKeys){
 
                         if(elem.knots.includes(knotId)){
-                            if(allFilteredInDict[knotId]){ // if every object is filtered in no object is selected therefore filteredIn should be reset because the next interaction will filter in the object
-                                value[knotId+"_filteredIn"] = false;
-                                if(invertedDict[knotId] != undefined){
-                                    value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
-                                }    
-                            }
+
+                            // temp
+                            // if(allFilteredInDict[knotId]){ // if every object is filtered in no object is selected therefore filteredIn should be reset because the next interaction will filter in the object
+                            //     value[knotId+"_filteredIn"] = false;
+                            //     if(invertedDict[knotId] != undefined){
+                            //         value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
+                            //     }    
+                            // }
     
                             if(value[knotId+"_index"] != undefined && value[knotId+"_index"] == elements[knotId]){
                                 
@@ -361,12 +372,13 @@ export class PlotManager {
                                 }
                             }
     
-                            if(allFilteredOutDict[knotId]){
-                                value[knotId+"_filteredIn"] = true;
-                                if(invertedDict[knotId] != undefined){
-                                    value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
-                                }
-                            }
+                            // temp
+                            // if(allFilteredOutDict[knotId]){
+                            //     value[knotId+"_filteredIn"] = true;
+                            //     if(invertedDict[knotId] != undefined){
+                            //         value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
+                            //     }
+                            // }
     
                             if(!value[knotId+"_filteredIn"]){
                                 this._filtered[i] = true;
@@ -413,8 +425,10 @@ export class PlotManager {
     }
 
     updatePlotsNewData(){
+
         // update plots data
         for(let i = 0; i < this._plots.length; i++){
+
             let elem = this._plots[i].grammar
 
             if(elem.plot.data != undefined){
@@ -689,6 +703,8 @@ export class PlotManager {
             d3.select("#"+plotId).style("background-color", "white");
 
         }
+
+        this.updatePlotsNewData();
 
     }
 

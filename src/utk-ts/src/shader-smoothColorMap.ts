@@ -95,6 +95,10 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         return this._currentPickedElement;
     }
 
+    set currentPickedElement(currentPickedElement: number[]){
+        this._currentPickedElement = currentPickedElement;
+    }
+
     public updateShaderGeometry(mesh: Mesh, centroid:number[] | Float32Array = [0,0,0], viewId: number) {
         this._coordsDirty = true;
         this._filteredDirty = true;
@@ -389,7 +393,6 @@ export class ShaderSmoothColorMap extends AuxiliaryShaderTriangles {
         }
 
         this._colorOrPickedDirty = true;
-
     }
 
     public renderPass(glContext: WebGL2RenderingContext, glPrimitive: number, camera: any, mesh: Mesh, zOrder: number): void {

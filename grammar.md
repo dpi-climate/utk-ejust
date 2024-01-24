@@ -28,17 +28,25 @@ grid:{
 In this example the screen is divided in 12 sections horizontally and 4 sections vertically.
 
 ### Grammar editor
+<!-- 
+By using the grid system it is possible to define where the grammar editor will be rendered. The grammar editor is used to edit the master and components' grammars. -->
 
-By using the grid system it is possible to define where the grammar editor will be rendered. The grammar editor is used to edit the master and components' grammars.
+The grammar editor is used to edit the master and components' grammars.
 
-```js
+<!-- ```js
 grammar_position:{
     width: [1,5],
     height: [1,4]
 }
 ```
 
-In the previous example the editor is occupying columns 1 through 5 and line 4.
+In the previous example the editor is occupying columns 1 through 5 and line 4. -->
+
+Through the grammar flag it is possible to choose to display (true) or hide (false) the editor:  
+
+```js
+grammar: true
+```
 
 ### Knots 
 
