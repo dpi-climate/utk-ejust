@@ -613,11 +613,17 @@ export class Knot {
                         let objectIds = this._physicalLayer.getIdLastHighlightedElement(shaders);
                         let map = this._maps[parseInt(key)]
 
+                        let level = LevelType.OBJECTS;
+
+                        if(this._physicalLayer instanceof PointsLayer){
+                            level = LevelType.COORDINATES3D;
+                        }
+
                         if(objectIds != undefined){
                             if(objectIds.length > 1){ // if more than one id is being highlighted at the same time that is an area interaction
-                                map.updateGrammarPlotsHighlight(this._physicalLayer.id, LevelType.OBJECTS, null, true); // clear
+                                map.updateGrammarPlotsHighlight(this._physicalLayer.id, level, null, true); // clear
                             }
-                            map.updateGrammarPlotsHighlight(this._physicalLayer.id, LevelType.OBJECTS, objectIds);
+                            map.updateGrammarPlotsHighlight(this._physicalLayer.id, level, objectIds);
                         }
                     }
                 }

@@ -12,6 +12,8 @@ import { ShaderPicking } from "./shader-picking";
 import { ShaderPickingTriangles } from "./shader-picking-triangles";
 import { ShaderAbstractSurface } from "./shader-abstractSurface";
 import { ShaderPickingPoints } from "./shader-picking-points";
+import { AuxiliaryShaderTriangles } from "./auxiliaryShaderTriangles";
+import { ShaderFlatColorPointsMap } from "./shader-flatColorPointsMap";
 
 export class PointsLayer extends Layer {
 
@@ -177,10 +179,12 @@ export class PointsLayer extends Layer {
         }
     }
 
-    getIdLastHighlightedElement(shaders: (Shader|AuxiliaryShader)[]){
+    getIdLastHighlightedElement(shaders: (Shader|AuxiliaryShaderTriangles)[]){
         for(const shader of shaders){
-            if(shader instanceof ShaderSmoothColorMap){
-                return shader.currentPickedElement;
+            if(shader instanceof ShaderFlatColorPointsMap){
+                let picked = shader.currentPickedElement;
+                shader.currentPickedElement = [];
+                return picked;
             }
         }
     }
@@ -245,7 +249,7 @@ export class PointsLayer extends Layer {
             throw Error("Cannot get abstract information attached to COORDINATES because the layer does not have a 2D representation");            
         }
 
-        if(level == LevelType.COORDINATES3D){
+        if(level == LevelType.COORDINATES3D || level == LevelType.OBJECTS){
 
             let functions = this._mesh.getFunctionVBO(knotId)
 
@@ -258,9 +262,9 @@ export class PointsLayer extends Layer {
             }
         }
 
-        if(level == LevelType.OBJECTS){
-            throw Error("Cannot get abstract information attached to OBJECTS because the layer does not have a 2D representation");            
-        }
+        // if(level == LevelType.OBJECTS){
+        //     // throw Error("Cannot get abstract information attached to OBJECTS because the layer does not have a 2D representation");            
+        // }
 
         return functionByLevel;  
     }

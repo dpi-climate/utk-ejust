@@ -181,7 +181,9 @@ export class TrianglesLayer extends Layer {
     getIdLastHighlightedElement(shaders: (Shader|AuxiliaryShader)[]){
         for(const shader of shaders){
             if(shader instanceof ShaderSmoothColorMap){
-                return shader.currentPickedElement;
+                let picked = shader.currentPickedElement;
+                shader.currentPickedElement = [];
+                return picked;
             }
         }
     }

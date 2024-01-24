@@ -207,6 +207,7 @@ export class PlotManager {
     }
 
     applyInteractionEffectsLocally(elements: any, truthValue: boolean, toggle: boolean = false, fromMap: boolean = false){
+        
         this.setHighlightElementsLocally(elements, truthValue, toggle);
         if(fromMap){ // only filter elements if the interaction comes from map
             this.setFilterElementsLocally(elements, truthValue, toggle);
@@ -424,6 +425,7 @@ export class PlotManager {
     }
 
     updatePlotsNewData(){
+
         // update plots data
         for(let i = 0; i < this._plots.length; i++){
 
