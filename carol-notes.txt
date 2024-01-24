@@ -1,9 +1,9 @@
 cd src\utk-ts
-npm run build ; cd ..\utk-dashboard\ ; npm run build:web ; cd ..\utk-ts
-npm run build && cd ..\utk-dashboard\ && npm run build:web && cd ..\utk-ts
+npm run build ; cd ..\utk-frontend\ ; npm run build:web ; cd ..\utk-ts
+npm run build && cd ..\utk-frontend\ && npm run build:web && cd ..\utk-ts
 
 cd src
-python utk_server.py start --bundle utk-dashboard\build\utk-app\ --data "..\examples\wrf_chicago"
+python utk_server.py start --bundle utk-frontend\build\utk-app\ --data "..\examples\chicago-ejust"
 
 Example of load_thematic/thematic_from_netcdf(...):
 

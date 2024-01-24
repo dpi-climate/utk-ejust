@@ -386,4 +386,3 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
 }
 
 export default Views;
-
