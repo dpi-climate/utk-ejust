@@ -298,7 +298,6 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
             height={mainDiv.offsetHeight}
             genericPlots={genericPlots}
             togglePlots={toggleAllPlots}
-            editGrammar={setActiveGrammarAndType}
             activeKnotPhysical={activeKnotPhysical}
             updateStatus={updateStatus}
           />
