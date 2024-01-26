@@ -8,18 +8,21 @@ import vsFlatColorMap from './shaders/flatColorMap.vs';
 // @ts-ignore
 import fsFlatColorMap from './shaders/flatColorMap.fs';
 
+import { AuxiliaryShaderTriangles } from "./auxiliaryShaderTriangles";
+
 import { IKnot } from "./interfaces";
 
 import * as d3_scale from 'd3-scale';
 
 const d3 = require('d3');
 
-export class ShaderFlatColorMap extends Shader {
+export class ShaderFlatColorMap extends AuxiliaryShaderTriangles {
     // Data to be rendered
     protected _coords:  number[] = [];
     protected _function: number[][] = [];
     protected _currentTimestepFunction: number = 0;
     protected _indices: number[] = [];
+    protected _coordsPerComp: number[] = [];
 
     // Color map definition
     private _colorMap: string | null = null;
@@ -39,11 +42,13 @@ export class ShaderFlatColorMap extends Shader {
     protected _functionDirty: boolean = false;
     protected _colorMapDirty: boolean = false;
     protected _filteredDirty: boolean = false;
+    protected _colorOrPickedDirty: boolean = false;
 
     // Id of each property in the VAO
     protected _coordsId = -1;
     protected _functionId = -1;
     protected _filteredId = -1;
+    protected _colorOrPickedId = -1;
 
     // Uniforms location
     protected _uModelViewMatrix: WebGLUniformLocation | null = null;
@@ -51,6 +56,8 @@ export class ShaderFlatColorMap extends Shader {
     protected _uWorldOrigin: WebGLUniformLocation | null = null;
     protected _uColorMap: WebGLUniformLocation | null = null;
 
+    protected _colorOrPicked: number[] = [];
+    protected _currentPickedElement: number[]; // stores the indices of the currently picked elements
     protected _filtered: number[] = [];
 
     // Color map texture
@@ -70,6 +77,14 @@ export class ShaderFlatColorMap extends Shader {
         this.createUniforms(glContext);
         this.createVertexArrayObject(glContext);
         this.createTextures(glContext);
+    }
+
+    get currentPickedElement(): number[]{
+        return this._currentPickedElement;
+    }
+
+    set currentPickedElement(currentPickedElement: number[]){
+        this._currentPickedElement = currentPickedElement;
     }
 
     public updateShaderGeometry(mesh: Mesh, centroid:number[] | Float32Array = [0,0,0], viewId: number) {
@@ -279,7 +294,49 @@ export class ShaderFlatColorMap extends Shader {
     }
 
     public setHighlightElements(coordinates: number[], value: boolean): void {
-        throw Error("The shader flat color map can not highlight elements yet");
+        for(const coordIndex of coordinates){
+            if(value)
+                this._colorOrPicked[coordIndex] = 1;
+            else
+                this._colorOrPicked[coordIndex] = 0;
+        }
+
+        this._colorOrPickedDirty = true;
+    }
+
+    public clearPicking(){
+
+        for(let i = 0; i < this._colorOrPicked.length; i++){
+            this._colorOrPicked[i] = 0;
+        }
+
+        this._colorOrPickedDirty = true;
+    }
+
+    public setPickedObject(ids: number[]): void {
+        
+        this._currentPickedElement = ids;
+        
+        for(const objectId of ids){
+            let readCoords = 0;
+            for(let i = 0; i < this._coordsPerComp.length; i++){
+                if(objectId == i){
+                    break;
+                }
+    
+                readCoords += this._coordsPerComp[i];
+            }
+    
+            for(let i = 0; i < this._coordsPerComp[objectId]; i++){
+                if(this._colorOrPicked[readCoords+i] == 1){
+                    this._colorOrPicked[readCoords+i] = 0;
+                }else if(this._colorOrPicked[readCoords+i] == 0){
+                    this._colorOrPicked[readCoords+i] = 1;
+                }
+            }
+        }
+
+        this._colorOrPickedDirty = true;
     }
 
     public renderPass(glContext: WebGL2RenderingContext, glPrimitive: number, camera: any, mesh: Mesh, zOrder: number): void {

@@ -7,6 +7,7 @@ import { ShaderPickingTriangles } from "./shader-picking-triangles";
 import { ShaderAbstractSurface } from "./shader-abstractSurface";
 import { AuxiliaryShader } from "./auxiliaryShader";
 import { Shader } from "./shader";
+import { ShaderFlatColorMap } from "./shader-flatColorMap";
 
 export class TrianglesLayer extends Layer {
     // protected _mesh: Mesh;
@@ -180,7 +181,7 @@ export class TrianglesLayer extends Layer {
 
     getIdLastHighlightedElement(shaders: (Shader|AuxiliaryShader)[]){
         for(const shader of shaders){
-            if(shader instanceof ShaderSmoothColorMap){
+            if(shader instanceof ShaderSmoothColorMap || shader instanceof ShaderFlatColorMap){
                 let picked = shader.currentPickedElement;
                 shader.currentPickedElement = [];
                 return picked;

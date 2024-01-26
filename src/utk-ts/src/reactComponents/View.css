@@ -6,7 +6,7 @@
 .sidebarGrammar{
     position: fixed; 
     z-index: 10;
-    width: 300px;
+    width: 25vw;
     height: 100vh;
     left: 0;
     top: 0;
@@ -14,11 +14,11 @@
 }
 
 .sidebarGrammar--isHidden{
-    margin-left: -300px;
+    margin-left: -25vw;
 }
 
 .sidebarGrammar--isOpen{
-    margin-left: 300px;
+    margin-left: 25vw;
 }
 
 .hidden{

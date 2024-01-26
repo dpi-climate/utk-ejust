@@ -193,12 +193,14 @@ export class PlotManager {
                     for(const knotId of knotsIds){
                         if(value[knotId+"_index"] != undefined){
                             value[knotId+"_highlight"] = false;
+                            value[knotId+"_filteredIn"] = false; // test
                         }
                     }
 
                     for(const physicalId of physicalIds){
                         if(value[physicalId+"_index"] != undefined){
                             value[physicalId+"_highlight"] = false;
+                            value[physicalId+"_filteredIn"] = false; // test
                         }
                     }
                 }
@@ -260,13 +262,17 @@ export class PlotManager {
                         if(value[knotId+"_index"] != undefined && value[knotId+"_index"] == elements[knotId]){
                             if(toggle){
                                 value[knotId+"_highlight"] = !value[knotId+"_highlight"];
+                                value[knotId+"_highlight"] = value[knotId+"_filteredIn"];
                                 if(invertedDict[knotId] != undefined){
                                     value[invertedDict[knotId]+"_highlight"] = value[knotId+"_highlight"];
+                                    value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_highlight"];
                                 }
                             }else{
                                 value[knotId+"_highlight"] = truthValue;
+                                value[knotId+"_filteredIn"] = truthValue;
                                 if(invertedDict[knotId] != undefined){
                                     value[invertedDict[knotId]+"_highlight"] = value[knotId+"_highlight"];
+                                    value[invertedDict[knotId]+"_filteredIn"] = value[knotId+"_filteredIn"];
                                 }
                             }
                         }
@@ -284,48 +290,48 @@ export class PlotManager {
         // let allFilteredOutDict: any = {};
 
         // update local data
-        for(const plotKnotData of this._plotsKnotsData){
-            if(elements[plotKnotData.knotId] != undefined){
+        // for(const plotKnotData of this._plotsKnotsData){
+        //     if(elements[plotKnotData.knotId] != undefined){
 
-                // temp
-                // allFilteredInDict[plotKnotData.knotId] = plotKnotData.allFilteredIn;
+        //         // temp
+        //         // allFilteredInDict[plotKnotData.knotId] = plotKnotData.allFilteredIn;
 
-                // if(plotKnotData.allFilteredIn){ // no object is selected (all are filtered in)
-                //     for(const element of plotKnotData.elements){
-                //         element.filteredIn = false;
-                //     }
+        //         // if(plotKnotData.allFilteredIn){ // no object is selected (all are filtered in)
+        //         //     for(const element of plotKnotData.elements){
+        //         //         element.filteredIn = false;
+        //         //     }
 
-                //     plotKnotData.allFilteredIn = false;
-                // }
+        //         //     plotKnotData.allFilteredIn = false;
+        //         // }
 
-                // let allFilteredOut = true;
+        //         // let allFilteredOut = true;
 
-                for(const element of plotKnotData.elements){
-                    if(element.index == elements[plotKnotData.knotId]){
-                        if(toggle){
-                            element.filteredIn = !element.filteredIn;
-                        }else{
-                            element.filteredIn = truthValue;
-                        }
-                    }
-                    // temp
-                    // if(element.filteredIn)
-                    //     allFilteredOut = false;
-                }
+        //         for(const element of plotKnotData.elements){
+        //             if(element.index == elements[plotKnotData.knotId]){
+        //                 if(toggle){
+        //                     element.filteredIn = !element.filteredIn;
+        //                 }else{
+        //                     element.filteredIn = truthValue;
+        //                 }
+        //             }
+        //             // temp
+        //             // if(element.filteredIn)
+        //             //     allFilteredOut = false;
+        //         }
 
-                // temp
-                // allFilteredOutDict[plotKnotData.knotId] = allFilteredOut;
+        //         // temp
+        //         // allFilteredOutDict[plotKnotData.knotId] = allFilteredOut;
 
-                // if(allFilteredOut){ // if no object is selected then include all (all are filtered in)
-                //     for(const element of plotKnotData.elements){
-                //         if(element.index == elements[plotKnotData.knotId]){
-                //             element.filteredIn = true;
-                //         }
-                //     }
-                //     plotKnotData.allFilteredIn = true;
-                // } 
-            }
-        }
+        //         // if(allFilteredOut){ // if no object is selected then include all (all are filtered in)
+        //         //     for(const element of plotKnotData.elements){
+        //         //         if(element.index == elements[plotKnotData.knotId]){
+        //         //             element.filteredIn = true;
+        //         //         }
+        //         //     }
+        //         //     plotKnotData.allFilteredIn = true;
+        //         // } 
+        //     }
+        // }
 
         let invertedDict: any = {};
 
@@ -439,16 +445,23 @@ export class PlotManager {
     
                     let valueKeys = Object.keys(value);
 
-                    let include = true;
+                    let include = false;
 
                     for(const key of valueKeys){
                         if(key != "Symbol(vega_id)"){
                             valueCopy[key] = value[key];
                         }
 
-                        if(key.includes("_filteredIn") && !value[key] && elem.interaction_effect == InteractionEffectType.FILTER){
-                            include = false;
+                        // if(key.includes("_filteredIn") && !value[key] && elem.interaction_effect == InteractionEffectType.FILTER){
+                        //     include = false;
+                        // }
+
+                        if(key.includes("_highlight") && value[key] && elem.interaction_effect == InteractionEffectType.FILTER){
+                            include = true;
+                        }else if(elem.interaction_effect != InteractionEffectType.FILTER){
+                            include = true;
                         }
+
                     }
     
                     // if filter is activated do not include filtered out elements

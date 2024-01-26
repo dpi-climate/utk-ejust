@@ -44,7 +44,7 @@ export const GenericFixedPlotContainer = ({
 
     return(
         <React.Fragment key={id}>
-            <div style={{padding: 0, paddingLeft: "10px", width: "100%", height: "100%"}}>
+            <div style={{padding: 0, width: "100%", height: "100%"}}>
                 <Row className="justify-content-center" style={{height: "100%"}}>
                     <Row className="justify-content-center" style={{height: "20%", padding: 0}}>
                         {
@@ -62,8 +62,8 @@ export const GenericFixedPlotContainer = ({
                             })
                         }
                     </Row>
-                    <Row style={{width: "95%", height:"75%", padding: 0, overflow: "scroll"}}>
-                        <div id={svgId}>
+                    <Row style={{width: "95%", height:"75%", padding: 0, overflow: "auto"}}>
+                        <div id={svgId} style={{textAlign: "center"}}>
                         </div>
                     </Row>
                 </Row>

@@ -55,25 +55,29 @@ export const GenericScreenPlotContainer = ({
 
     return(
         <Draggable nodeRef={nodeRef} key={id} defaultPosition={{x: x, y: y}}>
-            <div ref={nodeRef} className="drag-box" style={{display: disp ? 'block' : 'none', backgroundColor: "white", borderRadius: "8px", padding: "10px", border: "1px solid #dadce0", boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)", overflow: "auto", maxWidth: window.innerWidth/2, maxHeight: window.innerHeight, zIndex: 10}}>
-                <Row className="justify-content-center">
-                    {
-                        (Object.keys(knotsByPhysical)).map((key: any) => {
-                            return <div>
-                                <label>{key}</label>
-                                <select style={{width: "200px"}} key={"selectKnotsByPhysical"+key} value={selectActiveKnotPhysical[key]} onChange={e => updateActiveKnotPhysical(key, e.target.value)}>
-                                    {
-                                        knotsByPhysical[key].map((knotId: string) => (
-                                            <option value={knotId} key={"optionKnotsByPhysical"+knotId}>{knotId}</option>
-                                        ))
-                                    }
-                                </select>
-                            </div>
-                        })
-                    }
+            <div ref={nodeRef} className="drag-box" style={{display: disp ? 'block' : 'none', backgroundColor: "white", borderRadius: "8px", padding: "10px", border: "1px solid #dadce0", boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)", maxWidth: window.innerWidth/3, maxHeight: window.innerHeight/3, zIndex: 10, overflow: "clip"}}>
+                <Row className="justify-content-center" style={{height: "100%"}}>
+                    <Row className="justify-content-center" style={{height: "20%", padding: 0}}>
+                        {
+                            (Object.keys(knotsByPhysical)).map((key: any) => {
+                                return <div style={{marginTop: "30px", marginBottom: "20px", textAlign: "center"}}>
+                                    <label style={{marginRight: "10px", fontWeight: "bold"}}>{key}</label>
+                                    <select style={{width: "200px"}} key={"selectKnotsByPhysical"+key} value={selectActiveKnotPhysical[key]} onChange={e => updateActiveKnotPhysical(key, e.target.value)}>
+                                        {
+                                            knotsByPhysical[key].map((knotId: string) => (
+                                                <option value={knotId} key={"optionKnotsByPhysical"+knotId}>{knotId}</option>
+                                            ))
+                                        }
+                                    </select>
+                                </div>
+                            })
+                        }
+                    </Row>
+                    <Row style={{width: "95%", height:"75%", padding: 0, overflow: "auto"}}>
+                        <div id={svgId} style={{textAlign: "center"}}>
+                        </div>
+                    </Row>
                 </Row>
-                <div id={svgId}>
-                </div>
             </div>
         </Draggable>
     )

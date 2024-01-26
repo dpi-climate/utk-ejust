@@ -134,7 +134,7 @@ export const SideBarMapWidgets = ({x, y, mapWidth, mapHeight, listLayers, knotVi
               mapWidgets.map((component, index) => {
                 if(component.type == WidgetType.TOGGLE_KNOT){
                   return <React.Fragment key={"toggle_knot_"+index}>
-                    <div className='component' id="toggle_knot_widget" style={{position: "absolute", right: 100, top: 10, width: 620, borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)", display: "none"}}>
+                    <div className='component' id="toggle_knot_widget" style={{position: "absolute", right: 100, top: 10, width: 760, borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)", display: "none"}}>
                       <ToggleKnotsWidget
                         obj = {component.obj}
                         listLayers = {listLayers}

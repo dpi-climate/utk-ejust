@@ -291,7 +291,6 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
 
   return (
     <React.Fragment>
-      <div style={{backgroundColor: "#EAEAEA", height: "100%", width: "100%", position: "relative"}}>
         {
           <MasterWidgets
             width={mainDiv.offsetWidth}
@@ -302,6 +301,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
             updateStatus={updateStatus}
           />
         }
+      <div style={{backgroundColor: "#EAEAEA", height: "100%", width: "100%", position: "relative"}}>
         {
           viewObjs.map((component, index) => {
             if (component.type == ComponentIdentifier.MAP) {

@@ -50,7 +50,7 @@ grammar: true
 
 ### Knots 
 
-`knot := (id, group?, knotOp?, colorMap?, integration_scheme+)`
+`knot := (id, group?, knotOp?, color_map?, integration_scheme+)`
 
 All data inside the grammar is in the knots format. It defines how the data will be linked and creates a uniform format for the data.  
 
@@ -245,7 +245,7 @@ It is possible to do operations between knots. To do so the `knotOp` field in th
     {
         id: "whatIfSurface",
         knotOp: true,
-        colorMap: "interpolateBlues",
+        color_map: "interpolateBlues",
         integration_scheme: [
             {
                 out: {
