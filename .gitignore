@@ -29,6 +29,7 @@ examples/downtown_nyc
 examples/multiple_downtown_nyc
 examples/multiple_timesteps_nyc
 examples/chicago-ejust
+examples/2024chicago-ejust
 
 urbantk_cache/
 examples/downtown_nyc

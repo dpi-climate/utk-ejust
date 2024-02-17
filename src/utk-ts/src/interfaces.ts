@@ -103,6 +103,17 @@ export interface IKnotGroup{
     position: number
 }
 
+export interface IToggleKnotItem {
+    id: string, 
+    position?: number | null,
+    cmap: string | IConditionBlock,
+    domain: number[],
+    scale: string,
+    range: number[]
+    timesteps?: number,
+    groupName: string
+}
+
 export interface ILinkDescription {
     spatial_relation?: SpatialRelationType;
     out: {name: string, level: LevelType};

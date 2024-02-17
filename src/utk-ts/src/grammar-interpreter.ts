@@ -1,6 +1,6 @@
 /// <reference types="@types/webgl2" />
 
-import { ICameraData, IConditionBlock, IMasterGrammar, IKnotVisibility, IKnot, IMapGrammar, IPlotGrammar, IComponentPosition, IGenericWidget, ILayerData } from './interfaces';
+import { ICameraData, IConditionBlock, IMasterGrammar, IKnotVisibility, IKnot, IMapGrammar, IPlotGrammar, IComponentPosition, IGenericWidget, ILayerData, IToggleKnotItem } from './interfaces';
 import { PlotArrangementType, OperationType, SpatialRelationType, LevelType, ComponentIdentifier, WidgetType, GrammarType} from './constants';
 import { Knot } from './knot';
 import { MapViewFactory } from './mapview';
@@ -311,6 +311,8 @@ class GrammarInterpreter {
             if(!replace){
                 this._components_grammar.push({id: <string>componentInfo.id, originalGrammar: component_grammar, grammar: <IMapGrammar | IPlotGrammar | undefined>undefined, position: <IComponentPosition | undefined>componentInfo.position});
             }
+
+            console.log("grammar-interpreter this._components_grammar", this._components_grammar)
         }
     }
 
@@ -415,58 +417,38 @@ class GrammarInterpreter {
 
         this.initKnots();
 
-        let knotsGroups: any = {};
-
-        for(const knot of this._knotManager.knots){
-            
-            let knotSpecification = knot.knotSpecification;
-            
-            if(knotSpecification.group != undefined){
-                if(!(knotSpecification.group.group_name in knotsGroups)){
-                    knotsGroups[knotSpecification.group.group_name] = [{
-                        id: knot.id,
-                        position: knotSpecification.group.position,
-                        cmap: knot.cmap,
-                        domain: knot.domain,
-                        scale: knot.scale,
-                        range: knot.range,
-                        timesteps: knot.thematicData?.length
-                    }];
-                }else{
-                    knotsGroups[knotSpecification.group.group_name].push({
-                        id: knot.id,
-                        position: knotSpecification.group.position,
-                        cmap: knot.cmap,
-                        domain: knot.domain,
-                        scale: knot.scale,
-                        range: knot.range,
-                        timesteps: knot.thematicData?.length
-                    });
-                }
-            }else{
-                knotsGroups[knot.id] = [{
-                    id: knot.id,
-                    cmap: knot.cmap,
-                    domain: knot.domain,
-                    scale: knot.scale,
-                    range: knot.range,
-                    timesteps: knot.thematicData?.length
-                }]; // group of single knot
-            }
-            
-        }
-
-        for(const group of Object.keys(knotsGroups)){
-            if(knotsGroups[group].length > 1){
-                knotsGroups[group].sort((a: any,b: any) => {a.position - b.position});
-                let ids = [];
-                for(const element of knotsGroups[group]){
-                    ids.push(element.id);
-                }
-                knotsGroups[group] = ids;
-            }
-        }
+        const arr: IToggleKnotItem[] = []
         
+        for(const knot of this._knotManager.knots) {
+            const knotSpecification = knot.knotSpecification
+            let groupName = "Single"
+            let position = null
+            
+            if(knotSpecification.group != undefined) {
+                groupName = knotSpecification.group.group_name
+                position = knotSpecification.group.position
+            }
+
+            const obj = {
+                id: knot.id,
+                position: position,
+                cmap: knot.cmap,
+                domain: knot.domain,
+                scale: knot.scale,
+                range: knot.range,
+                timesteps: knot.thematicData?.length,
+                groupName: groupName
+            }
+
+            arr.push(obj)
+
+        }
+
+        const knotsGroups: { [key: string]:  IToggleKnotItem[]; } = arr.reduce((result: { [key: string]: IToggleKnotItem[]; }, current: IToggleKnotItem) => {            
+            (result[current.groupName] = result[current['groupName']] || []).push(current)
+            return result
+        }, {})
+
         updateStatus("listLayers", knotsGroups);
 
         for(let i = 0; i < this._components_grammar.length; i++){
@@ -787,9 +769,10 @@ class GrammarInterpreter {
                                 testString = testString.replaceAll("timeElapsed", timeElapsed+'');
                             
                                 let testResult = eval(testString);
-                
+                                
                                 if(testResult && !knot.visible){
                                     this._knotManager.toggleKnot(knot.id, true);
+                                    
                                 }else if(!testResult && knot.visible){
                                     this._knotManager.toggleKnot(knot.id, false);
                                 }
@@ -800,6 +783,7 @@ class GrammarInterpreter {
 
                     }else if(component.grammar.knots.includes(knot.id)){
                         return knot.visible;
+                    
                     }else{
                         return false; // the knot is not being rendered in this map
                     }   

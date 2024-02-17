@@ -26,9 +26,10 @@ export class KnotManager {
     toggleKnot(id: string, value: boolean | null = null){
 
         let knotVisibility: any = {};
-
+        
         for(const knot of this._knots){
             if(knot.id == id){
+                
                 if(value != null){
                     knot.visible = value;
                 }else{

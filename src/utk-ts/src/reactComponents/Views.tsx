@@ -7,7 +7,7 @@ import { ComponentIdentifier, GrammarType, WidgetType} from '../constants';
 import {GrammarMethods} from '../grammar-methods';
 import './Dragbox.css'
 import * as d3 from "d3";
-import { IComponentPosition, IGenericWidget, IMapGrammar, IMasterGrammar, IPlotGrammar, } from '../interfaces';
+import { IComponentPosition, IGenericWidget, IMapGrammar, IMasterGrammar, IPlotGrammar, IToggleKnotItem} from '../interfaces';
 import './View.css';
 import { GenericFixedPlotContainer } from './GenericFixedPlotContainer';
 import { MasterWidgets } from './MasterWidgets';
@@ -38,7 +38,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
   const [genericPlots, setGenericPlots] = useState<{id: number, knotsByPhysical: any, hidden: boolean, svgId: string, label: string, checked: boolean, edit: boolean, floating: boolean, position: IComponentPosition | undefined, componentId: string}[]>([]);
   const [knotVisibility, setKnotVisibility] = useState<any>({});
   const [currentPlotId, setCurrentPlotId] = useState(0);
-  const [listLayers, setListLayers] = useState<any>({});
+  const [listLayers, setListLayers] = useState<{ [key: string]:  IToggleKnotItem[]; }>({});
   const [activeGrammar, setActiveGrammar] = useState("grammar"); // store active component id
   const [activeGrammarType, setActiveGrammarType] = useState(GrammarType.MASTER); // type of active grammar
   const [activeKnotPhysical, setActiveKnotPhysical] = useState<any>({}); // object that, for each physical, stores the knotId of the activated knot
@@ -101,7 +101,6 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
       resolve(returnIds);
 
     });
-
   }
   
   const setActiveGrammarAndType = (grammar: string, grammarType: GrammarType) => {

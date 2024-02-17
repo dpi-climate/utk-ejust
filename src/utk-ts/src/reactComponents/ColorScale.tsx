@@ -9,6 +9,7 @@ import * as d3_scale_s from 'd3-scale';
 
 // drag box css
 import './Dragbox.css'
+import { IConditionBlock } from "../interfaces";
 // import the bar component to draw bars
 
 // declaring the types of the props
@@ -18,7 +19,7 @@ type ColorScaleProps = {
     y: number,
     range: number[],
     domain: number[],
-    cmap: string,
+    cmap: string  | IConditionBlock,
     scale: string,
     disp: boolean
 }
