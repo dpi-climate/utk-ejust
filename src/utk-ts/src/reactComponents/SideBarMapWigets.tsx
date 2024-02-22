@@ -9,9 +9,10 @@ import { faLayerGroup, faChartSimple, faEyeSlash, faSearch, faEye, faCode } from
 import * as d3 from "d3";
 import { InteractionChannel } from "../interaction-channel";
 import { ColorScaleContainer } from './ColorScale';
-import { TimeSlider } from "./TimeSlider";
+import Slider from '@mui/material/Slider';
 
 type SideBarMapWidgetsProps = {
+    maxTimestep: number,
     x: number,
     y: number,
     mapWidth: number,
@@ -28,7 +29,7 @@ type SideBarMapWidgetsProps = {
 }
 
 export var GrammarPanelVisibility = true;
-export const SideBarMapWidgets = ({x, y, mapWidth, mapHeight, listLayers, knotVisibility, inputBarId, genericPlots, togglePlots, mapWidgets, componentId, editGrammar, broadcastMessage}:SideBarMapWidgetsProps) =>{
+export const SideBarMapWidgets = ({maxTimestep, x, y, mapWidth, mapHeight, listLayers, knotVisibility, inputBarId, genericPlots, togglePlots, mapWidgets, componentId, editGrammar, broadcastMessage}:SideBarMapWidgetsProps) =>{
 
     const handleToggleKnotClick = (e: any) => {
 
@@ -58,7 +59,11 @@ export const SideBarMapWidgets = ({x, y, mapWidth, mapHeight, listLayers, knotVi
     // }
 
     const [colorScales, setColorScales] = useState<{range: number[], domain: number[], cmap: string | IConditionBlock, id: string, scale: string, visible: boolean}[]>([]);
-
+    const [activeTimestep, setTimestep] = useState<number>(0)
+    const [visibleKnots, setVisibleKnots] = useState<number>(0)
+    const [nTimesteps, setNTimesteps] = useState<number>(0)
+    const [showSlider, setShowSlider] = useState<boolean>(false)
+    
     useEffect(() => {
 
       const colorScalesAux: {range: number[], domain: number[], cmap: string | IConditionBlock, id: string, scale: string, visible: boolean}[] = [];
@@ -129,6 +134,10 @@ export const SideBarMapWidgets = ({x, y, mapWidth, mapHeight, listLayers, knotVi
                 grammarDefinition = {widget.grammarDefinition}
                 broadcastMessage = {broadcastMessage}
                 toggleColorScaleVisibility = {toggleColorScaleVisibility}
+                activeTimestep={activeTimestep}
+                setShowSlider={setShowSlider}
+                setNTimesteps={setNTimesteps}
+                setTimestep={setTimestep}
               />
             </div>
           </React.Fragment>
@@ -168,19 +177,34 @@ export const SideBarMapWidgets = ({x, y, mapWidth, mapHeight, listLayers, knotVi
     }
 
     const renderSlider = () => {
-      
-      return (
-        <div style={{ backgroundColor: "white", width: "750px", position: "absolute", left: "10px", bottom: "10px", padding: "5px", borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)" }}>
-          {/* <div style={{overflowY: "auto", overflowX: "clip", height: "73%", padding: "10px"}} id="time_slider"> */}
-          <div style={{height: "73%", paddingRight: "20px", paddingLeft: "20px", paddingTop: "10px"}} id="time_slider">
-          {/* <Row> */}
-              <TimeSlider/>
-          {/* </Row> */}
+      if(showSlider) {
+        return (
+          <div style={{ backgroundColor: "white", width: "750px", position: "absolute", left: "10px", bottom: "10px", padding: "5px", borderRadius: "8px", border: "1px solid #dadce0", opacity: 0.9, boxShadow: "0 2px 8px 0 rgba(99,99,99,.2)" }}>
+            <div style={{height: "73%", paddingRight: "20px", paddingLeft: "20px", paddingTop: "10px"}} id="time_slider">
+              <Slider
+                aria-label="Temperature"
+                key="_slider"
+                value={activeTimestep}
+                valueLabelDisplay="auto"
+                // getAriaValueText={valuetext}
+                // step={null}
+                step={1}
+                marks={[{label: "0", value: 0}, {label: `${maxTimestep}`, value: maxTimestep}]}
+                min={0}
+                max={maxTimestep}
+                onChange={(e: Event) => { 
+                  if(e !== null && e.target !== null) setTimestep(parseInt((e.target as HTMLInputElement).value) as number)}
+                }
+                // disabled = {}
+              />
+            </div>
           </div>
-        </div>
-      )
+        )
+      } else {
+        return null
+      }
     }
-    
+   
     const render = () => {
       return (
         <React.Fragment>

@@ -43,6 +43,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
   const [activeGrammarType, setActiveGrammarType] = useState(GrammarType.MASTER); // type of active grammar
   const [activeKnotPhysical, setActiveKnotPhysical] = useState<any>({}); // object that, for each physical, stores the knotId of the activated knot
   
+  const [maxTimestep, setMaxTimestep] = useState<number>(0);
   const [refreshView, setRefreshView] = useState<boolean>(false); 
 
   const [subscribers, _setSubscribers] = useState<any>({}); // each key represent a channel that stores objects of type {id: string, callback: any, ref: any}
@@ -191,6 +192,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
 
   // id: participant that sent the message
   const broadcastMessage = (id:string, channel: string, message: any) => {
+    // message === {knotId: layer.id, timestep: currentTimestep, mapId: obj.viewId}
     for(const currentChannel of Object.keys(subscribersRef.current)){
       if(currentChannel == channel){
         for(const participant of subscribersRef.current[currentChannel]){
@@ -226,6 +228,8 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
       updateSubscribers(value.id, value.callback, value.channel, value.ref); // callback will be called when channel has new message from any of its participants
     }else if(state == "broadcastChannel"){ // broadcast a message to the whole channel
       broadcastMessage(value.id, value.channel, value.message);
+    }else if(state == "maxTimestep"){
+      setMaxTimestep(value)
     }
   }
 
@@ -308,6 +312,7 @@ function Views({viewObjs, mapsWidgets, viewIds, grammar, componentsGrammar, main
                 {/* <div className='component' style={{padding: 0, position: "absolute", left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}> */}
                 <div className='component' style={{padding: 0, position: "absolute", left: getTopLeft(component.position).left, top: getTopLeft(component.position).top, width: getSizes(component.position).width, height: getSizes(component.position).height}}>
                   <MapRendererContainer
+                    maxTimestep={maxTimestep}
                     obj = {component.obj}
                     viewId={viewIds[index]}
                     mapWidgets={mapsWidgets}

@@ -17,9 +17,13 @@ type ToggleKnotsWidgetProps = {
     grammarDefinition: any
     broadcastMessage: any
     toggleColorScaleVisibility: any
+    setShowSlider: Function
+    setNTimesteps: Function
+    setTimestep: Function
+    activeTimestep: number
 }
 
-export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, widgetIdx, grammarDefinition, broadcastMessage, toggleColorScaleVisibility}:ToggleKnotsWidgetProps) =>{
+export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, widgetIdx, grammarDefinition, broadcastMessage, toggleColorScaleVisibility, setShowSlider, setNTimesteps, activeTimestep, setTimestep}:ToggleKnotsWidgetProps) =>{
    
   // Animation ====================================================
 
@@ -143,7 +147,62 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, widgetIdx, g
     return false
   }
 
-  const handleOnChangeItem = (itemObj:IToggleKnotItem) => obj.toggleKnot(itemObj.id, !knotVisibility[itemObj.id])
+  const handleOnChangeItem = (itemObj: IToggleKnotItem) => {
+    // Make nonoverlap knots invisible
+    const nextKnotVisibility = { ...knotVisibility }
+
+    if (itemObj.nonoverlap !== null && !knotVisibility[itemObj.id]) {
+      itemObj.nonoverlap.forEach((knotId: string) => {
+        obj.toggleKnot(knotId, false)
+        nextKnotVisibility[knotId] = false
+      })      
+    }
+
+    nextKnotVisibility[itemObj.id] = !nextKnotVisibility[itemObj.id]
+
+    // Update slider's maximum value and if it will be rendered
+    const visibleKnotsKeys = Object.keys(nextKnotVisibility).filter((k:string) => nextKnotVisibility[k])
+    const visibleKnotsNewTimestep: number[] = []
+    let _nTimesteps: number = 0
+    let _showSlider = false
+ 
+    for(const groupName of Object.keys(listLayers)) {
+      for(const item of listLayers[groupName]) {
+        if(visibleKnotsKeys.includes(item.id)) {
+          if(_showSlider === false && item.nTimesteps !== undefined) {
+            _showSlider = true
+          }
+
+          let timestepIdx = activeTimestep < item.nTimesteps
+            ? activeTimestep
+            : 0
+          
+          if(item.timestep_array !== null) {
+            timestepIdx = item.timestep_array.indexOf(activeTimestep) > -1
+              ? item.timestep_array.indexOf(activeTimestep)
+              : 0
+          }
+          broadcastMessage("", "updateTimestepKnot", {knotId: item.id, timestep: timestepIdx, mapId: obj.viewId})
+        }
+      }
+    }
+
+    // // Update knots' time step
+    // for(const groupName of Object.keys(listLayers)){
+    //   for(const item of listLayers[groupName]) {
+    //     if(nextKnotVisibility[item.id] && item.nTimesteps > 1 && activeTimestep <= item.nTimesteps - 1) {
+    //       broadcastMessage("", "updateTimestepKnot", {knotId: item.id, timestep: activeTimestep, mapId: obj.viewId})
+    //     }
+    //   }
+    // }    
+
+    obj.toggleKnot(itemObj.id, !knotVisibility[itemObj.id])
+    // if (newTimestep !== activeTimestep) setTimestep(newTimestep)
+    setTimestep(activeTimestep)
+    setNTimesteps(_nTimesteps)
+    setShowSlider(_showSlider)
+  }
+
   const handleCheckedItem = (id: string) => knotVisibility[id]
 
   // if activated uncheck all elements of the group. If not activated activate the first element
@@ -209,7 +268,7 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, widgetIdx, g
   const getMarksTimesteps = (layer: any, totalSteps: number) => {
       let marks = [];
       
-      for(let i = 0; i < layer.timesteps; i++){
+      for(let i = 0; i < layer.nTimesteps; i++){
           let mark = {
               value: Math.round((i/totalSteps)*100),
               label: ''+i
@@ -248,18 +307,35 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, widgetIdx, g
       // even though it is a range of values the timestep shown is always the first
       let currentTimestep = Math.round(sliderValue[0]/step);
 
-      if(currentTimestep <= layer.timesteps-1){ // TODO: add lower boundary
-          broadcastMessage("", "updateTimestepKnot", {knotId: layer.id, timestep: currentTimestep, mapId: obj.widgetIdx});
+      if(currentTimestep <= layer.nTimesteps-1){ // TODO: add lower boundary
+          broadcastMessage("", "updateTimestepKnot", {knotId: layer.id, timestep: currentTimestep, mapId: obj.viewId});
       }
   }
 
   useEffect(() => {
-      for(const item of Object.keys(listLayers)){
-          if(listLayers[item].length == 1){
-              handleChangeSlidesTimesteps(sliderValue, listLayers[item][0], getSlideSteps(listLayers))
+    for(const groupName of Object.keys(listLayers)){
+      for(const item of listLayers[groupName]) {
+        if(knotVisibility[item.id]) {
+          let timestepIdx = activeTimestep < item.nTimesteps
+            ? activeTimestep
+            : 0
+          
+          if(item.timestep_array !== null) {
+            timestepIdx = item.timestep_array.indexOf(activeTimestep) > -1
+              ? item.timestep_array.indexOf(activeTimestep)
+              : 0
+            
           }
+
+          broadcastMessage("", "updateTimestepKnot", {knotId: item.id, timestep: timestepIdx, mapId: obj.viewId})
+        }
+
+        // if(knotVisibility[item.id] && item.nTimesteps > 1 && activeTimestep <= item.nTimesteps - 1) {
+          // broadcastMessage("", "updateTimestepKnot", {knotId: item.id, timestep: activeTimestep, mapId: obj.viewId})
+        // }
       }
-  }, [sliderValue]);
+    }
+  }, [activeTimestep]);
 
   const [collapsedItems, setCollapsedItems] = useState<string[]>([]);
 
@@ -334,8 +410,8 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, widgetIdx, g
 
       for(const item of Object.keys(listLayers)){
           if(listLayers[item].length == 1){
-              if(listLayers[item][0].timesteps >= maxTimesteps){
-                  maxTimesteps = listLayers[item][0].timesteps;
+              if(listLayers[item][0].nTimesteps >= maxTimesteps){
+                  maxTimesteps = listLayers[item][0].nTimesteps;
               }
           }
       }
@@ -344,8 +420,8 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, widgetIdx, g
 
       // for(const item of Object.keys(listLayers)){
       //     if(listLayers[item].length == 1){
-      //         if(listLayers[item][0].timesteps <= minTimesteps){
-      //             minTimesteps = listLayers[item][0].timesteps;
+      //         if(listLayers[item][0].nTimesteps <= minTimesteps){
+      //             minTimesteps = listLayers[item][0].nTimesteps;
       //         }
       //     }
       // }
@@ -391,7 +467,7 @@ export const ToggleKnotsWidget = ({obj, listLayers, knotVisibility, widgetIdx, g
                           {/* <Col md={3} style={{paddingLeft: 0}}>
                               <Form.Control placeholder="FPS" type="text" onChange={(e) => {if(e.target.value != ''){setFps(parseInt(e.target.value))}}}/>
                           </Col> */}
-                  </Row></Col> : listLayers[item][0].timesteps != undefined && listLayers[item][0].timesteps > 1 ?
+                  </Row></Col> : listLayers[item][0].nTimesteps != undefined && listLayers[item][0].nTimesteps > 1 ?
                       <Col>
                       <Row style={{padding: 0}} className="align-items-center">
                           <Col md={12}>

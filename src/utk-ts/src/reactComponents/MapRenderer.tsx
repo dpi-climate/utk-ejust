@@ -6,6 +6,7 @@ import { IGenericWidget } from "../interfaces";
 
 // declaring the types of the props
 type MapRendererProps = {
+  maxTimestep: number,
   obj: any,
   viewId: string,
   mapWidgets: {type: WidgetType, obj: any, grammarDefinition: IGenericWidget | undefined}[] // each viewObj has a an object representing its logic
@@ -23,7 +24,7 @@ type MapRendererProps = {
   broadcastMessage: any
 }
 
-export const MapRendererContainer = ({obj, viewId, mapWidgets, x, y, width, height, listLayers, knotVisibility, genericPlots, togglePlots, inputBarId, componentId, editGrammar, broadcastMessage}:MapRendererProps) =>{
+export const MapRendererContainer = ({maxTimestep, obj, viewId, mapWidgets, x, y, width, height, listLayers, knotVisibility, genericPlots, togglePlots, inputBarId, componentId, editGrammar, broadcastMessage}:MapRendererProps) =>{
 
     return(
       <React.Fragment>
@@ -37,6 +38,7 @@ export const MapRendererContainer = ({obj, viewId, mapWidgets, x, y, width, heig
         </div>
 
         <SideBarMapWidgets 
+          maxTimestep={maxTimestep}
           mapWidgets={mapWidgets}
           x={x}
           y={y}

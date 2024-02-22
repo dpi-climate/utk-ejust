@@ -336,7 +336,7 @@ class GrammarInterpreter {
         for(const knotGrammar of this.getKnots()){
             let layerId = this.getKnotOutputLayer(knotGrammar);
             let layer = this._layerManager.searchByLayerId(layerId);
-            let knot = this._knotManager.createKnot(knotGrammar.id, <Layer>layer, knotGrammar, this, true);
+            let knot = this._knotManager.createKnot(knotGrammar.id, <Layer>layer, knotGrammar, this, false);
             knot.processThematicData(this._layerManager); // send thematic data to the mesh of the physical layer TODO: put this inside the constructor of Knot
             for(let i = 0; i < this._components_grammar.length; i++){
                 if(this._components_grammar[i].grammar != undefined && this._components_grammar[i].grammar?.grammar_type == GrammarType.MAP){
@@ -418,16 +418,35 @@ class GrammarInterpreter {
         this.initKnots();
 
         const arr: IToggleKnotItem[] = []
+        let maxTimestep: number = 0
         
         for(const knot of this._knotManager.knots) {
             const knotSpecification = knot.knotSpecification
+            const nonoverlap = knotSpecification.nonoverlap ? knotSpecification.nonoverlap : null
             let groupName = "Single"
             let position = null
+            let timestep_array = null
+            let timesteps_continuous = null
             
             if(knotSpecification.group != undefined) {
                 groupName = knotSpecification.group.group_name
                 position = knotSpecification.group.position
             }
+
+            if(knotSpecification.timesteps !== undefined) {
+                timestep_array = knotSpecification.timesteps.timesteps_array
+                timesteps_continuous = knotSpecification.timesteps.continuous
+                
+                if(maxTimestep < timestep_array[timestep_array.length -1]){
+                    maxTimestep = timestep_array[timestep_array.length -1]
+                }
+            }
+
+            // if(knot.thematicData !== undefined && )
+
+            maxTimestep = knot.thematicData && knot.thematicData.length > maxTimestep
+                ? knot.thematicData.length
+                : maxTimestep
 
             const obj = {
                 id: knot.id,
@@ -436,8 +455,11 @@ class GrammarInterpreter {
                 domain: knot.domain,
                 scale: knot.scale,
                 range: knot.range,
-                timesteps: knot.thematicData?.length,
-                groupName: groupName
+                nTimesteps: knot.thematicData?.length,
+                groupName: groupName,
+                nonoverlap: nonoverlap,
+                timestep_array: timestep_array,
+                timesteps_continuous: timesteps_continuous
             }
 
             arr.push(obj)
@@ -450,6 +472,7 @@ class GrammarInterpreter {
         }, {})
 
         updateStatus("listLayers", knotsGroups);
+        updateStatus("maxTimestep", maxTimestep);
 
         for(let i = 0; i < this._components_grammar.length; i++){
             if(this._components_grammar[i].grammar != undefined && this._components_grammar[i].grammar?.grammar_type == GrammarType.MAP){

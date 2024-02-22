@@ -96,6 +96,8 @@ export interface IKnot {
     range?: number[],
     domain?: number[],
     scale?: string,
+    nonoverlap?: string[],
+    timesteps?: {timesteps_array: number[], continuous: boolean}
 }
 
 export interface IKnotGroup{
@@ -110,8 +112,11 @@ export interface IToggleKnotItem {
     domain: number[],
     scale: string,
     range: number[]
-    timesteps?: number,
-    groupName: string
+    nTimesteps?: number,
+    timestep_array: number[] | null
+    timesteps_continuous: boolean | null
+    groupName: string,
+    nonoverlap:string[] | null
 }
 
 export interface ILinkDescription {

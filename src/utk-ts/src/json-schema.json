@@ -61,6 +61,12 @@
                     "id": {
                         "type": "string"
                     },
+                    "nonoverlap": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
                     "group": {
                         "type": "object",
                         "properties": {
@@ -149,7 +155,22 @@
                                 "in": ["spatial_relation"]
                             }
                         }
+                    },
+                    "timesteps": {
+                        "type": "object",
+                        "properties": {
+                            "timesteps_array": {
+                                "type": "array",
+                                "items": {
+                                    "type": "number"
+                                }
+                            },
+                            "continuous": {
+                                "type": "boolean"
+                            }
+                        }
                     }
+                    
                 },
                 "required": ["id", "integration_scheme"]
             }
